@@ -56,6 +56,7 @@
 <div id="ui"></div>
 <script type="module">
 import { createStore } from './src/store.js';
+import { api } from './src/api.js';
 import { createEditor } from './src/edit.js';
 import { createTown } from './src/town.js';
 import { createGestures } from './src/gestures.js';
@@ -65,7 +66,8 @@ const houses = (await (await fetch('./data/houses.json')).json()).houses;
 const strings = await fetch('./design/ui_strings.template.json').then((r) => r.json()).catch(() => ({}));
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const store = createStore();
+const store = createStore(globalThis.localStorage, { api, onEvent: onSync });
+addEventListener('online', () => store.flush());
 const ed = createEditor(store, houses);
 const town = createTown(document.getElementById('town'), { houses, reducedMotion });
 const view = { tab: 'town', mode: 'view', tool: null, ghost: null, sel: null, canUndo: false, rot: 0 };
@@ -160,7 +162,16 @@ createGestures(document.getElementById('town'), {
   },
 });
 
-if (new URLSearchParams(location.search).has('dev')) mountDev({ store, ui, houses, onReset: () => { ed.done(); Object.assign(view, { tool: null, ghost: null, sel: null }); refresh(); } });
+function onSync(e) {
+  if (e.type === 'replaced') { ed?.done(); if (view) Object.assign(view, { ghost: null, sel: null }); }
+  else if (e.type === 'offline') ui?.toast(ui.t('error.offline'));
+  else if (e.type === 'conflict') ui?.toast(ui.t('error.conflict'));
+  else if (e.type === 'rejected') ui?.toast(ui.t('error.invalid'));
+}
+store.connect();
+// 除錯面板只在本機開（上線版不出現）
+const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
+if (LOCAL && new URLSearchParams(location.search).has('dev')) mountDev({ store, ui, houses, onReset: () => { ed.done(); Object.assign(view, { tool: null, ghost: null, sel: null }); refresh(); } });
 window.__bym = { store, town, ed, view };
 </script>
 </body>

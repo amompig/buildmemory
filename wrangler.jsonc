@@ -1,7 +1,14 @@
 {
-  // Sprint 0：純靜態（Workers Static Assets）。Sprint 1 加 main（API）與 D1。
-  // 部署：node scripts/build.mjs && npx wrangler deploy（只上傳 dist/ 白名單）
+  // 部署：node scripts/build.mjs && npx wrangler@4 deploy（靜態只上傳 dist/ 白名單；/api/* 先進 Worker）
   "name": "buildingyourmemory",
+  "main": "worker/index.js",
   "compatibility_date": "2026-10-01",
-  "assets": { "directory": "./dist" }
+  "assets": { "directory": "./dist", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
+  "d1_databases": [
+    // ⚠️ 正式 D1 尚未建立（需使用者同意）；本機 wrangler dev --local 用這個佔位 id 即可
+    { "binding": "DB", "database_name": "buildingyourmemory", "database_id": "00000000-0000-0000-0000-000000000000" }
+  ],
+  "vars": { "ENV": "prod", "APP_ORIGIN": "https://buildingyourmemory.gpttotaychat.workers.dev" },
+  // DEVICE_SECRET 用 wrangler secret put；本機在 .dev.vars
+  "observability": { "enabled": true }
 }

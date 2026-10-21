@@ -17,6 +17,7 @@ const FALLBACK = {
   error: {
     too_far: '再走約 {dist} m', weak_signal: '定位訊號太弱，到空曠一點再試', cooldown: '今天來過這裡了，{until} 後再來',
     daily_cap: '今天打卡次數到上限了', rate_limited: '{retry_after} 秒後再試', invalid: '這樣不行喔', offline: '有訊號再按',
+    conflict: '另一台裝置改過小鎮，已換成最新版', unauthorized: '連線逾時，重新連線中',
   },
 };
 // 錯誤參數轉人話（時間轉台北時間）

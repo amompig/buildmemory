@@ -216,3 +216,102 @@ test('失敗的操作不進堆疊；done() 清空堆疊', () => {
   ed.done();
   assert.equal(ed.canUndo(), false);
 });
+
+// ---------- store 同步（假 api）----------
+// 伺服器模擬：rev、grid、grants；calls 記錄每次請求
+function fakeServer({ offline = false } = {}) {
+  const srv = { rev: 0, grid: R.starterGrid(), grants: starterState(() => crypto.randomUUID()).grants, calls: [], offline, ops: new Map() };
+  srv.api = async (method, path, body) => {
+    srv.calls.push({ method, path, body });
+    if (srv.delay) await tick(srv.delay);
+    if (srv.offline) return { ok: false, code: 'offline' };
+    if (path === '/api/me') return { ok: true, data: { grants: srv.grants, town: { grid: srv.grid, rev: srv.rev } } };
+    if (path === '/api/town') {
+      if (srv.ops.has(body.op_id)) return { ok: true, data: { rev: srv.ops.get(body.op_id) } };
+      if (body.base_rev !== srv.rev) return { ok: false, code: 'conflict', rev: srv.rev, grid: srv.grid };
+      srv.grid = body.grid; srv.rev++; srv.ops.set(body.op_id, srv.rev);
+      return { ok: true, data: { rev: srv.rev } };
+    }
+    return { ok: true, data: {} };
+  };
+  return srv;
+}
+const tick = (ms = 5) => new Promise((r) => setTimeout(r, ms));
+
+test('同步：connect 以伺服器版為準（grants、grid、rev）', async () => {
+  const srv = fakeServer(); srv.rev = 7; srv.grid[idx(6, 6)] = { t: 'road' };
+  const store = createStore(memStorage(), { api: srv.api, debounceMs: 0 });
+  await store.connect();
+  assert.equal(store.get().rev, 7);
+  assert.deepEqual(store.get().grid, srv.grid);
+  assert.equal(store.get().grants[0].id, srv.grants[0].id);
+});
+
+test('同步：編輯後 debounce 送 PUT /town，成功 → rev 更新、dirty 清掉', async () => {
+  const srv = fakeServer(), events = [];
+  const store = createStore(memStorage(), { api: srv.api, debounceMs: 0, onEvent: (e) => events.push(e.type) });
+  await store.connect();
+  const ed = createEditor(store, HOUSES);
+  ed.paintRoad(idx(6, 6)); ed.paintRoad(idx(6, 7));
+  await tick(20);
+  assert.equal(srv.calls.filter((c) => c.path === '/api/town').length, 1); // 兩次編輯合併成一次送出
+  assert.deepEqual([store.get().rev, store.get().dirty, srv.grid[idx(6, 7)]], [1, false, { t: 'road' }]);
+  assert.ok(events.includes('synced'));
+});
+
+test('同步：離線送不出 → 保持 dirty；恢復後 flush 沿用同一個 op_id', async () => {
+  const srv = fakeServer(), events = [];
+  const store = createStore(memStorage(), { api: srv.api, debounceMs: 0, onEvent: (e) => events.push(e.type) });
+  await store.connect();
+  srv.offline = true;
+  createEditor(store, HOUSES).paintRoad(idx(6, 6));
+  await tick(20);
+  assert.equal(store.get().dirty, true);
+  assert.ok(events.includes('offline'));
+  srv.offline = false;
+  await store.flush();
+  const puts = srv.calls.filter((c) => c.path === '/api/town');
+  assert.equal(puts.length, 2);
+  assert.equal(puts[0].body.op_id, puts[1].body.op_id);
+  assert.deepEqual([store.get().dirty, store.get().rev], [false, 1]);
+});
+
+test('同步：409 → 改用伺服器版並通知 conflict / replaced', async () => {
+  const srv = fakeServer(), events = [];
+  const store = createStore(memStorage(), { api: srv.api, debounceMs: 0, onEvent: (e) => events.push(e.type) });
+  await store.connect();
+  srv.rev = 3; srv.grid = R.starterGrid(); srv.grid[idx(8, 8)] = { t: 'road' }; // 別台裝置先寫了
+  createEditor(store, HOUSES).paintRoad(idx(6, 6));
+  await tick(20);
+  assert.deepEqual([store.get().rev, store.get().grid[idx(8, 8)], store.get().grid[idx(6, 6)], store.get().dirty], [3, { t: 'road' }, null, false]);
+  assert.ok(events.includes('conflict') && events.includes('replaced'));
+});
+
+test('同步：重開時本機有沒送出的修改且 rev 相同 → 送本機版，grant state 依 grid 重算', async () => {
+  const srv = fakeServer(), storage = memStorage();
+  let store = createStore(storage, { api: srv.api, debounceMs: 0 });
+  await store.connect();
+  srv.offline = true;
+  const minnan = store.get().grants.find((g) => g.item_id === 'sys:minnan');
+  createEditor(store, HOUSES).placeHouse(minnan.id, idx(6, 5));
+  await tick(20);
+  srv.offline = false;
+  store = createStore(storage, { api: srv.api, debounceMs: 0 }); // 重新整理
+  await store.connect();
+  assert.deepEqual(srv.grid[idx(6, 5)]?.ref, minnan.id);
+  assert.equal(store.get().grants.find((g) => g.id === minnan.id).state, 'placed');
+  assert.equal(store.get().dirty, false);
+});
+
+test('同步：送出途中又編輯 → 那筆不會漏，送完會再送一次', async () => {
+  const srv = fakeServer();
+  const store = createStore(memStorage(), { api: srv.api, debounceMs: 0 });
+  await store.connect();
+  const ed = createEditor(store, HOUSES);
+  srv.delay = 30;
+  ed.paintRoad(idx(6, 6));
+  await tick(10); // 第一次 PUT 還在路上
+  ed.paintRoad(idx(6, 7));
+  await tick(150);
+  assert.deepEqual([srv.grid[idx(6, 6)], srv.grid[idx(6, 7)], store.get().dirty], [{ t: 'road' }, { t: 'road' }, false]);
+});
