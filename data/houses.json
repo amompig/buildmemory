@@ -1,6 +1,6 @@
 {
   "data_version": "2026-10-21.1",
-  "_note": "外層欄位（id/name/size/palettes/daily/footprint 規則）為契約；blueprint 內部結構由 Code 以 samples/kit.js 打通 3 房型後定稿，此處 blueprint_draft 只是起點，可整個改掉。palettes[0] 為原色（seed 0），其餘為變體。",
+  "_note": "外層欄位（id/name/size/palettes/daily/footprint 規則）為契約；blueprint 內部結構由 src/kit.js 定義（2026-10-21 打通 3 房型後定稿；沒有 blueprint 的房型以色塊占位）。palettes[0] 為原色（seed 0），其餘為變體。",
   "houses": [
     {
       "id": "sys:iron",
@@ -13,11 +13,14 @@
         { "wall": "#CFD6D2", "roof": "#6F7F8C", "door": "#8E6B50", "accent": "#E2B45A" },
         { "wall": "#F2DDB5", "roof": "#4F5B6B", "door": "#3A3A48", "accent": "#6FA88A" }
       ],
-      "blueprint_draft": {
+      "blueprint": {
         "body": { "w": 1.4, "d": 1.5, "floors": 4, "floorH": 0.75 },
-        "window": "plain", "windowCols": 2, "door": "plain", "roof": "flat",
-        "extras": [ { "type": "signboard", "x": 0, "y": 1.3, "z": 0.8 }, { "type": "balcony", "x": 0, "y": 1.5, "z": 0.75 } ],
-        "_todo": "鐵窗格柵、鐵皮加蓋（屋頂改 gable 小斜頂 + 波浪板色）"
+        "window": "grille", "windowCols": 2, "door": "plain", "roof": "flat",
+        "extras": [
+          { "type": "signboard", "x": 0.2, "y": 0.78, "z": 0.8 },
+          { "type": "balcony", "x": 0, "y": 1.5, "z": 0.75 },
+          { "type": "rooftop_shed", "x": 0.1, "y": 3.08, "z": -0.2, "w": 1.0, "d": 0.9 }
+        ]
       }
     },
     {
@@ -30,7 +33,7 @@
         { "wall": "#B8604E", "roof": "#8A5A3C", "door": "#3A3A48", "accent": "#E2B45A" },
         { "wall": "#D4836C", "roof": "#C97D4B", "door": "#2F5D50", "accent": "#F7F3EE" }
       ],
-      "blueprint_draft": {
+      "blueprint": {
         "body": { "w": 2.0, "d": 1.3, "floors": 1, "floorH": 1.0 },
         "window": "round", "windowCols": 3, "door": "double", "roof": "swallowtail"
       }
@@ -45,11 +48,13 @@
         { "wall": "#E9C9A8", "roof": "#6F7F8C", "door": "#3A3A48", "accent": "#5B8BC9" },
         { "wall": "#D9D4C7", "roof": "#4F5B6B", "door": "#8E6B50", "accent": "#6FA88A" }
       ],
-      "blueprint_draft": {
+      "blueprint": {
         "body": { "w": 1.4, "d": 1.6, "floors": 2, "floorH": 0.9 },
-        "window": "arch", "windowCols": 2, "door": "double", "roof": "flat", "porch": "columns",
-        "extras": [ { "type": "signboard", "x": 0, "y": 1.0, "z": 0.85 } ],
-        "_todo": "騎樓拱廊（porch columns 改拱）、女兒牆"
+        "window": "arch", "windowCols": 2, "door": "double", "roof": "flat", "porch": "arcade",
+        "extras": [
+          { "type": "signboard", "x": 0, "y": 0.95, "z": 0.85 },
+          { "type": "parapet", "x": 0, "y": 1.88, "z": 0.75, "w": 1.5 }
+        ]
       }
     }
   ],
