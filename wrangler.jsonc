@@ -1,0 +1,7 @@
+{
+  // Sprint 0：純靜態（Workers Static Assets）。Sprint 1 加 main（API）與 D1。
+  // 部署：node scripts/build.mjs && npx wrangler deploy（只上傳 dist/ 白名單）
+  "name": "buildingyourmemory",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./dist" }
+}
