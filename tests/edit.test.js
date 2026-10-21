@@ -124,6 +124,15 @@ test('落房非法格：occupied / no_road / locked 各一（S0-C），grid 與�
   assert.equal(store.get(), before);
 });
 
+test('checkHouse：與 placeHouse 同判定、不改 store', () => {
+  const { store, ed, stock } = setup();
+  const id = stock('sys:minnan').id, before = store.get();
+  assert.deepEqual(ed.checkHouse(id, idx(6, 5)), { ok: true, cells: [idx(6, 5)] });
+  assert.equal(ed.checkHouse(id, idx(5, 5)).reason, 'no_road');
+  assert.equal(ed.checkHouse('nope', idx(6, 5)).reason, 'ref');
+  assert.equal(store.get(), before);
+});
+
 test('落房：同一 grant 不能放兩次；不存在的 grant → ref', () => {
   const { ed, stock } = setup();
   const id = stock('sys:minnan').id;

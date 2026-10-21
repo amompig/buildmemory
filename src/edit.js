@@ -37,12 +37,19 @@ export function createEditor(store, houses) {
       return apply({ grid: next });
     },
 
-    placeHouse(grantId, anchor, rot = 0) {
+    // 幽靈預覽：同 placeHouse 的檢查，不改 store
+    checkHouse(grantId, anchor, rot = 0) {
       const { grid, grants } = store.get();
       const g = grants.find((x) => x.id === grantId);
       if (!g || g.kind !== 'house' || g.state !== 'stock' || !byId.has(g.item_id)) return fail('ref');
-      const r = R.canPlace(grid, byId.get(g.item_id), anchor, rot, R.unlockedSize(grid));
+      return R.canPlace(grid, byId.get(g.item_id), anchor, rot, R.unlockedSize(grid));
+    },
+
+    placeHouse(grantId, anchor, rot = 0) {
+      const r = this.checkHouse(grantId, anchor, rot);
       if (!r.ok) return r;
+      const { grid, grants } = store.get();
+      const g = grants.find((x) => x.id === grantId);
       const next = grid.slice();
       for (const i of r.cells) next[i] = i === anchor ? { t: 'house', id: g.item_id, ref: g.id, rot } : { t: 'part', of: anchor };
       return apply({ grid: next, grants: grants.map((x) => (x === g ? { ...x, state: 'placed' } : x)) });

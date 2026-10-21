@@ -230,7 +230,18 @@ export function createTown(canvas, { houses, reducedMotion = false }) {
       cam.z = THREE.MathUtils.clamp(cam.z + a.z - b.z, -lim, lim);
       tween = null; kick();
     },
-    zoom(factor) { cam.dist = THREE.MathUtils.clamp(cam.dist / factor, DIST.min, DIST.max); tween = null; kick(); },
+    // 以螢幕點 (x,y) 為中心縮放（雙指中點／滑鼠位置不動）；省略則以畫面中心
+    zoom(factor, x, y) {
+      place(); camera.updateMatrixWorld();
+      const a = x == null ? null : groundAt(x, y);
+      cam.dist = THREE.MathUtils.clamp(cam.dist / factor, DIST.min, DIST.max);
+      if (a) {
+        place(); camera.updateMatrixWorld();
+        const b = groundAt(x, y), lim = (N * CELL) / 2;
+        if (b) { cam.x = THREE.MathUtils.clamp(cam.x + a.x - b.x, -lim, lim); cam.z = THREE.MathUtils.clamp(cam.z + a.z - b.z, -lim, lim); }
+      }
+      tween = null; kick();
+    },
 
     stats: () => ({ calls: renderer.info.render.calls, triangles: renderer.info.render.triangles }),
     renderNow() { frame(performance.now()); return this.stats(); },

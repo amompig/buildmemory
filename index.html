@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BuildingYourMemory</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<style>
+  /* tokens：design/palette.seed.json css 區塊（Design 出 tokens.css 後替換） */
+  :root { --bg:#F6F1E8; --surface:#FFFFFF; --surface-2:#F0E9DD; --ink:#2F3B46; --ink-2:#5C6670; --accent:#C9705B; --accent-ink:#FFFFFF;
+    --ok:#4F9A7A; --danger:#C7453B; --line:#E3DBCD; --radius:12px; --touch:44px; --shadow:0 2px 8px rgba(47,59,70,.12);
+    font-family: system-ui, -apple-system, 'Noto Sans TC', sans-serif; color: var(--ink); }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #8FCFC6; overscroll-behavior: none; }
+  #town { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #ui { position: fixed; inset: 0; pointer-events: none; }
+  #ui > * { pointer-events: auto; }
+  button { min-height: var(--touch); min-width: var(--touch); border: 0; border-radius: var(--radius); background: var(--surface); color: var(--ink);
+    font: inherit; font-size: 15px; padding: 0 14px; box-shadow: var(--shadow); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  button.on { outline: 3px solid var(--accent); }
+  button.dim { opacity: .45; }
+  .ui-top { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 12px; right: 12px; display: flex; justify-content: center; }
+  .banner { display: flex; gap: 8px; align-items: center; background: var(--surface); border-radius: 999px; padding: 4px 4px 4px 16px; box-shadow: var(--shadow); }
+  .banner button { box-shadow: none; border-radius: 999px; }
+  .progress { position: relative; width: min(320px, 100%); height: 24px; background: var(--surface); border-radius: 999px; overflow: hidden; box-shadow: var(--shadow); }
+  .progress i { position: absolute; inset: 0 auto 0 0; background: var(--ok); opacity: .35; }
+  .progress span { position: relative; display: block; text-align: center; line-height: 24px; font-size: 13px; }
+  .ui-side { position: absolute; right: 12px; bottom: 210px; display: flex; flex-direction: column; gap: 8px; }
+  .ui-side button { font-size: 20px; padding: 0; }
+  .ui-bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 12px max(10px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
+  .bar { display: flex; gap: 8px; justify-content: center; }
+  .tabs { display: flex; gap: 6px; background: var(--surface); border-radius: var(--radius); padding: 6px; box-shadow: var(--shadow); }
+  .tabs button { flex: 1; box-shadow: none; }
+  .tabs button.on { outline: 0; background: var(--surface-2); font-weight: 600; }
+  .drawer { display: flex; gap: 8px; overflow-x: auto; padding: 6px 2px 4px; }
+  .card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 84px; height: 72px; font-size: 13px; }
+  .card small { color: var(--ink-2); font-size: 11px; }
+  .card.road { background: #6F7F8C; color: #fff; }
+  .swatch { width: 22px; height: 14px; border-radius: 4px; }
+  .ui-page { position: absolute; inset: 0 0 76px; background: var(--bg); padding: 24px 16px; overflow: auto; display: none; }
+  #ui[data-tab="map"] .ui-page, #ui[data-tab="inventory"] .ui-page { display: block; }
+  .inv { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+  .muted { color: var(--ink-2); text-align: center; }
+  .toast { position: absolute; left: 50%; top: 64px; transform: translate(-50%, -8px); background: var(--ink); color: #fff; border-radius: var(--radius);
+    padding: 10px 16px; font-size: 14px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; max-width: 86vw; text-align: center; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+  #dev { position: fixed; left: 8px; top: 60px; z-index: 5; background: rgba(255,255,255,.95); border-radius: var(--radius); padding: 8px; font-size: 12px; box-shadow: var(--shadow); max-width: 230px; }
+  #dev summary { cursor: pointer; font-weight: 600; }
+  #dev input { width: 100%; box-sizing: border-box; font-size: 12px; }
+  #dev button { min-height: 32px; min-width: 0; padding: 0 8px; font-size: 12px; margin: 2px 0; }
+</style>
+</head>
+<body>
+<canvas id="town"></canvas>
+<div id="ui"></div>
+<script type="module">
+import { createStore } from './src/store.js';
+import { createEditor } from './src/edit.js';
+import { createTown } from './src/town.js';
+import { createGestures } from './src/gestures.js';
+import { createUI, mountDev } from './src/ui.js';
+
+const houses = (await (await fetch('./data/houses.json')).json()).houses;
+const strings = await fetch('./design/ui_strings.template.json').then((r) => r.json()).catch(() => ({}));
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const store = createStore();
+const ed = createEditor(store, houses);
+const town = createTown(document.getElementById('town'), { houses, reducedMotion });
+const view = { tab: 'town', mode: 'view', tool: null, ghost: null, sel: null, canUndo: false, rot: 0 };
+const ui = createUI(document.getElementById('ui'), { strings, houses, onIntent });
+
+const sizeAt = (i) => houses.find((h) => h.id === store.get().grid[i]?.id)?.size ?? [1, 1];
+const houseOf = (grantId) => houses.find((h) => h.id === store.get().grants.find((g) => g.id === grantId)?.item_id);
+
+function refresh() {
+  view.canUndo = ed.canUndo();
+  town.setGhost(view.ghost ?? (view.sel != null ? { anchor: view.sel, ok: true, size: sizeAt(view.sel) } : null));
+  ui.render(store.get(), view);
+}
+store.subscribe((s) => { town.update(s); refresh(); });
+town.update(store.get()); refresh();
+
+// 拒絕回饋：紅框斜線（town 幽靈）+ 震動 + 一句人話
+function reject(r, i) {
+  if (i != null) { view.ghost = { anchor: i, ok: false }; refresh(); setTimeout(() => { if (view.ghost && !view.ghost.houseId) { view.ghost = null; refresh(); } }, 600); }
+  if (!reducedMotion) navigator.vibrate?.(30);
+  ui.toast(ui.reasonText(r));
+}
+
+function onIntent(it) {
+  switch (it.type) {
+    case 'tab': view.tab = it.tab; break;
+    case 'mode': view.mode = it.mode; break;
+    case 'tool':
+      view.tool = it.tool; view.ghost = null; view.sel = null; view.rot = 0;
+      town.topDown(it.tool?.kind === 'road'); // 畫路 = 俯視（F3）
+      break;
+    case 'undo': ed.undo(); view.ghost = null; view.sel = null; break;
+    case 'done': ed.done(); Object.assign(view, { mode: 'view', tool: null, ghost: null, sel: null }); town.topDown(false); break;
+    case 'view': town.view(town.dir + it.delta); break;
+    case 'fit': town.fit(); break;
+    case 'rotateGhost':
+      view.rot = (view.rot + 1) % 4;
+      if (view.ghost) { const r = ed.checkHouse(view.tool.grantId, view.ghost.anchor, view.rot); view.ghost = { ...view.ghost, rot: view.rot, ok: r.ok, r }; }
+      break;
+    case 'confirm': {
+      const r = ed.placeHouse(view.tool.grantId, view.ghost.anchor, view.rot);
+      if (!r.ok) { reject(r); return; }
+      view.tool = null; view.ghost = null;
+      break;
+    }
+    case 'rotateSel': ed.rotate(view.sel); break;
+    case 'removeSel': { const r = ed.removeHouse(view.sel); if (!r.ok) reject(r); view.sel = null; break; }
+  }
+  refresh();
+}
+
+// ---------- 手勢 → 編輯 ----------
+let stroke = null; // { erase, last, warned }
+function brushAt(x, y) {
+  const i = town.cellAt(x, y);
+  const tool = view.tool;
+  if (tool?.kind === 'road') {
+    if (i == null || i === stroke.last) return;
+    stroke.last = i;
+    const r = stroke.erase ? ed.eraseRoad(i) : ed.paintRoad(i);
+    // 塗路拖過房子不算錯；鎖住格 / orphan 每筆只提示一次
+    if (!r.ok && r.reason !== 'occupied' && r.reason !== 'not_road' && !stroke.warned) { stroke.warned = true; reject(r, i); }
+  } else if (tool?.kind === 'house') {
+    if (i == null) return;
+    const h = houseOf(tool.grantId), r = ed.checkHouse(tool.grantId, i, view.rot);
+    view.ghost = { anchor: i, ok: r.ok, r, size: h?.size, houseId: h?.id, rot: view.rot };
+    refresh();
+  } else if (i != null) {
+    // 沒選工具：點房子 = 選取（旋轉 / 收回）
+    const v = store.get().grid[i];
+    view.sel = v?.t === 'house' ? i : v?.t === 'part' ? v.of : null;
+    refresh();
+  }
+}
+createGestures(document.getElementById('town'), {
+  getMode: () => (view.tab === 'town' ? view.mode : 'view'),
+  onEvent(e) {
+    if (e.type === 'pan') town.pan(e.x0, e.y0, e.x1, e.y1);
+    else if (e.type === 'zoom') town.zoom(e.factor, e.x, e.y);
+    else if (e.type === 'brushStart') {
+      const i = town.cellAt(e.x, e.y);
+      stroke = { erase: view.tool?.kind === 'road' && store.get().grid[i]?.t === 'road', last: null, warned: false };
+      if (view.tool?.kind === 'road') ed.beginStroke();
+      brushAt(e.x, e.y);
+    } else if (e.type === 'brushMove' && stroke) brushAt(e.x, e.y);
+    else if (e.type === 'brushEnd' && stroke) {
+      if (view.tool?.kind === 'road') ed.endStroke();
+      // 放房：手指放開時幽靈不合法 → 說原因
+      if (view.tool?.kind === 'house' && view.ghost && !view.ghost.ok) reject(view.ghost.r);
+      stroke = null; refresh();
+    }
+  },
+});
+
+if (new URLSearchParams(location.search).has('dev')) mountDev({ store, ui, houses, onReset: () => { ed.done(); Object.assign(view, { tool: null, ghost: null, sel: null }); refresh(); } });
+window.__bym = { store, town, ed, view };
+</script>
+</body>
+</html>
