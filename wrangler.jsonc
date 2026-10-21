@@ -10,7 +10,7 @@
   "vars": {
     "ENV": "prod",
     "APP_ORIGIN": "https://buildingyourmemory.gpttotaychat.workers.dev",
-    "GOOGLE_CLIENT_ID": "" // 公開值，不是 secret；使用者在 Google Cloud 設好授權來源後填入
+    "GOOGLE_CLIENT_ID": "396909109625-50bdb97id15hkve5fvp3f9mjj251eife.apps.googleusercontent.com" // 沿用 Dies-X 的 OAuth client（公開值，不是 secret）
   },
   // DEVICE_SECRET 用 wrangler secret put；本機在 .dev.vars
   "observability": { "enabled": true }

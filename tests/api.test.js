@@ -248,3 +248,13 @@ test('auth：session 竄改 → 401', local, async () => {
   const bad = r.session.slice(0, -1) + (r.session.endsWith('0') ? '1' : '0');
   assert.equal((await call('GET', '/api/me', { cookie: bad })).status, 401);
 });
+
+// 正式站：client_id 是真的；用測試金鑰簽的憑證必須被拒（證明正式環境沒有信任 TEST_JWKS）
+const prodOnly = { skip: !process.env.PROD && '只在正式站跑' };
+test('prod auth：nonce 給真的 client_id；測試金鑰簽的憑證 → 401、不發 session', prodOnly, async () => {
+  const n = await call('GET', '/api/auth/nonce');
+  assert.match(n.json.client_id, /^\d+-[0-9a-z]+\.apps\.googleusercontent\.com$/);
+  const nonceCookie = cookiesFrom(n.setCookie)[0];
+  const r = await call('POST', '/api/auth/google', { cookie: nonceCookie, body: { credential: idToken({ nonce: n.json.nonce, aud: n.json.client_id, azp: n.json.client_id }) } });
+  assert.deepEqual([r.status, r.json.error.code, /bym_session=[0-9a-f]/.test(r.setCookie ?? '')], [401, 'unauthorized', false]);
+});
