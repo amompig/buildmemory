@@ -226,3 +226,101 @@ export async function putTown({ env, body, userId }) {
   if (res[0].meta.changes !== 1) throw conflict(await townOf(env, userId)); // 併發：別人先寫了
   return { body: { rev: base_rev + 1 } };
 }
+
+// ---------- 打卡 / 每日簽到 / 記憶卡 ----------
+// 座標只在這個請求裡用來算距離，不寫 D1、不寫 log（只存地標、日、距離）
+import landmarksJson from '../data/landmarks.json';
+const LANDMARKS = landmarksJson.items;
+const LM = new Map(LANDMARKS.map((l) => [l.id, l]));
+const HOUSE = new Map(HOUSES.map((h) => [h.id, h]));
+const fin = (x) => typeof x === 'number' && Number.isFinite(x);
+const geoOk = (b) => fin(b?.lat) && fin(b?.lng) && fin(b?.acc) && Math.abs(b.lat) <= 90 && Math.abs(b.lng) <= 180 && b.acc >= 0
+  && typeof b.op_id === 'string' && /^[0-9a-f-]{8,64}$/i.test(b.op_id);
+const STATUS = { weak_signal: 422, too_far: 422, cooldown: 429, daily_cap: 429, rate_limited: 429 };
+const fromRule = (r) => new ApiError(STATUS[r.code] ?? 400, r.code, Object.fromEntries(Object.entries(r).filter(([k]) => k !== 'ok' && k !== 'code')));
+const grantById = (env, id) => env.DB.prepare(`SELECT ${GRANT_COLS} FROM grants WHERE id = ?`).bind(id).first();
+const byOp = (env, userId, op) => env.DB.prepare(`SELECT ${GRANT_COLS} FROM grants WHERE user_id = ? AND op_id = ?`).bind(userId, op).first();
+const isUnique = (e) => /UNIQUE/i.test(String(e?.message ?? e));
+
+// 寫一筆 grant + checkin（同一 batch）；UNIQUE 撞到 = 同日已打過（併發）→ cooldown
+async function writeGrant(env, userId, g, lmId, day, distM, t) {
+  const id = crypto.randomUUID(), db = env.DB;
+  try {
+    await db.batch([
+      db.prepare('INSERT INTO grants (id, user_id, kind, item_id, state, seed, landmark_id, visit_n, at, op_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .bind(id, userId, 'house', g.item_id, g.state, g.seed, g.landmark_id, g.visit_n, t, g.op_id),
+      db.prepare('INSERT INTO checkins (user_id, landmark_id, day, grant_id, dist_m, at) VALUES (?, ?, ?, ?, ?, ?)')
+        .bind(userId, lmId, day, id, distM, t),
+    ]);
+  } catch (e) {
+    if (isUnique(e)) {
+      const again = await byOp(env, userId, g.op_id); // 同一 op_id 併發重送
+      if (again) return again;
+      throw new ApiError(429, 'cooldown', { until: R.cooldownUntil(day) });
+    }
+    throw e;
+  }
+  return grantById(env, id);
+}
+
+// POST /api/checkin {landmark_id, lat, lng, acc, op_id}
+// 順序（schema_v1 §5）：schema → acc → 地標存在 → 距離 → 同地標同日 → 日上限 → 間隔 → 寫入
+export async function checkin({ env, body, userId }) {
+  if (!geoOk(body) || typeof body.landmark_id !== 'string') throw invalid('schema');
+  const prev = await byOp(env, userId, body.op_id);
+  if (prev) return { body: { grant: prev, checkin: { landmark_id: prev.landmark_id, day: R.tpeDay(prev.at), visit_n: prev.visit_n } } };
+
+  if (body.acc > R.RULES.ACC_MAX) throw fromRule({ code: 'weak_signal' });
+  const lm = LM.get(body.landmark_id);
+  if (!lm) throw invalid('landmark');
+  const d = R.distanceM(body.lat, body.lng, lm.lat, lm.lng);
+  const dist = R.checkinDistance(d, lm.r, body.acc);
+  if (!dist.ok) throw fromRule(dist);
+
+  const t = now(), day = R.tpeDay(t), db = env.DB;
+  const [same, today, last, visits] = await Promise.all([
+    db.prepare('SELECT 1 FROM checkins WHERE user_id = ? AND landmark_id = ? AND day = ?').bind(userId, lm.id, day).first(),
+    db.prepare("SELECT COUNT(*) AS n FROM checkins WHERE user_id = ? AND day = ? AND landmark_id <> 'daily'").bind(userId, day).first(),
+    db.prepare("SELECT MAX(at) AS at FROM checkins WHERE user_id = ? AND landmark_id <> 'daily'").bind(userId).first(),
+    db.prepare('SELECT COUNT(*) AS n FROM checkins WHERE user_id = ? AND landmark_id = ?').bind(userId, lm.id).first(),
+  ]);
+  const c = R.canCheckin({ existsSameDay: !!same, countToday: today.n, lastAt: last.at, now: t });
+  if (!c.ok) throw fromRule(c);
+
+  const visit = R.visitN(visits.n), h = HOUSE.get(lm.house);
+  const grant = await writeGrant(env, userId, {
+    item_id: h.id, state: 'stock', seed: R.seed(visit, h.palettes.length, Math.random()), landmark_id: lm.id, visit_n: visit, op_id: body.op_id,
+  }, lm.id, day, Math.round(d), t);
+  return { body: { grant, checkin: { landmark_id: lm.id, day, visit_n: visit } } };
+}
+
+// POST /api/daily {lat, lng, acc, op_id}：每日 1 次；縣市 = 最近地標 ≤ 30 km；iron 持有 ≥ 3 → 碎片
+export async function daily({ env, body, userId }) {
+  if (!geoOk(body)) throw invalid('schema');
+  const prev = await byOp(env, userId, body.op_id);
+  const county = R.countyOf(body.lat, body.lng, LANDMARKS);
+  if (prev) return { body: { grant: prev, county, kind: prev.state === 'dismantled' ? 'shard' : 'house' } };
+
+  if (body.acc > R.RULES.ACC_MAX) throw fromRule({ code: 'weak_signal' });
+  if (!county) throw invalid('county');
+  const t = now(), day = R.tpeDay(t);
+  if (await env.DB.prepare("SELECT 1 FROM checkins WHERE user_id = ? AND landmark_id = 'daily' AND day = ?").bind(userId, day).first()) {
+    throw new ApiError(429, 'cooldown', { until: R.cooldownUntil(day) });
+  }
+  const iron = HOUSE.get(R.RULES.DAILY_HOUSE);
+  const g = R.dailyGrant(R.ironOwned(await grantsOf(env, userId)), iron.palettes.length, Math.random());
+  // 碎片 = 一列 state='dismantled' 的 house（schema_v1 §3 碎片數的定義）
+  const grant = await writeGrant(env, userId, {
+    item_id: g.item_id, state: g.kind === 'shard' ? 'dismantled' : 'stock', seed: g.seed ?? 0, landmark_id: null, visit_n: 1, op_id: body.op_id,
+  }, 'daily', day, null, t);
+  return { body: { grant, county, kind: g.kind } };
+}
+
+// PUT /api/grant/:id/memory {mood, note}
+export async function memory({ env, body, userId, params }) {
+  const v = R.validateMemory(body ?? {});
+  if (!v.ok) throw invalid(v.reason);
+  const r = await env.DB.prepare('UPDATE grants SET mood = ?, note = ? WHERE id = ? AND user_id = ?').bind(v.mood, v.note, params.id, userId).run();
+  if (r.meta.changes !== 1) throw new ApiError(404, 'invalid', { reason: 'ref' });
+  return { body: { grant: await grantById(env, params.id) } };
+}

@@ -258,3 +258,63 @@ test('prod auth：nonce 給真的 client_id；測試金鑰簽的憑證 → 401�
   const r = await call('POST', '/api/auth/google', { cookie: nonceCookie, body: { credential: idToken({ nonce: n.json.nonce, aud: n.json.client_id, azp: n.json.client_id }) } });
   assert.deepEqual([r.status, r.json.error.code, /bym_session=[0-9a-f]/.test(r.setCookie ?? '')], [401, 'unauthorized', false]);
 });
+
+// ---------- 打卡 / 每日簽到 / 記憶卡 ----------
+const LMS = JSON.parse(readFileSync(new URL('../data/landmarks.json', import.meta.url), 'utf8')).items;
+const LM5 = LMS.find((l) => l.id === 'lm:TPE-f05'); // 西門紅樓 r=100
+const north = (l, m) => ({ lat: l.lat + m / 111195, lng: l.lng });
+const ck = (u, l, m, acc = 20, extra = {}) => call('POST', '/api/checkin', { cookie: u.cookie, body: { landmark_id: l.id, ...north(l, m), acc, op_id: op(), ...extra } });
+
+test('checkin：acc > 200 → 422 weak_signal；未知地標 → invalid；圈外 → 422 too_far{dist}', opts, async () => {
+  const u = await newUser();
+  assert.deepEqual([(await ck(u, LM5, 0, 201)).status, (await ck(u, LM5, 0, 201)).json.error.code], [422, 'weak_signal']);
+  assert.equal((await ck(u, { ...LM5, id: 'lm:TPE-nope' }, 0)).json.error.reason, 'landmark');
+  const far = await ck(u, LM5, 125);
+  assert.deepEqual([far.status, far.json.error.code, far.json.error.dist], [422, 'too_far', 120]);
+  assert.equal((await me(u)).grants.length, 2); // 都沒有發房
+});
+
+test('checkin：圈內 → 發房（原色、第 1 次）；同 op_id 重送 → 同一筆；同地標同日 → cooldown；馬上打別處 → rate_limited', opts, async () => {
+  const u = await newUser(), id = op();
+  const r = await ck(u, LM5, 80, 30, { op_id: id }); // 80 m < 100 + 30
+  assert.equal(r.status, 200);
+  assert.deepEqual([r.json.grant.item_id, r.json.grant.seed, r.json.grant.state, r.json.grant.landmark_id, r.json.checkin.visit_n], [LM5.house, 0, 'stock', LM5.id, 1]);
+  const again = await ck(u, LM5, 80, 30, { op_id: id });
+  assert.equal(again.json.grant.id, r.json.grant.id);
+  const cd = await ck(u, LM5, 0);
+  assert.deepEqual([cd.status, cd.json.error.code], [429, 'cooldown']);
+  assert.match(cd.json.error.until, /T20:00:00Z$/);
+  const other = LMS.find((l) => l.id === 'lm:TPE-f02');
+  const rl = await ck(u, other, 0);
+  assert.deepEqual([rl.status, rl.json.error.code], [429, 'rate_limited']);
+  assert.ok(rl.json.error.retry_after > 0 && rl.json.error.retry_after <= 60);
+  assert.equal((await me(u)).grants.length, 3);
+});
+
+test('daily：台北 → 鐵窗厝 seed 1..n−1；同日再領 → cooldown；30 km 外 → invalid county', opts, async () => {
+  const u = await newUser();
+  const r = await call('POST', '/api/daily', { cookie: u.cookie, body: { ...north(LM5, 500), acc: 30, op_id: op() } });
+  assert.equal(r.status, 200);
+  assert.deepEqual([r.json.kind, r.json.county, r.json.grant.item_id, r.json.grant.state], ['house', 'TPE', 'sys:iron', 'stock']);
+  assert.ok(r.json.grant.seed >= 1 && r.json.grant.seed <= 3);
+  const again = await call('POST', '/api/daily', { cookie: u.cookie, body: { ...north(LM5, 500), acc: 30, op_id: op() } });
+  assert.deepEqual([again.status, again.json.error.code], [429, 'cooldown']);
+  const v = await newUser();
+  const kao = await call('POST', '/api/daily', { cookie: v.cookie, body: { lat: 22.6273, lng: 120.3014, acc: 30, op_id: op() } });
+  assert.deepEqual([kao.status, kao.json.error.reason], [400, 'county']);
+});
+
+test('daily 不計入打卡間隔：簽到後馬上打卡仍可', opts, async () => {
+  const u = await newUser();
+  await call('POST', '/api/daily', { cookie: u.cookie, body: { ...north(LM5, 0), acc: 30, op_id: op() } });
+  assert.equal((await ck(u, LM5, 0)).status, 200);
+});
+
+test('memory：心情＋一句話寫入；41 字 → invalid；別人的 grant → 404', opts, async () => {
+  const u = await newUser(), v = await newUser();
+  const g = (await ck(u, LM5, 0)).json.grant;
+  const r = await call('PUT', `/api/grant/${g.id}/memory`, { cookie: u.cookie, body: { mood: 3, note: '  第一次來\u0000紅樓 ' } });
+  assert.deepEqual([r.status, r.json.grant.mood, r.json.grant.note], [200, 3, '第一次來紅樓']);
+  assert.equal((await call('PUT', `/api/grant/${g.id}/memory`, { cookie: u.cookie, body: { mood: 1, note: '好'.repeat(41) } })).json.error.reason, 'note');
+  assert.equal((await call('PUT', `/api/grant/${g.id}/memory`, { cookie: v.cookie, body: { mood: 1, note: 'x' } })).status, 404);
+});

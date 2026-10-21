@@ -1,0 +1,143 @@
+{
+ "meta": {
+  "source": "OpenStreetMap Nominatim（© OpenStreetMap contributors, ODbL）（座標）；名稱與半徑：data/landmarks_tpe12.json",
+  "license": "ODbL（座標）",
+  "dataset": "tpe12",
+  "fetched_at": "2026-10-21",
+  "data_version": "2026-10-21.2"
+ },
+ "items": [
+  {
+   "id": "lm:TPE-f01",
+   "name": "北門（承恩門）",
+   "lat": 25.04773,
+   "lng": 121.51122,
+   "county": "TPE",
+   "house": "sys:minnan",
+   "r": 150,
+   "tier": "featured",
+   "blurb": "灰石方形基座、上層紅磚牆、歇山屋頂翹角、正面一圓窗兩方窗、拱形城門洞"
+  },
+  {
+   "id": "lm:TPE-f02",
+   "name": "總統府",
+   "lat": 25.04001,
+   "lng": 121.51199,
+   "county": "TPE",
+   "house": "sys:shophouse",
+   "r": 200,
+   "tier": "featured",
+   "blurb": "紅磚＋白色橫帶、長條對稱立面、中央高塔、拱窗成排、斜屋頂石板灰、後方兩個中庭（日字形）"
+  },
+  {
+   "id": "lm:TPE-f03",
+   "name": "中正紀念堂",
+   "lat": 25.03458,
+   "lng": 121.52178,
+   "county": "TPE",
+   "house": "sys:minnan",
+   "r": 200,
+   "tier": "featured",
+   "blurb": "白牆方體、藍色八角攢尖雙層屋頂、金色寶頂、正面大拱門、寬大白色石階基座"
+  },
+  {
+   "id": "lm:TPE-f04",
+   "name": "國立臺灣博物館",
+   "lat": 25.04276,
+   "lng": 121.515,
+   "county": "TPE",
+   "house": "sys:shophouse",
+   "r": 150,
+   "tier": "featured",
+   "blurb": "灰白石造新古典、中央六柱門廊＋三角楣、中央銅綠圓頂、左右對稱兩翼兩層拱窗"
+  },
+  {
+   "id": "lm:TPE-f05",
+   "name": "西門紅樓",
+   "lat": 25.04214,
+   "lng": 121.50628,
+   "county": "TPE",
+   "house": "sys:shophouse",
+   "r": 100,
+   "tier": "featured",
+   "blurb": "前段八角形紅磚兩層＋白飾帶＋深灰斜頂；後段十字形單層長屋，山牆較低"
+  },
+  {
+   "id": "lm:TPE-f06",
+   "name": "艋舺龍山寺",
+   "lat": 25.03725,
+   "lng": 121.49988,
+   "county": "TPE",
+   "house": "sys:minnan",
+   "r": 150,
+   "tier": "featured",
+   "blurb": "前殿三開間燕尾脊、中庭、正殿較高雙層燕尾脊、兩側護室低矮長廊、石基石柱、紅燈籠"
+  },
+  {
+   "id": "lm:TPE-f07",
+   "name": "臺北賓館",
+   "lat": 25.04029,
+   "lng": 121.51683,
+   "county": "TPE",
+   "house": "sys:shophouse",
+   "r": 150,
+   "tier": "featured",
+   "blurb": "灰白石造巴洛克、橫長立面、兩層拱窗、正面柱廊門廊突出、深灰馬薩式斜頂＋老虎窗、欄杆女兒牆"
+  },
+  {
+   "id": "lm:TPE-f08",
+   "name": "監察院",
+   "lat": 25.04489,
+   "lng": 121.52044,
+   "county": "TPE",
+   "house": "sys:shophouse",
+   "r": 150,
+   "tier": "featured",
+   "blurb": "L 形沿街轉角建築：轉角弧形入口上方銅綠圓頂、兩翼紅磚白橫帶兩層拱窗、翼端小圓頂塔、後方中庭"
+  },
+  {
+   "id": "lm:TPE-f09",
+   "name": "迪化街街屋",
+   "lat": 25.05617,
+   "lng": 121.51022,
+   "county": "TPE",
+   "house": "sys:shophouse",
+   "r": 100,
+   "tier": "featured",
+   "blurb": "窄面寬、縱深長：前段兩層（騎樓拱廊、三連拱窗、巴洛克山牆），後段單層倉儲，中間天井"
+  },
+  {
+   "id": "lm:TPE-f10",
+   "name": "台北 101",
+   "lat": 25.03384,
+   "lng": 121.5645,
+   "county": "TPE",
+   "house": "sys:iron",
+   "r": 200,
+   "tier": "featured",
+   "blurb": "低矮玻璃裙樓佔大半基地，塔樓偏一角拔起：藍綠玻璃帷幕、八節竹節段上寬下窄、尖塔"
+  },
+  {
+   "id": "lm:TPE-f11",
+   "name": "圓山大飯店",
+   "lat": 25.07877,
+   "lng": 121.52621,
+   "county": "TPE",
+   "house": "sys:minnan",
+   "r": 200,
+   "tier": "featured",
+   "blurb": "中央高聳主樓朱紅柱列＋金黃琉璃瓦大歇山頂，兩側較低翼樓同色系，底層紅柱門廊"
+  },
+  {
+   "id": "lm:TPE-f12",
+   "name": "林安泰古厝",
+   "lat": 25.07243,
+   "lng": 121.53046,
+   "county": "TPE",
+   "house": "sys:minnan",
+   "r": 150,
+   "tier": "featured",
+   "blurb": "三合院：正身三開間燕尾脊在後，兩側護龍向前伸、較低，中間埕（前庭），紅磚牆橙瓦，小方窗木門"
+  }
+ ]
+}
