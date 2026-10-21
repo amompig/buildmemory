@@ -7,14 +7,20 @@ import * as R from '../shared/rules.js';
 import { readFileSync } from 'node:fs';
 
 const API = process.env.API;
-const ORIGIN = 'http://localhost:8787';
+const ORIGIN = process.env.ORIGIN ?? 'http://localhost:8787';
+// PROD=1：打正式站時略過會大量建帳的限速測試（正式環境 Cloudflare 會覆寫 cf-connecting-ip，假 IP 無效）
+const heavy = { skip: (!API && '沒設 API') || (process.env.PROD && '正式站不跑大量建帳') };
+// 記錄測試建的帳號，打正式站後可清掉（USERS_LOG=檔名）
+import { appendFileSync } from 'node:fs';
+const logUser = (id) => { if (process.env.USERS_LOG && id) appendFileSync(process.env.USERS_LOG, `${id}\n`); };
 const HOUSES = JSON.parse(readFileSync(new URL('../data/houses.json', import.meta.url), 'utf8')).houses;
 const opts = { skip: !API && '沒設 API（需要 wrangler dev）' };
 
 // 每個測試用戶各自一個假 IP，避免撞到建帳的 IP 限速（正式環境 Cloudflare 會覆寫這個標頭，客端偽造無效）
 const fakeIp = () => `10.${(Math.random() * 255) | 0}.${(Math.random() * 255) | 0}.${(Math.random() * 255) | 0}`;
 async function call(method, path, { body, cookie, origin = ORIGIN, raw, ip = fakeIp() } = {}) {
-  const headers = { 'content-type': 'application/json', 'cf-connecting-ip': ip };
+  const headers = { 'content-type': 'application/json' };
+  if (!process.env.PROD) headers['cf-connecting-ip'] = ip; // 正式站帶這個標頭會被 Cloudflare 邊緣直接 403
   if (cookie) headers.cookie = cookie;
   if (origin) headers.origin = origin;
   const res = await fetch(API + path, { method, headers, body: raw ?? (body === undefined ? undefined : JSON.stringify(body)) });
@@ -24,6 +30,7 @@ async function call(method, path, { body, cookie, origin = ORIGIN, raw, ip = fak
 }
 async function newUser() {
   const r = await call('POST', '/api/session', { body: {} });
+  logUser(r.json.user_id);
   return { id: r.json.user_id, cookie: r.setCookie.split(';')[0] };
 }
 const op = () => crypto.randomUUID();
@@ -36,8 +43,10 @@ test('session：沒有 Origin → 403；Origin 不在名單 → 403', opts, asyn
 
 test('session：建帳 → HttpOnly device cookie；首啟贈品 2 棟 stock + 預鋪路 grid', opts, async () => {
   const r = await call('POST', '/api/session', { body: {} });
+  logUser(r.json.user_id);
   assert.equal(r.status, 200);
   assert.match(r.setCookie, /^bym_device=[0-9a-f-]{36}\.[0-9a-f]{64}; Path=\/api; HttpOnly; SameSite=Lax/);
+  if (process.env.PROD) assert.match(r.setCookie, /; Secure/);
   const m = await me({ cookie: r.setCookie.split(';')[0] });
   assert.equal(m.user_id, r.json.user_id);
   assert.deepEqual(m.grants.map((g) => [g.item_id, g.state, g.seed]).sort(), [['sys:iron', 'stock', 0], ['sys:minnan', 'stock', 0]]);
@@ -135,7 +144,7 @@ test('town：每人每分鐘 30 次，第 31 次 → 429 rate_limited{retry_afte
   assert.ok(last.json.error.retry_after > 0);
 });
 
-test('session：同一 IP 每分鐘建帳 30 次，第 31 次 → 429', opts, async () => {
+test('session：同一 IP 每分鐘建帳 30 次，第 31 次 → 429', heavy, async () => {
   const ip = fakeIp(), st = [];
   for (let i = 0; i < 31; i++) st.push((await call('POST', '/api/session', { body: {}, ip })).status);
   assert.deepEqual([st.slice(0, 30).every((s) => s === 200), st[30]], [true, 429]);

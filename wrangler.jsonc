@@ -5,8 +5,7 @@
   "compatibility_date": "2026-10-01",
   "assets": { "directory": "./dist", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
   "d1_databases": [
-    // ⚠️ 正式 D1 尚未建立（需使用者同意）；本機 wrangler dev --local 用這個佔位 id 即可
-    { "binding": "DB", "database_name": "buildingyourmemory", "database_id": "00000000-0000-0000-0000-000000000000" }
+    { "binding": "DB", "database_name": "buildingyourmemory", "database_id": "b4841d70-2604-46cb-b71d-043d751839c2" }
   ],
   "vars": { "ENV": "prod", "APP_ORIGIN": "https://buildingyourmemory.gpttotaychat.workers.dev" },
   // DEVICE_SECRET 用 wrangler secret put；本機在 .dev.vars
