@@ -65,7 +65,7 @@ null                                   空地
 
 伺服器驗證順序（`/checkin`）：schema → session → 限速 → `acc ≤ 200` → 地標存在 → `dist ≤ R + min(acc,50)` → `UNIQUE(user, landmark, day)` → 日計數 < 40 → 與上一筆打卡間隔 ≥ 60 s → 寫入（batch）。座標在回應前丟棄，不入 log。
 
-`PUT /town` 驗證：`rev == base_rev` → schema（256、型別、enum）→ `rules.validateGrid(grid, grants)` → batch 更新 grant state → `rev + 1`。
+`PUT /town` 驗證：`rev == base_rev` → `rules.validateGrid(grid, grants, houses)`（含嚴格 schema：多餘欄位、未知房型 id 皆 `invalid{reason:'schema'}`）→ batch 更新 grant state → `rev + 1`。客端送出前必須剝除 UI 專用欄位。
 
 ## 6. 錯誤碼（`rules.js` 回傳 / `ui_strings.json` 鍵）
 | code | HTTP | 參數 | 觸發 |

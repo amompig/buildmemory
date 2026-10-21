@@ -71,8 +71,8 @@ return size
 `removeHouse(grid, anchor)` → 新 grid（錨點與 part 全設 null）+ `ref`；永遠合法。
 
 ## 4. 整鎮驗證（伺服器 PUT /town）
-`validateGrid(grid, grants)` → `{ok}` 或 `{ok:false, code:'invalid', reason}`：
-1. `Array.isArray(grid) && grid.length===256`，每格型別合法 → `'schema'`
+`validateGrid(grid, grants, houses)` → `{ok}` 或 `{ok:false, code:'invalid', reason}`（`houses` = houses.json 的 `houses[]`，用來查 size）：
+1. `Array.isArray(grid) && grid.length===256`，每格型別合法；**嚴格 schema**：格子出現契約以外的欄位、或 house `id` 不在 `houses` → `'schema'`（客端 store 必須在送出前剝除 UI 專用欄位）
 2. `size = unlockedSize(grid)`；所有非 null 格 isUnlocked → `'locked'`
 3. 每個 house 格：`ref` 存在於 grants 且 `kind='house'`、`item_id===id`、state ∈ {stock, placed} → `'ref'`；同一 ref 只出現一次 → `'dup_ref'`
 4. 每個 house 格依 houses.json size 的 footprint：從屬格必須是 `{t:'part', of:anchor}`；每個 part 格的 `of` 指向真實錨點且自己在其 footprint 內 → `'footprint'`
@@ -87,6 +87,10 @@ return size
 | part 的 of 指向空格 | footprint |
 | 房四周無路 | no_road |
 | 房在視窗外 | locked |
+| 格子多了 `{t:'house', …, selected:true}` | schema |
+| house id `sys:nope` 不在 houses | schema |
+
+測試夾具：houses.json 第一版尚無 2×2 房型，`tests/` 以假房型 `test:big`（size [2,2]）測 footprint；`rules.js` 不得對它特判。Sprint 2 `sys:hakka` 落地後夾具可留。
 
 ## 5. 距離與打卡
 `distanceM(lat1,lng1,lat2,lng2)`：haversine，地球半徑 6371000。
@@ -134,7 +138,7 @@ else ok
 
 ## 6. 每日簽到
 `countyOf(lat,lng,landmarks)`：最近地標距離 ≤ 30 km → 其 `county`；否則 null → `invalid`。
-`dailyGrant(ironOwned)`：`ironOwned`（stock+placed 的 `sys:iron` 列數）≥ 3 → `{kind:'shard'}`（寫一列 `item_id:'sys:iron', state:'dismantled'`）；否則 `{kind:'house', item_id:'sys:iron', seed:1+rand}`。
+`dailyGrant(ironOwned, paletteCount, rand)`：`ironOwned`（stock+placed 的 `sys:iron` 列數）≥ 3 → `{kind:'shard'}`（寫一列 `item_id:'sys:iron', state:'dismantled'`）；否則 `{kind:'house', item_id:'sys:iron', seed: seed(2, paletteCount, rand)}`，即與一般變體同規則、seed ∈ 1..paletteCount−1（iron 4 組 → 1–3；首啟贈品那棟才是 seed 0）。
 | ironOwned | 結果 |
 |---|---|
 | 0, 2 | house |
@@ -152,10 +156,16 @@ else ok
 | `"a\u0000b"` | ok，存 "ab" |
 | 全空白 | ok，存 null |
 
-`canDismantle(grants, ids)`：1 ≤ ids.length ≤ 99；每個 id 屬於本人且 `state='stock'`；否則 `invalid`。`shards(grants)` = 條件列數。
+`canDismantle(grants, ids)`：1 ≤ ids.length ≤ 99；**ids 不得重複**；每個 id 屬於本人且 `state='stock'`；否則 `invalid`。`shards(grants)` = 條件列數。
+| ids | 結果 |
+|---|---|
+| [a]（a stock） | ok |
+| [a, a] | invalid |
+| [a, b]（b placed） | invalid |
+| 100 個 | invalid |
 
 ## 8. 版本
-`applyTown(base_rev, serverRev)`：相等 → 寫入、`rev+1`；不等 → `conflict{rev:serverRev, grid:serverGrid}`。
+`applyTown(base_rev, serverRev, serverGrid)`：相等 → `{ok:true, rev: serverRev+1}`；不等 → `{ok:false, code:'conflict', rev:serverRev, grid:serverGrid}`。
 
 ## 9. 首啟贈品（伺服器 `POST /session` 首次）
 - grants：`sys:iron` seed 0、`sys:minnan` seed 0，皆 stock。
