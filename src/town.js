@@ -3,7 +3,7 @@
 // 世界座標：格 (r,c) 中心 x=(c-7.5)·CELL、z=(r-7.5)·CELL；北 = -z；rot k = 順時針 k×90°（俯視），門面起始朝 +z。
 import * as THREE from 'three';
 import { RULES, rc, inBounds, idx, isUnlocked, unlockedSize, footprint } from '../shared/rules.js';
-import { bakeCached, houseMaterial, paletteRGB, SLOT_ATTRS, CELL } from './kit.js';
+import { bakeCached, bakeEdges, houseMaterial, paletteRGB, SLOT_ATTRS, CELL } from './kit.js';
 
 const N = RULES.GRID, CELLS = N * N, HALF = (N - 1) / 2;
 const TWEEN_MS = 320; // tokens.css --t-camera
@@ -14,10 +14,11 @@ const PAN_MARGIN = 2;                // 相機平移夾在解鎖視窗 + 2 格
 
 // design/palette.json 的 three 區塊 → 場景用色（缺值時退回同檔的定稿值）
 function colorsFrom(three = {}) {
-  const sc = three.scene ?? {}, day = three.light?.day ?? {}, gh = three.ghost ?? {};
+  const sc = three.scene ?? {}, day = three.light?.day ?? {}, gh = three.ghost ?? {}, ed = three.edges ?? {};
   return {
     bg: sc.background ?? '#DCE8E2', ground: sc.ground ?? '#A6C9B8', tile: sc.tile ?? '#C3DDCC', tileLocked: sc.tile_locked ?? '#D5E0D9', road: sc.road ?? '#6F7F8C',
     ok: gh.ok ?? '#4F9A7A', okAlpha: gh.ok_alpha ?? 0.45, bad: gh.bad ?? '#C7453B', badAlpha: gh.bad_alpha ?? 0.35,
+    edge: ed.color ?? '#2F3B46', edgeAlpha: ed.alpha ?? 0.6, edgeDeg: ed.threshold_deg ?? 60,
     hemiSky: day.hemi_sky ?? '#FFF6E8', hemiGround: day.hemi_ground ?? '#7FB8A8', hemi: day.hemi ?? 0.9, sun: day.sun ?? '#FFF2DC', sunI: day.sun_i ?? 1.25, ambient: day.ambient ?? 0.25,
   };
 }
@@ -65,14 +66,23 @@ export function createTown(canvas, { houses, palette, reducedMotion = false }) {
   const roads = new THREE.InstancedMesh(new THREE.BoxGeometry(CELL, 0.06, CELL), new THREE.MeshLambertMaterial({ color: COL.road }), CELLS);
   roads.count = 0; roads.frustumCulled = false; scene.add(roads);
 
-  // 每房型一個 InstancedMesh；每棟 5 色寫在 iWall…iTrim
+  // 每房型一個 InstancedMesh；每棟槽位色寫在 iWall…iAccent
+  // 主轉折線：每房型一組 LineSegments，與房子共用同一份 instanceMatrix（1 px、ink 60%，palette.json three.edges）
+  const edgeMat = new THREE.LineBasicMaterial({ color: COL.edge, transparent: true, opacity: COL.edgeAlpha });
+  edgeMat.defines = { USE_INSTANCING: '' };
   const kinds = new Map();
   for (const h of houses) {
     const geo = bakeCached(h).clone();
     for (const a of SLOT_ATTRS) geo.setAttribute(a, new THREE.InstancedBufferAttribute(new Float32Array(CELLS * 3), 3));
     const mesh = new THREE.InstancedMesh(geo, houseMaterial, CELLS);
     mesh.count = 0; mesh.frustumCulled = false; scene.add(mesh);
-    kinds.set(h.id, { h, mesh });
+    const eg = new THREE.InstancedBufferGeometry();
+    eg.setAttribute('position', bakeEdges(h, COL.edgeDeg).attributes.position);
+    eg.setAttribute('instanceMatrix', mesh.instanceMatrix);
+    eg.instanceCount = 0;
+    const lines = new THREE.LineSegments(eg, edgeMat);
+    lines.frustumCulled = false; scene.add(lines);
+    kinds.set(h.id, { h, mesh, lines });
   }
 
   // 幽靈：地面框（依 footprint 大小縮放）+ 半透明房
@@ -192,8 +202,9 @@ export function createTown(canvas, { houses, palette, reducedMotion = false }) {
         }
       }
       roads.instanceMatrix.needsUpdate = true;
-      for (const { mesh } of kinds.values()) {
+      for (const { mesh, lines } of kinds.values()) {
         mesh.instanceMatrix.needsUpdate = true;
+        lines.geometry.instanceCount = mesh.count; lines.visible = mesh.count > 0;
         for (const a of SLOT_ATTRS) mesh.geometry.attributes[a].needsUpdate = true;
       }
       if (nextSize !== size) { size = nextSize; fit(); }

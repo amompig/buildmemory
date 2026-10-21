@@ -8,7 +8,7 @@ import { createStore, starterState, KEY } from '../src/store.js';
 import { createEditor } from '../src/edit.js';
 
 const { idx } = R;
-const HOUSES = [...JSON.parse(readFileSync(new URL('../data/houses.json', import.meta.url), 'utf8')).houses,
+const HOUSES = [...JSON.parse(readFileSync(new URL('../data/catalog.json', import.meta.url), 'utf8')).houses,
   { id: 'test:big', size: [2, 2] }, { id: 'test:3x1', size: [3, 1] }];
 
 // 假 localStorage
@@ -29,7 +29,7 @@ test('store 首啟：預鋪路 + 2 棟 stock seed 0，立即寫入且 validateGr
   const { storage, store } = setup();
   const s = store.get();
   assert.deepEqual(s.grid, R.starterGrid());
-  assert.deepEqual(s.grants.map((g) => [g.item_id, g.state, g.seed]), [['sys:iron', 'stock', 0], ['sys:minnan', 'stock', 0]]);
+  assert.deepEqual(s.grants.map((g) => [g.item_id, g.state, g.seed]), [['sys:iron', 'stock', 0], ['sys:jpdorm', 'stock', 0]]);
   assert.equal(new Set(s.grants.map((g) => g.id)).size, 2);
   assert.deepEqual(saved(storage), s);
   assert.equal(valid(store).ok, true);
@@ -37,7 +37,7 @@ test('store 首啟：預鋪路 + 2 棟 stock seed 0，立即寫入且 validateGr
 
 test('store 重新載入：讀回同一份 grid 與庫存（S0-D）', () => {
   const { storage, store, ed, stock } = setup();
-  ed.placeHouse(stock('sys:minnan').id, idx(6, 5));
+  ed.placeHouse(stock('sys:jpdorm').id, idx(6, 5));
   const again = createStore(storage);
   assert.deepEqual(again.get(), store.get());
 });
@@ -106,9 +106,9 @@ test('擦路：會讓房 orphan → 拒絕且 grid 不變；不是路 → not_ro
 // ---------- 落房 / 拆除 / 旋轉 ----------
 test('落房：寫錨點、grant → placed、localStorage 立即寫、整鎮仍合法', () => {
   const { storage, store, ed, stock } = setup();
-  const g = stock('sys:minnan');
+  const g = stock('sys:jpdorm');
   assert.equal(ed.placeHouse(g.id, idx(6, 5), 2).ok, true);
-  assert.deepEqual(store.get().grid[idx(6, 5)], { t: 'house', id: 'sys:minnan', ref: g.id, rot: 2 });
+  assert.deepEqual(store.get().grid[idx(6, 5)], { t: 'house', id: 'sys:jpdorm', ref: g.id, rot: 2 });
   assert.equal(store.get().grants.find((x) => x.id === g.id).state, 'placed');
   assert.deepEqual(saved(storage).grid[idx(6, 5)], store.get().grid[idx(6, 5)]);
   assert.equal(valid(store).ok, true);
@@ -116,7 +116,7 @@ test('落房：寫錨點、grant → placed、localStorage 立即寫、整鎮仍
 
 test('落房非法格：occupied / no_road / locked 各一（S0-C），grid 與庫存不變', () => {
   const { store, ed, stock } = setup();
-  const id = stock('sys:minnan').id;
+  const id = stock('sys:jpdorm').id;
   const before = store.get();
   assert.equal(ed.placeHouse(id, idx(7, 5)).reason, 'occupied');
   assert.equal(ed.placeHouse(id, idx(5, 5)).reason, 'no_road');
@@ -126,7 +126,7 @@ test('落房非法格：occupied / no_road / locked 各一（S0-C），grid 與�
 
 test('checkHouse：與 placeHouse 同判定、不改 store', () => {
   const { store, ed, stock } = setup();
-  const id = stock('sys:minnan').id, before = store.get();
+  const id = stock('sys:jpdorm').id, before = store.get();
   assert.deepEqual(ed.checkHouse(id, idx(6, 5)), { ok: true, cells: [idx(6, 5)] });
   assert.equal(ed.checkHouse(id, idx(5, 5)).reason, 'no_road');
   assert.equal(ed.checkHouse('nope', idx(6, 5)).reason, 'ref');
@@ -135,7 +135,7 @@ test('checkHouse：與 placeHouse 同判定、不改 store', () => {
 
 test('落房：同一 grant 不能放兩次；不存在的 grant → ref', () => {
   const { ed, stock } = setup();
-  const id = stock('sys:minnan').id;
+  const id = stock('sys:jpdorm').id;
   ed.placeHouse(id, idx(6, 5));
   assert.equal(ed.placeHouse(id, idx(6, 6)).reason, 'ref');
   assert.equal(ed.placeHouse('nope', idx(6, 6)).reason, 'ref');
@@ -186,11 +186,11 @@ test('復原：逐步退回（含 grant state），堆疊空了回 empty', () =>
   const s0 = store.get();
   ed.paintRoad(idx(6, 5));
   const s1 = store.get();
-  ed.placeHouse(stock('sys:minnan').id, idx(5, 5));
+  ed.placeHouse(stock('sys:jpdorm').id, idx(5, 5));
   assert.equal(ed.canUndo(), true);
   ed.undo();
   assert.deepEqual(store.get().grid, s1.grid);
-  assert.equal(stock('sys:minnan').state, 'stock');
+  assert.equal(stock('sys:jpdorm').state, 'stock');
   ed.undo();
   assert.deepEqual(store.get().grid, s0.grid);
   assert.equal(ed.undo().reason, 'empty');
@@ -210,7 +210,7 @@ test('一筆連續塗路算一步；沒畫到東西的筆不進堆疊', () => {
 
 test('失敗的操作不進堆疊；done() 清空堆疊', () => {
   const { ed, stock } = setup();
-  ed.placeHouse(stock('sys:minnan').id, idx(5, 5)); // no_road
+  ed.placeHouse(stock('sys:jpdorm').id, idx(5, 5)); // no_road
   assert.equal(ed.canUndo(), false);
   ed.paintRoad(idx(6, 5));
   ed.done();
@@ -292,7 +292,7 @@ test('同步：重開時本機有沒送出的修改且 rev 相同 → 送本機�
   let store = createStore(storage, { api: srv.api, debounceMs: 0 });
   await store.connect();
   srv.offline = true;
-  const minnan = store.get().grants.find((g) => g.item_id === 'sys:minnan');
+  const minnan = store.get().grants.find((g) => g.item_id === 'sys:jpdorm');
   createEditor(store, HOUSES).placeHouse(minnan.id, idx(6, 5));
   await tick(20);
   srv.offline = false;

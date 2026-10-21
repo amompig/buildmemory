@@ -89,14 +89,11 @@ import { locate, nearby, createMap } from './src/geo.js';
 import { tpeDay } from './shared/rules.js';
 
 const json = (u) => fetch(u).then((r) => r.json());
-const [housesJson, strings, palette, landmarksJson] = await Promise.all([
-  json('./data/houses.json'), json('./design/ui_strings.json').catch(() => ({})), json('./design/palette.json').catch(() => ({})), json('./data/landmarks.json').catch(() => ({ items: [] })),
+const [catalog, strings, palette, landmarksJson] = await Promise.all([
+  json('./data/catalog.json'), json('./design/ui_strings.json').catch(() => ({})), json('./design/palette.json').catch(() => ({})), json('./data/landmarks.json').catch(() => ({ items: [] })),
 ]);
-// 房型配色以 Design 的 palette.json three.house 為準（組數須與 houses.json 相同，伺服器的 seed 範圍才對得上）
-const houses = housesJson.houses.map((h) => {
-  const p = palette.three?.house?.[h.id];
-  return p && p.length === h.palettes.length ? { ...h, palettes: p } : h;
-});
+// 房型目錄（scripts/build_catalog.mjs 產出）：色票真值在 data/houses_tw10.json、landmarks_tpe12.json，palette.json three.house 只是引用
+const houses = catalog.houses;
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const store = createStore(globalThis.localStorage, { api, onEvent: onSync });

@@ -223,7 +223,7 @@ export function applyTown(baseRev, serverRev, serverGrid) {
 }
 
 // ---------- §9 首啟贈品 ----------
-export const STARTER_HOUSES = Object.freeze(['sys:iron', 'sys:minnan']);
+export const STARTER_HOUSES = Object.freeze(['sys:iron', 'sys:jpdorm']); // sys:minnan 已由 Design 刪除；暫以 1×1 的日式宿舍替代，待使用者確認
 export function starterGrid() {
   const grid = new Array(CELLS).fill(null);
   for (let c = 4; c <= 11; c++) grid[idx(7, c)] = { t: 'road' };

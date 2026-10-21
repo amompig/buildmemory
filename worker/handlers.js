@@ -1,10 +1,10 @@
 // worker/handlers.js — 各端點邏輯 + 共用工具（cookie、HMAC、限速、Google id_token 驗證）
 // 驗證規則只呼叫 shared/rules.js。user_id 只取自 cookie（guard 給的 userId），不收客端自報。
 import * as R from '../shared/rules.js';
-import housesJson from '../data/houses.json';
+import catalog from '../data/catalog.json';
 
-const HOUSES = housesJson.houses;
-const DATA_VERSION = housesJson.data_version;
+const HOUSES = catalog.houses;
+const DATA_VERSION = catalog.data_version;
 export const SESSION_PER_MIN = 30;
 const DEVICE = 'bym_device', SESSION = 'bym_session', NONCE = 'bym_nonce';
 const DAY_S = 86400, DEVICE_DAYS = 400, SESSION_DAYS = 30, NONCE_S = 300;

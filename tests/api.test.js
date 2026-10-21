@@ -13,7 +13,7 @@ const heavy = { skip: (!API && '沒設 API') || (process.env.PROD && '正式站�
 // 記錄測試建的帳號，打正式站後可清掉（USERS_LOG=檔名）
 import { appendFileSync } from 'node:fs';
 const logUser = (id) => { if (process.env.USERS_LOG && id) appendFileSync(process.env.USERS_LOG, `${id}\n`); };
-const HOUSES = JSON.parse(readFileSync(new URL('../data/houses.json', import.meta.url), 'utf8')).houses;
+const HOUSES = JSON.parse(readFileSync(new URL('../data/catalog.json', import.meta.url), 'utf8')).houses;
 const opts = { skip: !API && '沒設 API（需要 wrangler dev）' };
 
 // 每個測試用戶各自一個假 IP，避免撞到建帳的 IP 限速（正式環境 Cloudflare 會覆寫這個標頭，客端偽造無效）
@@ -49,7 +49,7 @@ test('session：建帳 → HttpOnly device cookie；首啟贈品 2 棟 stock + �
   if (process.env.PROD) assert.match(r.setCookie, /; Secure/);
   const m = await me({ cookie: r.setCookie.split(';')[0] });
   assert.equal(m.user_id, r.json.user_id);
-  assert.deepEqual(m.grants.map((g) => [g.item_id, g.state, g.seed]).sort(), [['sys:iron', 'stock', 0], ['sys:minnan', 'stock', 0]]);
+  assert.deepEqual(m.grants.map((g) => [g.item_id, g.state, g.seed]).sort(), [['sys:iron', 'stock', 0], ['sys:jpdorm', 'stock', 0]]);
   assert.deepEqual(m.town.grid, R.starterGrid());
   assert.equal(m.town.rev, 0);
   assert.equal(R.validateGrid(m.town.grid, m.grants, HOUSES).ok, true);
@@ -74,9 +74,9 @@ test('me：無 cookie / 竄改簽章 / 換成別人的 id → 401', opts, async 
 test('town：放房 → rev+1、grant → placed；收回 → stock', opts, async () => {
   const u = await newUser();
   const { grants } = await me(u);
-  const minnan = grants.find((g) => g.item_id === 'sys:minnan');
+  const minnan = grants.find((g) => g.item_id === 'sys:jpdorm');
   const grid = R.starterGrid();
-  grid[R.idx(6, 5)] = { t: 'house', id: 'sys:minnan', ref: minnan.id, rot: 1 };
+  grid[R.idx(6, 5)] = { t: 'house', id: 'sys:jpdorm', ref: minnan.id, rot: 1 };
   const r = await call('PUT', '/api/town', { cookie: u.cookie, body: { grid, base_rev: 0, op_id: op() } });
   assert.deepEqual([r.status, r.json], [200, { rev: 1 }]);
   let m = await me(u);

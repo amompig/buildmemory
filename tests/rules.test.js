@@ -6,16 +6,16 @@ import { readFileSync } from 'node:fs';
 import * as R from '../shared/rules.js';
 
 const { idx } = R;
-const HOUSES_JSON = JSON.parse(readFileSync(new URL('../data/houses.json', import.meta.url), 'utf8')).houses;
-// houses.json 目前沒有 2×2 房型，測試用一個假的
+const HOUSES_JSON = JSON.parse(readFileSync(new URL('../data/catalog.json', import.meta.url), 'utf8')).houses;
+// 測試用的假 2×2 房型（與目錄無關，避免跟著 Design 改尺寸）
 const HOUSES = [...HOUSES_JSON, { id: 'test:big', size: [2, 2] }];
-const ONE = { id: 'sys:minnan', size: [1, 1] };
+const ONE = { id: 'sys:jpdorm', size: [1, 1] };
 const BIG = { id: 'test:big', size: [2, 2] };
 
 const empty = () => new Array(256).fill(null);
 const road = { t: 'road' };
-const house = (ref, id = 'sys:minnan') => ({ t: 'house', id, ref, rot: 0 });
-const grant = (id, item_id = 'sys:minnan', state = 'placed', extra = {}) =>
+const house = (ref, id = 'sys:jpdorm') => ({ t: 'house', id, ref, rot: 0 });
+const grant = (id, item_id = 'sys:jpdorm', state = 'placed', extra = {}) =>
   ({ id, kind: 'house', item_id, state, seed: 0, consumed_at: null, ...extra });
 // 在 grid 裡把 cells 填成路
 const fill = (grid, cells) => { for (const i of cells) grid[i] = road; return grid; };
@@ -175,7 +175,7 @@ test('§4 補充：未知格子型別 → schema', () => {
 test('§4 補充：ref 存在但 item_id 不符 → ref', () =>
   assert.deepEqual(v(legalTown(), [grant('g1', 'sys:iron'), grant('g2', 'test:big')]), bad('ref')));
 test('§4 補充：ref 是已拆解的列 → ref', () =>
-  assert.deepEqual(v(legalTown(), [grant('g1', 'sys:minnan', 'dismantled'), grant('g2', 'test:big')]), bad('ref')));
+  assert.deepEqual(v(legalTown(), [grant('g1', 'sys:jpdorm', 'dismantled'), grant('g2', 'test:big')]), bad('ref')));
 
 // ---------- §5 距離與打卡 ----------
 const near = (a, b) => assert.ok(Math.abs(a - b) <= 1, `${a} 不在 ${b}±1`);
@@ -290,7 +290,7 @@ test('§9 首啟 grid：路在 idx 116–123，其餘 null', () => {
   const g = R.starterGrid();
   for (let i = 0; i < 256; i++) assert.deepEqual(g[i], i >= 116 && i <= 123 ? road : null, `idx ${i}`);
 });
-test('§9 首啟贈品房型：sys:iron + sys:minnan', () => assert.deepEqual([...R.STARTER_HOUSES], ['sys:iron', 'sys:minnan']));
+test('§9 首啟贈品房型：sys:iron + sys:jpdorm', () => assert.deepEqual([...R.STARTER_HOUSES], ['sys:iron', 'sys:jpdorm']));
 test('§9 首啟 grid：validateGrid 必為 ok', () => {
   const gs = R.STARTER_HOUSES.map((id, n) => grant(`gift${n}`, id, 'stock'));
   assert.deepEqual(R.validateGrid(R.starterGrid(), gs, HOUSES), { ok: true });
