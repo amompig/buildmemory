@@ -6,17 +6,19 @@ const fail = (reason) => ({ ok: false, code: 'invalid', reason });
 
 export function createEditor(store, houses) {
   const byId = new Map(houses.map((h) => [h.id, h]));
-  // 復原堆疊：每步存編輯前的 {grid, grants}；一筆連續塗路（beginStroke…endStroke）算一步；done() 清空
+  // 復原堆疊：每步存編輯前的 {grid, grants}，最多 20 步；一筆連續塗路（beginStroke…endStroke）算一步；done() 清空
   let history = [];
   let stroke = null;
   const snap = () => { const { grid, grants } = store.get(); return { grid, grants }; };
-  const apply = (patch) => { if (!stroke) history.push(snap()); store.set(patch); return { ok: true }; };
+  const UNDO_MAX = 20; // gestures.md §3
+  const push = (h) => { history.push(h); if (history.length > UNDO_MAX) history.shift(); };
+  const apply = (patch) => { if (!stroke) push(snap()); store.set(patch); return { ok: true }; };
   const anchorOf = (grid, i) => (grid[i]?.t === 'part' ? grid[i].of : i);
 
   return {
     beginStroke() { stroke = snap(); },
     endStroke() {
-      if (stroke && stroke.grid !== store.get().grid) history.push(stroke);
+      if (stroke && stroke.grid !== store.get().grid) push(stroke);
       stroke = null;
     },
 

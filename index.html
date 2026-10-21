@@ -1,59 +1,58 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="zh-Hant-TW">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>BuildingYourMemory</title>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<!-- 色彩／字級／間距／動效：design/tokens.css；元件：design/components.html 抽出的 src/components.css -->
+<link rel="stylesheet" href="design/tokens.css">
+<link rel="stylesheet" href="src/components.css">
 <style>
-  /* tokens：design/palette.seed.json css 區塊（Design 出 tokens.css 後替換） */
-  :root { --bg:#F6F1E8; --surface:#FFFFFF; --surface-2:#F0E9DD; --ink:#2F3B46; --ink-2:#5C6670; --accent:#C9705B; --accent-ink:#FFFFFF;
-    --ok:#4F9A7A; --danger:#C7453B; --line:#E3DBCD; --radius:12px; --touch:44px; --shadow:0 2px 8px rgba(47,59,70,.12);
-    font-family: system-ui, -apple-system, 'Noto Sans TC', sans-serif; color: var(--ink); }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #8FCFC6; overscroll-behavior: none; }
+  /* 只放版面定位；顏色、字級、圓角一律用 tokens.css 變數 */
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  body { background: #DCE8E2; }
   #town { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
-  #ui { position: fixed; inset: 0; pointer-events: none; }
+  #ui { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-hud); }
   #ui > * { pointer-events: auto; }
-  button { min-height: var(--touch); min-width: var(--touch); border: 0; border-radius: var(--radius); background: var(--surface); color: var(--ink);
-    font: inherit; font-size: 15px; padding: 0 14px; box-shadow: var(--shadow); cursor: pointer; }
-  button.primary { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
-  button.on { outline: 3px solid var(--accent); }
-  button.dim { opacity: .45; }
-  .ui-top { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 12px; right: 12px; display: flex; justify-content: center; }
-  .banner { display: flex; gap: 8px; align-items: center; background: var(--surface); border-radius: 999px; padding: 4px 4px 4px 16px; box-shadow: var(--shadow); }
-  .banner button { box-shadow: none; border-radius: 999px; }
-  .progress { position: relative; width: min(320px, 100%); height: 24px; background: var(--surface); border-radius: 999px; overflow: hidden; box-shadow: var(--shadow); }
-  .progress i { position: absolute; inset: 0 auto 0 0; background: var(--ok); opacity: .35; }
-  .progress span { position: relative; display: block; text-align: center; line-height: 24px; font-size: 13px; }
-  .ui-side { position: absolute; right: 12px; bottom: 210px; display: flex; flex-direction: column; gap: 8px; }
-  .ui-side button { font-size: 20px; padding: 0; }
-  .ui-bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 12px max(10px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
-  .bar { display: flex; gap: 8px; justify-content: center; }
-  .tabs { display: flex; gap: 6px; background: var(--surface); border-radius: var(--radius); padding: 6px; box-shadow: var(--shadow); }
-  .tabs button { flex: 1; box-shadow: none; }
-  .tabs button.on { outline: 0; background: var(--surface-2); font-weight: 600; }
-  .drawer { display: flex; gap: 8px; overflow-x: auto; padding: 6px 2px 4px; }
-  .card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 84px; height: 72px; font-size: 13px; }
-  .card small { color: var(--ink-2); font-size: 11px; }
-  .card.road { background: #6F7F8C; color: #fff; }
-  .swatch { width: 22px; height: 14px; border-radius: 4px; }
-  .ui-page { position: absolute; inset: 0 0 76px; background: var(--bg); padding: 24px 16px; overflow: auto; display: none; }
+  #ui > :empty { display: none; }
+  button { font-family: var(--font); }
+  .ui-top { position: absolute; top: max(var(--space-3), env(safe-area-inset-top)); left: var(--page-x); right: var(--page-x); }
+  .hud-progress { padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; box-shadow: var(--shadow); }
+  .hud-progress__row { display: flex; justify-content: space-between; font-size: 12px; }
+  .hud-progress__row span { color: var(--ink-2); }
+  .hud-row { display: flex; gap: 4px; }
+  .c-banner__btn:disabled { opacity: .45; cursor: default; }
+  .c-iconbtn:disabled { opacity: .45; cursor: default; }
+  .ui-bottom { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; pointer-events: none !important; }
+  .ui-bottom > * { pointer-events: auto; }
+  .ui-bottom > .hud-bar { pointer-events: none; }
+  .hud-bar { display: flex; align-items: flex-end; padding: 0 var(--page-x) var(--space-3); pointer-events: none; }
+  .hud-bar > * { pointer-events: auto; }
+  .hud-cam { margin-left: auto; display: flex; flex-direction: column; gap: var(--space-2); }
+  .hud-place { width: auto; padding: 0 24px; }
+  .hud-tools { display: flex; gap: 12px; padding: 0 var(--page-x) var(--space-3); }
+  .hud-tools .c-btn { height: 48px; font-size: 14px; }
+  .hud-tool--on { background: var(--accent-tint); border: 1.5px solid var(--accent); color: var(--accent-press); }
+  .c-tabbar { padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+  .c-tab { border: 0; background: transparent; cursor: pointer; }
+  .c-drawer { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+  .ui-page { position: absolute; inset: 0 0 var(--tab-h); background: var(--bg); padding: var(--space-6) var(--page-x); overflow: auto; display: none; }
   #ui[data-tab="map"] .ui-page, #ui[data-tab="inventory"] .ui-page { display: block; }
-  .inv { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
-  .muted { color: var(--ink-2); text-align: center; }
-  .toast { position: absolute; left: 50%; top: 64px; transform: translate(-50%, -8px); background: var(--ink); color: #fff; border-radius: var(--radius);
-    padding: 10px 16px; font-size: 14px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; max-width: 86vw; text-align: center; }
-  .toast.show { opacity: 1; transform: translate(-50%, 0); }
-  @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
-  .login-cta { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; text-align: center; box-shadow: var(--shadow); }
-  .login-cta p { margin: 0 0 12px; }
-  #login { position: fixed; inset: 0; z-index: 10; background: rgba(47,59,70,.45); display: flex; align-items: center; justify-content: center; padding: 16px; }
-  #login .sheet { background: var(--surface); border-radius: 20px; padding: 20px; max-width: 340px; width: 100%; text-align: center; box-shadow: var(--shadow); }
-  #login .gsi { display: flex; justify-content: center; min-height: 44px; margin: 12px 0; }
-  #dev { position: fixed; left: 8px; top: 60px; z-index: 5; background: rgba(255,255,255,.95); border-radius: var(--radius); padding: 8px; font-size: 12px; box-shadow: var(--shadow); max-width: 230px; }
-  #dev summary { cursor: pointer; font-weight: 600; }
+  .inv-head { display: flex; gap: var(--space-2); align-items: center; margin-bottom: var(--space-3); }
+  .inv { display: flex; flex-direction: column; gap: var(--space-2); }
+  .login-cta { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-4); }
+  .login-cta p { margin: 0; }
+  .ui-sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: var(--z-sheet); }
+  .ui-toast { position: absolute; left: var(--page-x); right: var(--page-x); bottom: calc(var(--stack-h, var(--tab-h)) + 12px); z-index: var(--z-toast);
+    opacity: 0; transform: translateY(8px); transition: opacity 160ms, transform 160ms; pointer-events: none; }
+  .ui-toast.show { opacity: 1; transform: none; }
+  #login { position: fixed; inset: 0; z-index: var(--z-dialog); background: var(--scrim); display: flex; align-items: flex-end; }
+  #login .c-sheet { width: 100%; }
+  #login .gsi { display: flex; justify-content: center; min-height: 44px; }
+  #dev { position: fixed; left: 8px; top: 90px; z-index: var(--z-dialog); background: rgba(255,255,255,.95); border-radius: var(--radius); padding: 8px; font-size: 12px; box-shadow: var(--shadow); max-width: 230px; }
   #dev input { width: 100%; box-sizing: border-box; font-size: 12px; }
-  #dev button { min-height: 32px; min-width: 0; padding: 0 8px; font-size: 12px; margin: 2px 0; }
+  #dev button { min-height: 32px; padding: 0 8px; font-size: 12px; margin: 2px 0; }
 </style>
 </head>
 <body>
@@ -67,108 +66,160 @@ import { createTown } from './src/town.js';
 import { createGestures } from './src/gestures.js';
 import { createUI, mountDev } from './src/ui.js';
 
-const houses = (await (await fetch('./data/houses.json')).json()).houses;
-const strings = await fetch('./design/ui_strings.template.json').then((r) => r.json()).catch(() => ({}));
+const json = (u) => fetch(u).then((r) => r.json());
+const [housesJson, strings, palette, landmarksJson] = await Promise.all([
+  json('./data/houses.json'), json('./design/ui_strings.json').catch(() => ({})), json('./design/palette.json').catch(() => ({})), json('./data/landmarks.json').catch(() => ({ items: [] })),
+]);
+// 房型配色以 Design 的 palette.json three.house 為準（組數須與 houses.json 相同，伺服器的 seed 範圍才對得上）
+const houses = housesJson.houses.map((h) => {
+  const p = palette.three?.house?.[h.id];
+  return p && p.length === h.palettes.length ? { ...h, palettes: p } : h;
+});
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const store = createStore(globalThis.localStorage, { api, onEvent: onSync });
 addEventListener('online', () => store.flush());
 const ed = createEditor(store, houses);
-const town = createTown(document.getElementById('town'), { houses, reducedMotion });
-const view = { tab: 'town', mode: 'view', tool: null, ghost: null, sel: null, canUndo: false, rot: 0 };
-const ui = createUI(document.getElementById('ui'), { strings, houses, onIntent });
+const town = createTown(document.getElementById('town'), { houses, palette: palette.three, reducedMotion });
+// erase：俯視畫路時「擦除」鈕；sel：看態點選的房子（F6）
+const view = { tab: 'town', mode: 'view', tool: null, erase: false, ghost: null, sel: null, canUndo: false, rot: 0 };
+const ui = createUI(document.getElementById('ui'), { strings, houses, landmarks: landmarksJson.items, onIntent });
 
-const sizeAt = (i) => houses.find((h) => h.id === store.get().grid[i]?.id)?.size ?? [1, 1];
+const houseAt = (i) => houses.find((h) => h.id === store.get().grid[i]?.id);
 const houseOf = (grantId) => houses.find((h) => h.id === store.get().grants.find((g) => g.id === grantId)?.item_id);
+const anchorAt = (i) => { const v = store.get().grid[i]; return v?.t === 'house' ? i : v?.t === 'part' ? v.of : null; };
 
 function refresh() {
   view.canUndo = ed.canUndo();
-  town.setGhost(view.ghost ?? (view.sel != null ? { anchor: view.sel, ok: true, size: sizeAt(view.sel) } : null));
+  const sel = view.sel != null && store.get().grid[view.sel];
+  town.setGhost(view.ghost ?? (sel ? { anchor: view.sel, ok: true, size: houseAt(view.sel)?.size, rot: sel.rot } : null));
   ui.render(store.get(), view);
 }
 store.subscribe((s) => { town.update(s); refresh(); });
 town.update(store.get()); refresh();
 
-// 拒絕回饋：紅框斜線（town 幽靈）+ 震動 + 一句人話
+// 拒絕回饋（gestures.md §4）：紅框＋斜線（幽靈格）＋震動 10 ms＋一句人話
 function reject(r, i) {
-  if (i != null) { view.ghost = { anchor: i, ok: false }; refresh(); setTimeout(() => { if (view.ghost && !view.ghost.houseId) { view.ghost = null; refresh(); } }, 600); }
-  if (!reducedMotion) navigator.vibrate?.(30);
+  if (i != null) { view.ghost = { anchor: i, ok: false }; refresh(); setTimeout(() => { if (view.ghost && !view.ghost.houseId) { view.ghost = null; refresh(); } }, 400); }
+  navigator.vibrate?.(10);
   ui.toast(ui.reasonText(r));
+}
+
+function enterPlace(tool = null) {
+  Object.assign(view, { tab: 'town', mode: 'place', tool, erase: false, ghost: null, sel: null, rot: 0 });
+  town.topDown(tool?.kind === 'road');
+}
+function finishPlace() {
+  ed.done();
+  Object.assign(view, { mode: 'view', tool: null, erase: false, ghost: null, sel: null });
+  town.topDown(false);
 }
 
 function onIntent(it) {
   switch (it.type) {
-    case 'tab': view.tab = it.tab; break;
-    case 'mode': view.mode = it.mode; break;
+    case 'tab': if (view.mode === 'place') finishPlace(); view.tab = it.tab; view.sel = null; break; // 切 tab = 先完成
+    case 'mode': enterPlace(); break;
     case 'tool':
-      view.tool = it.tool; view.ghost = null; view.sel = null; view.rot = 0;
-      town.topDown(it.tool?.kind === 'road'); // 畫路 = 俯視（F3）
+      Object.assign(view, { tool: it.tool, erase: false, ghost: null, sel: null, rot: 0 });
+      town.topDown(it.tool?.kind === 'road'); // 選道路 = 俯視（F3），選房型 = 回等角（F2）
       break;
-    case 'undo': ed.undo(); view.ghost = null; view.sel = null; break;
-    case 'done': ed.done(); Object.assign(view, { mode: 'view', tool: null, ghost: null, sel: null }); town.topDown(false); break;
+    case 'erase': view.erase = it.on; break;
+    case 'undo': ed.undo(); view.ghost = null; break;
+    case 'done': finishPlace(); break;
     case 'view': town.view(town.dir + it.delta); break;
     case 'fit': town.fit(); break;
-    case 'rotateGhost':
-      view.rot = (view.rot + 1) % 4;
-      if (view.ghost) { const r = ed.checkHouse(view.tool.grantId, view.ghost.anchor, view.rot); view.ghost = { ...view.ghost, rot: view.rot, ok: r.ok, r }; }
-      break;
-    case 'confirm': {
-      const r = ed.placeHouse(view.tool.grantId, view.ghost.anchor, view.rot);
-      if (!r.ok) { reject(r); return; }
-      view.tool = null; view.ghost = null;
-      break;
-    }
-    case 'rotateSel': ed.rotate(view.sel); break;
+    case 'placeFrom': enterPlace({ kind: 'house', grantId: it.grantId }); break; // F7 卡片「放」
+    case 'rotateSel': { const r = ed.rotate(view.sel); if (!r.ok) reject(r); break; }
+    case 'closeSheet': view.sel = null; break;
     case 'login': login(); return;
-    case 'removeSel': { const r = ed.removeHouse(view.sel); if (!r.ok) reject(r); view.sel = null; break; }
+    default: return;
   }
   refresh();
 }
 
 // ---------- 手勢 → 編輯 ----------
-let stroke = null; // { erase, last, warned }
+let stroke = null; // { last, warned }
+let lockedTaps = 0; // 鎖定格點第 2 次才提示（gestures.md §4）
+
+// 快滑時跨格補線（Bresenham），避免漏格
+function cellsBetween(a, b) {
+  if (a == null) return [b];
+  let [r0, c0] = [Math.floor(a / 16), a % 16];
+  const [r1, c1] = [Math.floor(b / 16), b % 16], dr = Math.abs(r1 - r0), dc = Math.abs(c1 - c0), sr = r0 < r1 ? 1 : -1, sc = c0 < c1 ? 1 : -1;
+  const out = [];
+  let err = dc - dr;
+  while (r0 !== r1 || c0 !== c1) {
+    const e2 = 2 * err;
+    if (e2 > -dr) { err -= dr; c0 += sc; } else { err += dc; r0 += sr; } // 一次只走一軸：路要上下左右連通
+    out.push(r0 * 16 + c0);
+  }
+  return out;
+}
+
 function brushAt(x, y) {
-  const i = town.cellAt(x, y);
-  const tool = view.tool;
+  const i = town.cellAt(x, y), tool = view.tool;
   if (tool?.kind === 'road') {
     if (i == null || i === stroke.last) return;
+    for (const c of cellsBetween(stroke.last, i)) {
+      const r = view.erase ? ed.eraseRoad(c) : ed.paintRoad(c);
+      if (r.ok || r.reason === 'occupied' || r.reason === 'not_road') continue; // 塗路滑過房子、擦除滑過空地都不算錯
+      if (r.reason === 'locked' && ++lockedTaps < 2) continue;
+      if (!stroke.warned) { stroke.warned = true; reject(r, c); }
+    }
     stroke.last = i;
-    const r = stroke.erase ? ed.eraseRoad(i) : ed.paintRoad(i);
-    // 塗路拖過房子不算錯；鎖住格 / orphan 每筆只提示一次
-    if (!r.ok && r.reason !== 'occupied' && r.reason !== 'not_road' && !stroke.warned) { stroke.warned = true; reject(r, i); }
   } else if (tool?.kind === 'house') {
     if (i == null) return;
     const h = houseOf(tool.grantId), r = ed.checkHouse(tool.grantId, i, view.rot);
     view.ghost = { anchor: i, ok: r.ok, r, size: h?.size, houseId: h?.id, rot: view.rot };
     refresh();
-  } else if (i != null) {
-    // 沒選工具：點房子 = 選取（旋轉 / 收回）
-    const v = store.get().grid[i];
-    view.sel = v?.t === 'house' ? i : v?.t === 'part' ? v.of : null;
-    refresh();
   }
 }
+
+// 放手 = 嘗試落房（gestures.md §1）；不能放就說原因，幽靈留著讓玩家換格
+function commitHouse() {
+  const g = view.ghost;
+  if (!g?.houseId) return;
+  const r = ed.placeHouse(view.tool.grantId, g.anchor, view.rot);
+  if (!r.ok) { reject(r); return; }
+  navigator.vibrate?.(10);
+  // 同一疊還有就繼續拿下一棟，沒有就放下工具
+  const placed = store.get().grants.find((x) => x.id === view.tool.grantId);
+  const next = store.get().grants.find((x) => x.state === 'stock' && x.item_id === placed.item_id && x.landmark_id === placed.landmark_id);
+  Object.assign(view, { tool: next ? { kind: 'house', grantId: next.id } : null, ghost: null, rot: 0 });
+}
+
 createGestures(document.getElementById('town'), {
   getMode: () => (view.tab === 'town' ? view.mode : 'view'),
   onEvent(e) {
     if (e.type === 'pan') town.pan(e.x0, e.y0, e.x1, e.y1);
     else if (e.type === 'zoom') town.zoom(e.factor, e.x, e.y);
-    else if (e.type === 'brushStart') {
+    else if (e.type === 'tap') { // 看態：點房子 = 迷你記憶卡（F6）
       const i = town.cellAt(e.x, e.y);
-      stroke = { erase: view.tool?.kind === 'road' && store.get().grid[i]?.t === 'road', last: null, warned: false };
+      view.sel = i == null ? null : anchorAt(i);
+      refresh();
+    } else if (e.type === 'lift') { // 長按已放的房子 = 拿起（變幽靈，可搬家）
+      const i = town.cellAt(e.x, e.y), a = i == null ? null : anchorAt(i);
+      if (a == null) return;
+      const cell = store.get().grid[a];
+      if (view.mode !== 'place') enterPlace();
+      ed.removeHouse(a);
+      Object.assign(view, { tool: { kind: 'house', grantId: cell.ref }, rot: cell.rot, sel: null });
+      stroke = { last: null, warned: false };
+      brushAt(e.x, e.y);
+    } else if (e.type === 'brushStart') {
+      stroke = { last: null, warned: false };
       if (view.tool?.kind === 'road') ed.beginStroke();
       brushAt(e.x, e.y);
     } else if (e.type === 'brushMove' && stroke) brushAt(e.x, e.y);
     else if (e.type === 'brushEnd' && stroke) {
       if (view.tool?.kind === 'road') ed.endStroke();
-      // 放房：手指放開時幽靈不合法 → 說原因
-      if (view.tool?.kind === 'house' && view.ghost && !view.ghost.ok) reject(view.ghost.r);
+      if (view.tool?.kind === 'house') commitHouse();
       stroke = null; refresh();
     }
   },
 });
 
-// ---------- Google 登入（GIS 按鈕放在獨立疊層，ui 重繪不會把它洗掉）----------
+// ---------- F9 Google 綁定（底板；GIS 按鈕放在獨立疊層，ui 重繪不會把它洗掉）----------
 const loadGsi = () => window.google?.accounts?.id ? Promise.resolve() : new Promise((ok, no) => {
   const sc = Object.assign(document.createElement('script'), { src: 'https://accounts.google.com/gsi/client', async: true, onload: ok, onerror: no });
   document.head.appendChild(sc);
@@ -178,8 +229,10 @@ async function login() {
   if (!n.ok) return ui.toast(ui.reasonText(n));
   if (!n.data.client_id) return ui.toast(ui.t('login.unavailable'));
   const box = Object.assign(document.createElement('div'), { id: 'login' });
-  box.innerHTML = `<div class="sheet"><p></p><div class="gsi"></div><button data-close>${ui.t('login.later')}</button></div>`;
-  box.querySelector('p').textContent = ui.t('login.prompt_body');
+  box.innerHTML = '<div class="c-sheet"><h3 class="c-dialog__title"></h3><div class="c-dialog__body"></div><div class="gsi"></div><button class="c-btn c-btn--ghost" data-close></button></div>';
+  box.querySelector('h3').textContent = ui.t('login.prompt_title');
+  box.querySelector('.c-dialog__body').textContent = ui.t('login.prompt_body');
+  box.querySelector('[data-close]').textContent = ui.t('login.later');
   box.addEventListener('click', (e) => { if (e.target === box || e.target.dataset.close !== undefined) box.remove(); });
   document.body.appendChild(box);
   try { await loadGsi(); } catch { box.remove(); return ui.toast(ui.t('error.offline')); }

@@ -6,26 +6,31 @@ import { RULES, rc, inBounds, idx, isUnlocked, unlockedSize, footprint } from '.
 import { bakeCached, houseMaterial, paletteRGB, SLOT_ATTRS, CELL } from './kit.js';
 
 const N = RULES.GRID, CELLS = N * N, HALF = (N - 1) / 2;
-const TWEEN_MS = 350;
+const TWEEN_MS = 320; // tokens.css --t-camera
 const PITCH = { iso: 0.85, top: Math.PI / 2 - 0.001 }; // 仰角（rad）
 const DIST = { min: 8, max: 260 };
+const ZOOM = { min: 0.6, max: 2.2 }; // gestures.md §3：相對「看全鎮」的倍率
+const PAN_MARGIN = 2;                // 相機平移夾在解鎖視窗 + 2 格
 
-// palette.seed.json three 區塊（Design 出 palette.json 後改讀檔）
-const COL = {
-  bg: '#8FCFC6', ground: '#7FBFB5', tile: '#A9D9C7', road: '#6F7F8C', fog: '#F6F1E8',
-  ok: '#4F9A7A', bad: '#C7453B',
-  hemiSky: '#FFF6E8', hemiGround: '#7FB8A8', hemi: 0.9, sun: '#FFF2DC', sunI: 1.25, ambient: 0.25,
-};
+// design/palette.json 的 three 區塊 → 場景用色（缺值時退回同檔的定稿值）
+function colorsFrom(three = {}) {
+  const sc = three.scene ?? {}, day = three.light?.day ?? {}, gh = three.ghost ?? {};
+  return {
+    bg: sc.background ?? '#DCE8E2', ground: sc.ground ?? '#A6C9B8', tile: sc.tile ?? '#C3DDCC', tileLocked: sc.tile_locked ?? '#D5E0D9', road: sc.road ?? '#6F7F8C',
+    ok: gh.ok ?? '#4F9A7A', okAlpha: gh.ok_alpha ?? 0.45, bad: gh.bad ?? '#C7453B', badAlpha: gh.bad_alpha ?? 0.35,
+    hemiSky: day.hemi_sky ?? '#FFF6E8', hemiGround: day.hemi_ground ?? '#7FB8A8', hemi: day.hemi ?? 0.9, sun: day.sun ?? '#FFF2DC', sunI: day.sun_i ?? 1.25, ambient: day.ambient ?? 0.25,
+  };
+}
 
 const cellX = (c) => (c - HALF) * CELL;
 const cellZ = (r) => (r - HALF) * CELL;
 const ease = (t) => 1 - (1 - t) ** 3;
 
-// 幽靈格貼圖：外框 + 合法淡填色 / 非法斜線（顏色之外的第二編碼）
-function ghostTexture(color, stripes) {
+// 幽靈格貼圖（gestures.md §4）：可放 = ok 色 45% 底＋框；不可放 = danger 框＋45° 斜線、底 35%
+function ghostTexture(color, alpha, stripes) {
   const s = 128, cv = document.createElement('canvas'); cv.width = cv.height = s;
   const g = cv.getContext('2d');
-  g.fillStyle = color; g.globalAlpha = 0.28; g.fillRect(0, 0, s, s); g.globalAlpha = 1;
+  g.fillStyle = color; g.globalAlpha = alpha; g.fillRect(0, 0, s, s); g.globalAlpha = 1;
   g.strokeStyle = color;
   if (stripes) {
     g.lineWidth = 10;
@@ -36,7 +41,8 @@ function ghostTexture(color, stripes) {
   return t;
 }
 
-export function createTown(canvas, { houses, reducedMotion = false }) {
+export function createTown(canvas, { houses, palette, reducedMotion = false }) {
+  const COL = colorsFrom(palette);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   const scene = new THREE.Scene();
@@ -52,7 +58,7 @@ export function createTown(canvas, { houses, reducedMotion = false }) {
   const tiles = new THREE.InstancedMesh(new THREE.BoxGeometry(CELL * 0.96, 0.1, CELL * 0.96), new THREE.MeshLambertMaterial(), CELLS);
   const m4 = new THREE.Matrix4();
   for (let i = 0; i < CELLS; i++) { const [r, c] = rc(i); tiles.setMatrixAt(i, m4.makeTranslation(cellX(c), -0.05, cellZ(r))); }
-  const tileOn = new THREE.Color(COL.tile), tileOff = new THREE.Color(COL.tile).lerp(new THREE.Color(COL.fog), 0.55);
+  const tileOn = new THREE.Color(COL.tile), tileOff = new THREE.Color(COL.tileLocked);
   tiles.frustumCulled = false; scene.add(tiles);
 
   // 道路池：一個 InstancedMesh，count = 路格數
@@ -70,7 +76,7 @@ export function createTown(canvas, { houses, reducedMotion = false }) {
   }
 
   // 幽靈：地面框（依 footprint 大小縮放）+ 半透明房
-  const ghostTex = { ok: ghostTexture(COL.ok, false), bad: ghostTexture(COL.bad, true) };
+  const ghostTex = { ok: ghostTexture(COL.ok, COL.okAlpha, false), bad: ghostTexture(COL.bad, COL.badAlpha, true) };
   const ghostCell = new THREE.Mesh(new THREE.PlaneGeometry(CELL, CELL).rotateX(-Math.PI / 2),
     new THREE.MeshBasicMaterial({ map: ghostTex.ok, transparent: true, depthWrite: false }));
   ghostCell.renderOrder = 2; ghostCell.visible = false; scene.add(ghostCell);
@@ -114,7 +120,10 @@ export function createTown(canvas, { houses, reducedMotion = false }) {
     return d;
   }
   // 視窗中心：size 都是偶數，視窗以格線 (7.5) 對稱 → 世界原點
-  const fit = () => animateTo({ x: 0, z: 0, dist: fitDist() });
+  let fitD = 40; // 「看全鎮」距離；縮放範圍以它為 1×
+  const fit = () => { fitD = fitDist(); animateTo({ x: 0, z: 0, dist: fitD }); };
+  const zoomClamp = (d) => THREE.MathUtils.clamp(d, fitD / ZOOM.max, fitD / ZOOM.min);
+  const panLim = () => ((size || 8) / 2 + PAN_MARGIN) * CELL;
 
   // ---------- 繪製（按需）----------
   function resize() {
@@ -145,8 +154,10 @@ export function createTown(canvas, { houses, reducedMotion = false }) {
   }
 
   const ry = new THREE.Matrix4(), mt = new THREE.Matrix4();
+  // 原點 = 佔格中心；size = [w, d]（w = c 方向），rot 1/3 時對調
   function houseMatrix(hs, a, rot) {
-    const [r, c] = rc(a), dx = (hs[1] - 1) / 2, dz = (hs[0] - 1) / 2;
+    const [w, d] = rot % 2 ? [hs[1], hs[0]] : hs;
+    const [r, c] = rc(a), dx = (w - 1) / 2, dz = (d - 1) / 2;
     return mt.makeTranslation(cellX(c + dx), 0, cellZ(r + dz)).multiply(ry.makeRotationY((-rot * Math.PI) / 2));
   }
 
@@ -193,10 +204,12 @@ export function createTown(canvas, { houses, reducedMotion = false }) {
     setGhost(ghost) {
       ghostCell.visible = ghostHouse.visible = false;
       if (ghost) {
-        const hs = footprint(ghost.size ?? [1, 1], ghost.anchor) ? ghost.size ?? [1, 1] : [1, 1];
+        const rot = ghost.rot ?? 0;
+        const hs = footprint(ghost.size ?? [1, 1], ghost.anchor, rot) ? ghost.size ?? [1, 1] : [1, 1];
+        const [w, d] = rot % 2 ? [hs[1], hs[0]] : hs;
         const [r, c] = rc(ghost.anchor);
-        ghostCell.position.set(cellX(c + (hs[1] - 1) / 2), 0.08, cellZ(r + (hs[0] - 1) / 2));
-        ghostCell.scale.set(hs[1], 1, hs[0]);
+        ghostCell.position.set(cellX(c + (w - 1) / 2), 0.08, cellZ(r + (d - 1) / 2));
+        ghostCell.scale.set(w, 1, d);
         ghostCell.material.map = ghost.ok ? ghostTex.ok : ghostTex.bad;
         ghostCell.visible = true;
         const k = ghost.houseId && kinds.get(ghost.houseId);
@@ -205,6 +218,7 @@ export function createTown(canvas, { houses, reducedMotion = false }) {
           ghostHouse.matrixAutoUpdate = false;
           ghostHouse.matrix.copy(houseMatrix(hs, ghost.anchor, ghost.rot ?? 0));
           ghostHouseMat.color.set(ghost.ok ? COL.ok : COL.bad);
+          ghostHouseMat.opacity = ghost.ok ? 0.6 : 0.35; // 可放 60% 不透明、不可放 35% 紅
           ghostHouse.visible = true;
         }
       }
@@ -225,7 +239,7 @@ export function createTown(canvas, { houses, reducedMotion = false }) {
       place(); camera.updateMatrixWorld();
       const a = groundAt(x0, y0), b = groundAt(x1, y1);
       if (!a || !b) return;
-      const lim = (N * CELL) / 2;
+      const lim = panLim();
       cam.x = THREE.MathUtils.clamp(cam.x + a.x - b.x, -lim, lim);
       cam.z = THREE.MathUtils.clamp(cam.z + a.z - b.z, -lim, lim);
       tween = null; kick();
@@ -234,10 +248,10 @@ export function createTown(canvas, { houses, reducedMotion = false }) {
     zoom(factor, x, y) {
       place(); camera.updateMatrixWorld();
       const a = x == null ? null : groundAt(x, y);
-      cam.dist = THREE.MathUtils.clamp(cam.dist / factor, DIST.min, DIST.max);
+      cam.dist = zoomClamp(cam.dist / factor);
       if (a) {
         place(); camera.updateMatrixWorld();
-        const b = groundAt(x, y), lim = (N * CELL) / 2;
+        const b = groundAt(x, y), lim = panLim();
         if (b) { cam.x = THREE.MathUtils.clamp(cam.x + a.x - b.x, -lim, lim); cam.z = THREE.MathUtils.clamp(cam.z + a.z - b.z, -lim, lim); }
       }
       tween = null; kick();

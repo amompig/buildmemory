@@ -334,3 +334,11 @@ test('v2 旋轉：3×1 轉向後佔格跟著換；轉向會撞到東西 → 拒�
     [2, { t: 'part', of: idx(4, 5) }, { t: 'part', of: idx(4, 5) }, null, null]);
   assert.equal(R.validateGrid(g(), store.get().grants, HOUSES).ok, true);
 });
+
+test('復原最多 20 步（gestures.md §3）', () => {
+  const { ed } = setup();
+  for (let c = 4; c <= 11; c++) for (const r of [4, 5, 6]) ed.paintRoad(idx(r, c)); // 24 步
+  let n = 0;
+  while (ed.undo().ok) n++;
+  assert.equal(n, 20);
+});
