@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "version": "1",
-    "date": "2026-10-21",
+    "version": "2",
+    "date": "2026-10-22",
     "from": "palette.seed.json seed-1",
-    "note": "css 區塊 = tokens.css 變數；three 區塊 → kit.js bake() 重烘與燈光。日夜只改 three.light，不改 three.house。house 原色 = houses.json palettes[0]，變體照 houses.json 不動（每房型 ≥ 3 組）。★ 標記與 seed 不同之處。",
+    "note": "css 區塊 = tokens.css 變數；three 區塊 → kit.js bake() 重烘與燈光。日夜只改 three.light。房型與地標的色票不再在此重複：three.house / three.landmark 只指向 data/*.json（單一真值）。map 區塊給 MapLibre 方案。★ 標記與 seed 不同之處。",
     "changes_from_seed": {
       "css.accent": "#C9705B → #B5532F：配白字 4.4:1 不過 4.5，加深；原值保留為 accent-soft 只做填色",
       "css.surface": "#FFFFFF → #FFFCF7：純白在暖紙上偏冷",
@@ -11,57 +11,146 @@
       "three.scene": "薄荷綠降飽和貼近紙色；road / road_line 不動"
     }
   },
-
   "css": {
-    "bg": "#F6F1E8", "surface": "#FFFCF7", "surface-2": "#F0E9DD", "line": "#E3DBCD",
-    "ink": "#2F3B46", "ink-2": "#5C6670", "ink-3": "#8B949C",
-    "accent": "#B5532F", "accent-ink": "#FFFFFF", "accent-press": "#8F3F22", "accent-tint": "#F3DDD5", "accent-soft": "#C9705B",
-    "ok": "#4F9A7A", "ok-ink": "#2F7A5C", "warn": "#D9A441", "danger": "#C7453B", "danger-tint": "#FBE4E2",
+    "bg": "#F6F1E8",
+    "surface": "#FFFCF7",
+    "surface-2": "#F0E9DD",
+    "line": "#E3DBCD",
+    "ink": "#2F3B46",
+    "ink-2": "#5C6670",
+    "ink-3": "#8B949C",
+    "accent": "#B5532F",
+    "accent-ink": "#FFFFFF",
+    "accent-press": "#8F3F22",
+    "accent-tint": "#F3DDD5",
+    "accent-soft": "#C9705B",
+    "ok": "#4F9A7A",
+    "ok-ink": "#2F7A5C",
+    "warn": "#D9A441",
+    "danger": "#C7453B",
+    "danger-tint": "#FBE4E2",
     "scrim": "rgba(47,59,70,.35)",
     "font": "system-ui, -apple-system, 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif",
     "font-display": "'LXGW WenKai TC', 'Noto Sans TC', serif",
-    "radius": "12px", "radius-lg": "20px",
-    "space-1": "4px", "space-2": "8px", "space-3": "12px", "space-4": "16px", "space-6": "24px",
+    "radius": "12px",
+    "radius-lg": "20px",
+    "space-1": "4px",
+    "space-2": "8px",
+    "space-3": "12px",
+    "space-4": "16px",
+    "space-6": "24px",
     "touch-min": "44px",
     "shadow": "0 2px 8px rgba(47,59,70,.12)"
   },
-
   "contrast": {
-    "ink/bg": 11.9, "ink-2/bg": 5.2, "accent-ink/accent": 4.9, "accent-press/accent-tint": 6.1,
-    "ok-ink/surface": 4.6, "danger-ink-white/danger": 4.8, "surface/ink(banner)": 11.5,
+    "ink/bg": 11.9,
+    "ink-2/bg": 5.2,
+    "accent-ink/accent": 4.9,
+    "accent-press/accent-tint": 6.1,
+    "ok-ink/surface": 4.6,
+    "danger-ink-white/danger": 4.8,
+    "surface/ink(banner)": 11.5,
     "note": "ink-3、ok、warn、accent-soft 不當文字色"
   },
-
   "three": {
     "scene": {
-      "background": "#DCE8E2", "fog": "#DCE8E2",
-      "ground": "#A6C9B8", "tile": "#C3DDCC", "tile_locked": "#D5E0D9",
-      "road": "#6F7F8C", "road_line": "#F7F3EE"
+      "background": "#DCE8E2",
+      "fog": "#DCE8E2",
+      "ground": "#A6C9B8",
+      "tile": "#C3DDCC",
+      "tile_locked": "#D5E0D9",
+      "road": "#6F7F8C",
+      "road_line": "#F7F3EE"
     },
     "light": {
-      "day":   { "hemi_sky": "#FFF6E8", "hemi_ground": "#7FB8A8", "hemi": 0.9, "sun": "#FFF2DC", "sun_i": 1.25, "ambient": 0.25, "exposure": 1.0 },
-      "night": { "hemi_sky": "#AFC0E0", "hemi_ground": "#2B3550", "hemi": 0.35, "sun": "#C9D4F0", "sun_i": 0.3, "ambient": 0.1, "exposure": 0.8, "background": "#2B3550" }
+      "day": {
+        "hemi_sky": "#FFF6E8",
+        "hemi_ground": "#7FB8A8",
+        "hemi": 0.9,
+        "sun": "#FFF2DC",
+        "sun_i": 1.25,
+        "ambient": 0.25,
+        "exposure": 1.0
+      },
+      "night": {
+        "hemi_sky": "#AFC0E0",
+        "hemi_ground": "#2B3550",
+        "hemi": 0.35,
+        "sun": "#C9D4F0",
+        "sun_i": 0.3,
+        "ambient": 0.1,
+        "exposure": 0.8,
+        "background": "#2B3550"
+      }
     },
-    "ghost": { "ok": "#4F9A7A", "ok_alpha": 0.45, "bad": "#C7453B", "bad_alpha": 0.35, "bad_hatch_deg": 45, "locked_fog": "rgba(246,241,232,.55)", "highlight": "#B5532F" },
+    "ghost": {
+      "ok": "#4F9A7A",
+      "ok_alpha": 0.45,
+      "bad": "#C7453B",
+      "bad_alpha": 0.35,
+      "bad_hatch_deg": 45,
+      "locked_fog": "rgba(246,241,232,.55)",
+      "highlight": "#B5532F"
+    },
     "house": {
-      "sys:iron": [
-        { "wall": "#D9D4C7", "roof": "#8A8F95", "door": "#4F5B6B", "accent": "#C7453B" },
-        { "wall": "#E8DCC8", "roof": "#7A8B99", "door": "#3A3A48", "accent": "#5B8BC9" },
-        { "wall": "#CFD6D2", "roof": "#6F7F8C", "door": "#8E6B50", "accent": "#E2B45A" },
-        { "wall": "#F2DDB5", "roof": "#4F5B6B", "door": "#3A3A48", "accent": "#6FA88A" }
+      "_source": "data/houses_tw10.json#houses[].palettes",
+      "_ids": [
+        "sys:iron",
+        "sys:apartment",
+        "sys:tilehighrise",
+        "sys:shophouse",
+        "sys:factory",
+        "sys:sanheyuan",
+        "sys:temple",
+        "sys:jpdorm",
+        "sys:village",
+        "sys:farmhouse"
       ],
-      "sys:minnan": [
-        { "wall": "#C9705B", "roof": "#C97D4B", "door": "#C7453B", "accent": "#E2B45A" },
-        { "wall": "#B8604E", "roof": "#8A5A3C", "door": "#3A3A48", "accent": "#E2B45A" },
-        { "wall": "#D4836C", "roof": "#C97D4B", "door": "#2F5D50", "accent": "#F7F3EE" }
-      ],
-      "sys:shophouse": [
-        { "wall": "#F4E6D2", "roof": "#7A8B99", "door": "#8E6B50", "accent": "#C9705B" },
-        { "wall": "#E9C9A8", "roof": "#6F7F8C", "door": "#3A3A48", "accent": "#5B8BC9" },
-        { "wall": "#D9D4C7", "roof": "#4F5B6B", "door": "#8E6B50", "accent": "#6FA88A" }
-      ]
+      "_note": "palettes[0] 原色（seed 0），其餘變體；建置檢查：_ids 必須等於 houses_tw10.json 的 id 清單（10 型）。sys:minnan 已刪除。"
     },
-    "shade": { "side_wall_mul": 0.88, "note": "右側牆面 = wall × 0.88（約 −12% 亮度），頂面不加暗；三面光影固定，不隨日夜改材質" },
-    "shared": { "glass": "#9FC8D9", "wood": "#8E6B50", "ink": "#3A3A48", "white": "#F7F3EE", "lantern": "#C7453B", "window_lit": "#F3E7C8", "tree": "#6FA88A", "tree_2": "#A9D9C7" }
+    "shade": {
+      "side_wall_mul": 0.86,
+      "note": "東面（右側）牆 = wall × 0.86，與 design/renderer 一致；屋頂南坡 1.0 / 東坡 0.8 / 北西坡 0.9；頂面不加暗；三面光影固定，不隨日夜改材質"
+    },
+    "shared": {
+      "glass": "#9FC8D9",
+      "wood": "#8E6B50",
+      "ink": "#3A3A48",
+      "white": "#F7F3EE",
+      "lantern": "#C7453B",
+      "window_lit": "#F3E7C8",
+      "tree": "#6FA88A",
+      "tree_2": "#A9D9C7"
+    },
+    "landmark": {
+      "_source": "data/landmarks_tpe12.json#landmarks[].palettes",
+      "_note": "12 棟精選各自的 palettes；地標無變體（palettes[0] 即可）。"
+    },
+    "edges": {
+      "threshold_deg": 60,
+      "width_px": 1,
+      "color": "#2F3B46",
+      "alpha": 0.6,
+      "note": "主轉折線；簷口 / 雨遮靠 AO 帶（wall × 0.78，簷深越大越寬），窗框不描邊"
+    }
+  },
+  "map": {
+    "background": "#F6F1E8",
+    "block": "#F0E9DD",
+    "block_line": "#E3DBCD",
+    "road": "#FFFCF7",
+    "road_casing": "#E3DBCD",
+    "road_major": "#F3DDD5",
+    "park": "#D7E6DA",
+    "water": "#CFE0E6",
+    "building": "#E8E1D4",
+    "building_line": "#D9CFC0",
+    "label": "#5C6670",
+    "label_halo": "#F6F1E8",
+    "landmark_pin": "#B5532F",
+    "me": "#2F7A5C",
+    "range_fill": "rgba(79,154,122,.18)",
+    "range_line": "#4F9A7A",
+    "_note": "MapLibre 樣式用的暖紙底圖：街廓 / 路 / 公園 / 水 / 建物 / 背景；對比最低 label/background 5.2:1"
   }
 }

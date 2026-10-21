@@ -1,123 +1,144 @@
 {
-  "_meta": { "lang": "zh-TW", "version": "1", "date": "2026-10-21", "from": "ui_strings.template.json template-1", "note": "鍵為契約（schema_v1 §6 錯誤碼 + 畫面文案）。{dist}/{until}/{retry_after}/{n}/{name}/{min}/{time} 為插值。每句失敗 = 一句人話 + 一個數值或下一步，不出現裸錯誤碼。" },
-
-  "error": {
-    "too_far": "再走約 {dist} m",
-    "weak_signal": "訊號弱，到戶外再按一次",
-    "cooldown": "今天來過了，明早 4 點後再來",
-    "daily_cap": "今天已收 40 棟，明天再來",
-    "rate_limited": "慢一點，{retry_after} 秒後再按",
-    "conflict": "另一台裝置也改了小鎮，選一個留下",
-    "unauthorized": "重新連線中，小鎮不會不見",
-    "invalid": "這一步沒存成功，再試一次",
-    "offline": "有訊號再按"
-  },
-
-  "privacy": {
-    "checkin_hint": "只在按下時取一次，只存地標名",
-    "about_title": "關於與隱私",
-    "about_source": "地標資料：文化部文化資產局",
-    "about_license": "政府資料開放授權條款－第 1 版",
-    "export": "下載我的全部資料（JSON）",
-    "delete_account": "刪除帳號與所有資料",
-    "delete_confirm": "輸入 DELETE 確認；刪了就找不回來"
-  },
-
-  "onboarding": {
-    "step1_road": "先塗一條路：單指在格子上滑",
-    "step2_house": "從底欄拿一棟房，放在路旁邊",
-    "step3_map": "去地圖找地標，走到就能拿新房子",
-    "skip": "略過引導",
-    "done": "開始蓋鎮"
-  },
-
-  "town": {
-    "tab": "城鎮",
-    "mode_view": "看",
-    "mode_place": "擺放",
-    "banner_placing": "擺放中",
-    "undo": "復原",
-    "done": "完成",
-    "tool_road": "道路",
-    "tool_erase": "擦除",
-    "rotate": "轉向",
-    "fit": "看全鎮",
-    "cell_locked": "這格還沒解鎖，裡面放滿 70% 就會長大",
-    "cell_occupied": "這格已經有東西了",
-    "cell_no_road": "房子要貼著路放",
-    "road_orphan": "擦掉這段路，旁邊的房子就沒路了",
-    "unlock_progress": "再 {n} 格就擴張一圈",
-    "unlock_ceremony": "小鎮長大了，多了一圈",
-    "empty": "小鎮還空著，從倉庫拿一棟放在路邊"
-  },
-
-  "map": {
-    "tab": "地圖",
-    "nearby_title": "最近的地標",
-    "distance_walk": "{min} 分鐘",
-    "preview_house": "會拿到：{name}",
-    "checkin": "打卡 · {name}",
-    "checkin_near": "再走約 {dist} m",
-    "checkin_offline": "有訊號再按",
-    "locating": "正在定位…",
-    "location_denied": "沒有定位就沒辦法打卡",
-    "location_denied_help": "到系統設定把定位打開，再回來按一次",
-    "daily_toast_house": "今天的通用房已入倉庫",
-    "daily_toast_shard": "鐵窗厝滿了，收為碎片",
-    "empty_no_landmark": "30 公里內沒有地標，換個地方再看"
-  },
-
-  "memory": {
-    "title_new": "你帶回了一棟房子",
-    "title_view": "這一天的記憶",
-    "visit_n": "第 {n} 次到訪",
-    "mood_label": "此刻的心情",
-    "mood": ["開心", "平靜", "懷念", "感動", "累"],
-    "note_placeholder": "寫給這裡的一句話，可留白",
-    "note_counter": "{n}/40",
-    "skip": "略過",
-    "save": "存",
-    "cta_place": "放進小鎮",
-    "dismantle": "拆解",
-    "rotate": "轉向"
-  },
-
-  "inventory": {
-    "tab": "倉庫",
-    "sort_date": "依日期",
-    "sort_county": "依縣市",
-    "shards": "碎片 {n}",
-    "dismantle": "拆解",
-    "dismantle_confirm": "拆解 {n} 棟換 {n} 碎片；記憶卡會留著",
-    "empty": "倉庫是空的，去地圖打卡拿房子"
-  },
-
-  "conflict": {
-    "title": "兩邊都改了小鎮",
-    "body": "另一台裝置存了新版本，選一個留下；沒選的那份會留在這支手機 30 天",
-    "this_device": "這支手機・剛才",
-    "other_device": "另一台・{time}",
-    "keep_newer": "用較新的",
-    "keep_this": "用這支手機的",
-    "draft_saved": "沒選的版本已存成草稿"
-  },
-
-  "login": {
-    "prompt_title": "想在別台手機也看到這座鎮？",
-    "prompt_body": "用 Google 綁定一次，房子和記憶卡都會跟著走；不綁也能繼續玩",
-    "google": "用 Google 綁定",
-    "later": "下次再說",
-    "merged": "綁好了，兩邊的房子都在倉庫裡"
-  },
-
-  "share": {
-    "title": "分享小鎮",
-    "toggle_county": "顯示縣市",
-    "toggle_date": "顯示日期",
-    "toggle_names": "顯示地標名",
-    "share": "分享圖片",
-    "saved": "圖片已準備好"
-  },
-
-  "common": { "ok": "好", "cancel": "取消", "retry": "再試一次", "close": "關閉" }
+ "_meta": {
+  "lang": "zh-TW",
+  "version": "2",
+  "date": "2026-10-22",
+  "from": "ui_strings.template.json template-1",
+  "note": "鍵為契約（schema_v1 §6 錯誤碼 + 畫面文案）。{dist}/{until}/{retry_after}/{n}/{name}/{min}/{time} 為插值。每句失敗 = 一句人話 + 一個數值或下一步，不出現裸錯誤碼。"
+ },
+ "error": {
+  "too_far": "再走約 {dist} m",
+  "weak_signal": "訊號弱，到戶外再按一次",
+  "cooldown": "今天來過了，明早 4 點後再來",
+  "daily_cap": "今天已收 40 棟，明天再來",
+  "rate_limited": "慢一點，{retry_after} 秒後再按",
+  "conflict": "另一台裝置也改了小鎮，選一個留下",
+  "unauthorized": "重新連線中，小鎮不會不見",
+  "invalid": "這一步沒存成功，再試一次",
+  "offline": "有訊號再按"
+ },
+ "privacy": {
+  "checkin_hint": "只在按下時取一次，只存地標名",
+  "about_title": "關於與隱私",
+  "about_source": "地標資料：文化部文化資產局",
+  "about_license": "政府資料開放授權條款－第 1 版",
+  "export": "下載我的全部資料（JSON）",
+  "delete_account": "刪除帳號與所有資料",
+  "delete_confirm": "輸入 DELETE 確認；刪了就找不回來"
+ },
+ "onboarding": {
+  "step1_road": "先塗一條路：單指在格子上滑",
+  "step2_house": "從底欄拿一棟房，放在路旁邊",
+  "step3_map": "去地圖找地標，走到就能拿新房子",
+  "skip": "略過引導",
+  "done": "開始蓋鎮"
+ },
+ "town": {
+  "tab": "城鎮",
+  "mode_view": "看",
+  "mode_place": "擺放",
+  "banner_placing": "擺放中",
+  "undo": "復原",
+  "done": "完成",
+  "tool_road": "道路",
+  "tool_erase": "擦除",
+  "rotate": "轉向",
+  "fit": "看全鎮",
+  "cell_locked": "這格還沒解鎖，裡面放滿 70% 就會長大",
+  "cell_occupied": "這格已經有東西了",
+  "cell_no_road": "房子要貼著路放",
+  "road_orphan": "擦掉這段路，旁邊的房子就沒路了",
+  "unlock_progress": "再 {n} 格就擴張一圈",
+  "unlock_ceremony": "小鎮長大了，多了一圈",
+  "empty": "小鎮還空著，從倉庫拿一棟放在路邊",
+  "progress_title": "我的小鎮 · {size}×{size}",
+  "road_unlimited": "道路不限",
+  "drawer_title": "倉庫 · 依日期"
+ },
+ "map": {
+  "tab": "地圖",
+  "nearby_title": "最近的地標",
+  "distance_walk": "{min} 分鐘",
+  "preview_house": "會拿到：{name}",
+  "checkin": "打卡 · {name}",
+  "checkin_near": "再走約 {dist} m",
+  "checkin_offline": "有訊號再按",
+  "locating": "正在定位…",
+  "location_denied": "沒有定位就沒辦法打卡",
+  "location_denied_help": "到系統設定把定位打開，再回來按一次",
+  "daily_toast_house": "今天的通用房已入倉庫",
+  "daily_toast_shard": "鐵窗厝滿了，收為碎片",
+  "empty_no_landmark": "30 公里內沒有地標，換個地方再看",
+  "today": "今天 {n} / 40 棟",
+  "checkin_ok": "打卡成功 · 第 {visit} 次來",
+  "range": "走進 {n} m 內就能打卡",
+  "relocate": "重新定位"
+ },
+ "memory": {
+  "title_new": "你帶回了一棟房子",
+  "title_view": "這一天的記憶",
+  "visit_n": "第 {n} 次到訪",
+  "mood_label": "此刻的心情",
+  "mood": [
+   "開心",
+   "平靜",
+   "懷念",
+   "感動",
+   "累"
+  ],
+  "note_placeholder": "寫給這裡的一句話，可留白",
+  "note_counter": "{n}/40",
+  "skip": "略過",
+  "save": "存",
+  "cta_place": "放進小鎮",
+  "dismantle": "拆解",
+  "rotate": "轉向",
+  "variant_origin": "原色",
+  "variant_n": "變體 {n}",
+  "footprint": "佔 {n} 格 · 已進倉庫",
+  "note_label": "寫一句話",
+  "optional": "可留白"
+ },
+ "inventory": {
+  "tab": "倉庫",
+  "sort_date": "依日期",
+  "sort_county": "依縣市",
+  "shards": "碎片 {n}",
+  "dismantle": "拆解",
+  "dismantle_confirm": "拆解 {n} 棟換 {n} 碎片；記憶卡會留著",
+  "empty": "倉庫是空的，去地圖打卡拿房子"
+ },
+ "conflict": {
+  "title": "兩邊都改了小鎮",
+  "body": "另一台裝置存了新版本，選一個留下；沒選的那份會留在這支手機 30 天",
+  "this_device": "這支手機・剛才",
+  "other_device": "另一台・{time}",
+  "keep_newer": "用較新的",
+  "keep_this": "用這支手機的",
+  "draft_saved": "沒選的版本已存成草稿"
+ },
+ "login": {
+  "prompt_title": "想在別台手機也看到這座鎮？",
+  "prompt_body": "用 Google 綁定一次，房子和記憶卡都會跟著走；不綁也能繼續玩",
+  "google": "用 Google 綁定",
+  "later": "下次再說",
+  "merged": "綁好了，兩邊的房子都在倉庫裡",
+  "done": "綁好了，房子都跟著走",
+  "failed": "沒綁成功，再試一次",
+  "unavailable": "綁定還沒開放，先繼續玩"
+ },
+ "share": {
+  "title": "分享小鎮",
+  "toggle_county": "顯示縣市",
+  "toggle_date": "顯示日期",
+  "toggle_names": "顯示地標名",
+  "share": "分享圖片",
+  "saved": "圖片已準備好"
+ },
+ "common": {
+  "ok": "好",
+  "cancel": "取消",
+  "retry": "再試一次",
+  "close": "關閉"
+ }
 }

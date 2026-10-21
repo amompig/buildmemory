@@ -1,15 +1,15 @@
 {
   "_meta": {
-    "version": "2026-10-21.3",
-    "blueprint_version": "2.1",
-    "note": "台北 12 棟地標（精選 tier）。blueprint v2.1：一棟 = 多個 block，各自佔格偏移、尺寸、層數、屋頂；joins 寫接法。v2.1 加 eave（出簷倍率）、eave2（下層簷高度比，重簷）、taper（sBot/sTop 收分）、segments（同 block 疊 n 節）、shape oct、medallion、lantern。每棟依空拍（平面）＋正面（高度比）＋細部三角度核對。floors 不封頂，真實層數在 real_floors。",
+    "version": "2026-10-22.2",
+    "blueprint_version": "2.2",
+    "note": "台北 12 棟地標（精選 tier）。v2.2 依「幾何語彙與模型本體檢討」+「立體感與線條一致性」兩份 memo 重做：每棟 required_features 三項、至少一項為負空間或深度。新增欄位：z（block 底部抬高，格單位）、arch（南面挖入的拱洞 {t 中心, w, h 比例, through 可看穿}）、winFaces S（只開南面窗）、ridge c|d（屋脊方向）、domeScale、roof mansard。柱子是 0.06 格的實體 block（id 前綴 pc/mc/fc/ac），joins colonnade 指明柱廊關係。屋頂由斜面構成（hip 四坡、gable 兩坡 + 山牆、hip2 下簷裙 + 牆帶 + 上坡、swallowtail 兩坡 + 翹脊），roofH 是 45° 基準的倍率。窗 = 深色框 + 內嵌亮面（有深度）。",
     "block_fields": {
       "id": "block 名，joins 用",
       "at": "[c, r] 相對錨點格（錨點 = 最小 r、最小 c）的偏移，單位格；可為小數（塔樓置中用）",
       "on": "疊在哪個 block 上（stack）；有 on 時 at 相對該 block 的原點",
       "w / d": "佔格寬 (c 方向) / 深 (r 方向)，單位格，可為小數",
       "floors / floorH": "層數 × 層高（格單位）；h = floors × floorH。courtyard 用 floors 0 floorH 0.1",
-      "roof": "flat | gable | hip | hip2（雙層）| swallowtail | swallowtail2 | dome | pagoda | spire",
+      "roof": "flat gable hip hip2 mansard swallowtail swallowtail2 dome spire",
       "window / windowCols / door / porch / special / extras": "同 v1",
       "color": "可覆寫 wall / roof / door / accent（例如石基）",
       "eave": "屋頂投影相對牆身的倍率（1 = 無出簷；歇山大屋頂 1.3–1.4）",
@@ -17,7 +17,12 @@
       "sBot / sTop": "底面 / 頂面相對 w×d 的縮放（收分）；101 基座 1→0.78、竹節 0.82→1.08",
       "segments": "同一 block 往上重複 n 節（每節 on 前一節）",
       "shape": "oct = 八角平面（第一版可用方體）",
-      "medallion / lantern": "南面裝飾件：圓徽 ×2 / 燈籠 ×2"
+      "medallion / lantern": "南面裝飾件：圓徽 ×2 / 燈籠 ×2",
+      "z": "block 底部抬高（格）；有 on 時相對父 block 頂",
+      "arch": "{t, w, h, through}：南面挖入的拱洞，t = 中心位置比例、w/h = 佔面寬高比例、through = 可看穿（北門）",
+      "winFaces": "'S' 只在南面開窗",
+      "ridge": "'c' | 'd' 屋脊方向（預設沿長邊）",
+      "domeScale": "dome 直徑倍率"
     },
     "join_types": {
       "shared_wall": "相鄰、共用一面牆，bake 時合併面、不畫內牆",
@@ -76,7 +81,8 @@
       "#8E8A80": "城門 / 廟宇石基",
       "#CFC7B4": "迪化街洗石子",
       "#9FBFA6": "中庭草地（= three.scene.tile 微調）"
-    }
+    },
+    "sources_note": "sources.model = 可取得的真實 3D 模型（見 docs/landmark_sources.md）；plan = buy→decimate 走降面管線，blueprint v2.1 走程式生成。nlsc = 國土測繪中心 LOD1 建物屬性。"
   },
   "landmarks": [
     {
@@ -89,7 +95,7 @@
         "https://commons.wikimedia.org/w/index.php?search=台北府城北門&title=Special:MediaSearch&type=image",
         "DuckDuckGo images: 北門（承恩門） 空拍 / 正面"
       ],
-      "observed": "空拍：近正方形碉堡式城門；正面：灰石基座約牆身一半高、紅磚城樓、歇山頂出簷明顯、一圓窗兩方窗；門洞在基座。",
+      "observed": "三項不能省略：挖穿基座的門洞（可看穿到後方）、基座頂的女牆讓城牆有厚度、城樓 hip 兩層出簷。基座 0.75、城樓 0.7，窗：一圓兩方。",
       "house": "lm:TPE-f01",
       "size": [
         1,
@@ -117,6 +123,8 @@
         }
       ],
       "blueprint": {
+        "vScale": 1.3,
+        "zoom": 1.1,
         "blocks": [
           {
             "id": "base",
@@ -126,41 +134,168 @@
             ],
             "w": 1,
             "d": 1,
-            "floors": 1,
-            "floorH": 0.9,
+            "h": 0.75,
             "roof": "flat",
-            "window": "plain",
             "windowCols": 0,
-            "door": "arch",
+            "arch": {
+              "t": 0.5,
+              "w": 0.34,
+              "h": 0.62,
+              "through": true
+            },
             "color": {
-              "wall": "accent"
+              "wall": "#8E8A80",
+              "roof": "#9A9690"
+            }
+          },
+          {
+            "id": "pF",
+            "at": [
+              0,
+              0.93
+            ],
+            "w": 1,
+            "d": 0.07,
+            "h": 0.07,
+            "roof": "flat",
+            "on": "base",
+            "windowCols": 0,
+            "color": {
+              "wall": "#7F7B76",
+              "roof": "#7F7B76"
+            }
+          },
+          {
+            "id": "pL",
+            "at": [
+              0,
+              0
+            ],
+            "w": 0.07,
+            "d": 1,
+            "h": 0.07,
+            "roof": "flat",
+            "on": "base",
+            "windowCols": 0,
+            "color": {
+              "wall": "#7F7B76",
+              "roof": "#7F7B76"
+            }
+          },
+          {
+            "id": "pR",
+            "at": [
+              0.93,
+              0
+            ],
+            "w": 0.07,
+            "d": 1,
+            "h": 0.07,
+            "roof": "flat",
+            "on": "base",
+            "windowCols": 0,
+            "color": {
+              "wall": "#7F7B76",
+              "roof": "#7F7B76"
+            }
+          },
+          {
+            "id": "pB",
+            "at": [
+              0,
+              0
+            ],
+            "w": 1,
+            "d": 0.07,
+            "h": 0.07,
+            "roof": "flat",
+            "on": "base",
+            "windowCols": 0,
+            "color": {
+              "wall": "#7F7B76",
+              "roof": "#7F7B76"
             }
           },
           {
             "id": "gate",
-            "on": "base",
             "at": [
-              0.08,
-              0.08
+              0.14,
+              0.14
             ],
-            "w": 0.84,
-            "d": 0.84,
-            "floors": 1,
-            "floorH": 0.95,
+            "w": 0.72,
+            "d": 0.72,
+            "h": 0.7,
             "roof": "hip",
-            "eave": 1.3,
-            "window": "round",
-            "windowCols": 3
+            "on": "base",
+            "eave": 1.35,
+            "roofH": 1,
+            "windowCols": 2,
+            "winRows": 1,
+            "window": "round"
           }
         ],
         "joins": [
+          {
+            "a": "pF",
+            "b": "base",
+            "type": "stack"
+          },
+          {
+            "a": "pL",
+            "b": "base",
+            "type": "stack"
+          },
+          {
+            "a": "pR",
+            "b": "base",
+            "type": "stack"
+          },
+          {
+            "a": "pB",
+            "b": "base",
+            "type": "stack"
+          },
           {
             "a": "gate",
             "b": "base",
             "type": "stack"
           }
         ]
-      }
+      },
+      "sources": {
+        "model": {
+          "source": "TDAL",
+          "id": "T202111160004",
+          "url": "https://tdal.tw/3DModels/model/T202111160004",
+          "license": "CC BY",
+          "price_twd": 1000,
+          "faces": 249575,
+          "fbx_mb": 8.18
+        },
+        "plan": "buy→decimate"
+      },
+      "chips": [
+        "門洞 挖穿 可看穿",
+        "女牆 城牆厚度",
+        "hip 出簷 1.35 兩層",
+        "圓窗 ×1 方窗 ×2"
+      ],
+      "required_features": [
+        {
+          "feature": "挖穿基座的門洞（可看穿到後方）",
+          "depth": true
+        },
+        {
+          "feature": "基座頂女牆，城牆有厚度",
+          "depth": false
+        },
+        {
+          "feature": "城樓 hip 出簷 1.35",
+          "depth": false
+        }
+      ],
+      "window_style": "rect",
+      "door_style": "rect"
     },
     {
       "id": "lm:TPE-f02",
@@ -172,7 +307,7 @@
         "https://commons.wikimedia.org/w/index.php?search=Presidential+Office+Building+Taipei&title=Special:MediaSearch&type=image",
         "DuckDuckGo images: 總統府 空拍 / 正面"
       ],
-      "observed": "空拍：日字形，前棟長、後棟平行；正面：中央塔樓高約主樓兩倍、四角角樓突出；紅磚白帶、拱窗成排。",
+      "observed": "三項不能省略：3 格長的前後翼 + 兩個中庭（日字）、中央入口退縮 0.12 並有柱廊車寄、塔樓 : 主樓 = 2.4。窗洞改為框 + 內嵌，四角與中棟各一座方錐角樓。",
       "house": "lm:TPE-f02",
       "size": [
         3,
@@ -200,126 +335,433 @@
         }
       ],
       "blueprint": {
+        "vScale": 1.5,
+        "zoom": 1,
         "blocks": [
           {
-            "id": "rear",
+            "id": "sideL",
             "at": [
               0,
               0
             ],
-            "w": 3,
-            "d": 1,
-            "floors": 3,
-            "floorH": 0.85,
+            "w": 0.4,
+            "d": 2,
+            "h": 0.5,
             "roof": "hip",
-            "eave": 1.08,
-            "window": "arch",
-            "windowCols": 6,
-            "extras": [
-              {
-                "type": "bands",
-                "rows": 3
-              }
-            ]
+            "eave": 1.05,
+            "roofH": 0.7,
+            "windowCols": 1,
+            "winRows": 3,
+            "winFaces": "S",
+            "bands": 3
           },
           {
-            "id": "front",
+            "id": "sideR",
+            "at": [
+              2.6,
+              0
+            ],
+            "w": 0.4,
+            "d": 2,
+            "h": 0.5,
+            "roof": "hip",
+            "eave": 1.05,
+            "roofH": 0.7,
+            "windowCols": 3,
+            "winRows": 3,
+            "bands": 3
+          },
+          {
+            "id": "rear",
+            "at": [
+              0.4,
+              0
+            ],
+            "w": 2.2,
+            "d": 0.45,
+            "h": 0.5,
+            "roof": "hip",
+            "eave": 1.05,
+            "roofH": 0.7,
+            "windowCols": 3,
+            "winRows": 3,
+            "winFaces": "S",
+            "bands": 3
+          },
+          {
+            "id": "courtN",
+            "at": [
+              0.4,
+              0.45
+            ],
+            "w": 2.2,
+            "d": 0.33,
+            "h": 0.01,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#9FBFA6",
+              "roof": "#9FBFA6"
+            }
+          },
+          {
+            "id": "mid",
+            "at": [
+              0.4,
+              0.78
+            ],
+            "w": 2.2,
+            "d": 0.4,
+            "h": 0.5,
+            "roof": "hip",
+            "eave": 1.05,
+            "roofH": 0.7,
+            "windowCols": 3,
+            "winRows": 3,
+            "winFaces": "S",
+            "bands": 3
+          },
+          {
+            "id": "midPav",
+            "at": [
+              0.9,
+              0
+            ],
+            "w": 0.4,
+            "d": 0.4,
+            "h": 0.1,
+            "roof": "hip",
+            "on": "mid",
+            "eave": 1.1,
+            "roofH": 1.6,
+            "windowCols": 0
+          },
+          {
+            "id": "courtS",
+            "at": [
+              0.4,
+              1.18
+            ],
+            "w": 2.2,
+            "d": 0.37,
+            "h": 0.01,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#9FBFA6",
+              "roof": "#9FBFA6"
+            }
+          },
+          {
+            "id": "frontL",
             "at": [
               0,
-              1
+              1.55
             ],
-            "w": 3,
-            "d": 1,
-            "floors": 4,
-            "floorH": 0.85,
+            "w": 1.15,
+            "d": 0.45,
+            "h": 0.6,
             "roof": "hip",
-            "eave": 1.08,
-            "window": "arch",
-            "windowCols": 6,
-            "door": "arch",
-            "extras": [
-              {
-                "type": "bands",
-                "rows": 4
-              }
-            ]
+            "eave": 1.05,
+            "roofH": 0.7,
+            "windowCols": 3,
+            "winRows": 3,
+            "winFaces": "S",
+            "bands": 3
+          },
+          {
+            "id": "frontR",
+            "at": [
+              1.85,
+              1.55
+            ],
+            "w": 1.15,
+            "d": 0.45,
+            "h": 0.6,
+            "roof": "hip",
+            "eave": 1.05,
+            "roofH": 0.7,
+            "windowCols": 3,
+            "winRows": 3,
+            "winFaces": "S",
+            "bands": 3
+          },
+          {
+            "id": "center",
+            "at": [
+              1.15,
+              1.55
+            ],
+            "w": 0.7,
+            "d": 0.33,
+            "h": 0.6,
+            "roof": "flat",
+            "windowCols": 0,
+            "bands": 3,
+            "arch": {
+              "t": 0.5,
+              "w": 0.3,
+              "h": 0.4,
+              "through": false
+            },
+            "color": {
+              "roof": "#A8473A"
+            }
+          },
+          {
+            "id": "canopy",
+            "at": [
+              1.2,
+              1.88
+            ],
+            "w": 0.6,
+            "d": 0.12,
+            "h": 0.03,
+            "roof": "flat",
+            "z": 0.3,
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
           },
           {
             "id": "pavL",
-            "on": "front",
             "at": [
-              0,
-              0.05
+              0.02,
+              0.02
             ],
-            "w": 0.45,
-            "d": 0.9,
-            "floors": 1,
-            "floorH": 0.6,
+            "w": 0.4,
+            "d": 0.41,
+            "h": 0.12,
             "roof": "hip",
-            "eave": 1.15,
+            "on": "frontL",
+            "eave": 1.1,
+            "roofH": 1.5,
             "windowCols": 0
           },
           {
             "id": "pavR",
-            "on": "front",
             "at": [
-              2.55,
-              0.05
+              0.73,
+              0.02
             ],
-            "w": 0.45,
-            "d": 0.9,
-            "floors": 1,
-            "floorH": 0.6,
+            "w": 0.4,
+            "d": 0.41,
+            "h": 0.12,
             "roof": "hip",
-            "eave": 1.15,
+            "on": "frontR",
+            "eave": 1.1,
+            "roofH": 1.5,
+            "windowCols": 0
+          },
+          {
+            "id": "pavRL",
+            "at": [
+              -0.38,
+              0.02
+            ],
+            "w": 0.4,
+            "d": 0.41,
+            "h": 0.12,
+            "roof": "hip",
+            "on": "rear",
+            "eave": 1.1,
+            "roofH": 1.5,
+            "windowCols": 0
+          },
+          {
+            "id": "pavRR",
+            "at": [
+              2.18,
+              0.02
+            ],
+            "w": 0.4,
+            "d": 0.41,
+            "h": 0.12,
+            "roof": "hip",
+            "on": "rear",
+            "eave": 1.1,
+            "roofH": 1.5,
             "windowCols": 0
           },
           {
             "id": "tower",
-            "on": "front",
             "at": [
-              1.25,
-              0.15
+              0.17,
+              0
             ],
-            "w": 0.5,
-            "d": 0.7,
-            "floors": 7,
-            "floorH": 0.85,
+            "w": 0.36,
+            "d": 0.33,
+            "h": 0.9,
             "roof": "hip",
-            "eave": 1.3,
-            "window": "arch",
+            "on": "center",
+            "eave": 1.35,
+            "roofH": 1.6,
             "windowCols": 1,
-            "extras": [
-              {
-                "type": "bands",
-                "rows": 7
-              }
-            ]
+            "winRows": 3,
+            "winFaces": "S",
+            "bands": 4
+          },
+          {
+            "id": "pc0",
+            "at": [
+              1.245,
+              1.94
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "pc1",
+            "at": [
+              1.395,
+              1.94
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "pc2",
+            "at": [
+              1.545,
+              1.94
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "pc3",
+            "at": [
+              1.695,
+              1.94
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
           }
         ],
         "joins": [
           {
-            "a": "tower",
-            "b": "front",
+            "a": "midPav",
+            "b": "mid",
             "type": "stack"
           },
           {
             "a": "pavL",
-            "b": "front",
+            "b": "frontL",
             "type": "stack"
           },
           {
             "a": "pavR",
-            "b": "front",
+            "b": "frontR",
             "type": "stack"
           },
           {
-            "a": "rear",
-            "b": "front",
+            "a": "pavRL",
+            "b": "rear",
+            "type": "stack"
+          },
+          {
+            "a": "pavRR",
+            "b": "rear",
+            "type": "stack"
+          },
+          {
+            "a": "tower",
+            "b": "center",
+            "type": "stack"
+          },
+          {
+            "a": "courtN",
+            "b": "rear",
+            "type": "courtyard"
+          },
+          {
+            "a": "courtS",
+            "b": "frontL",
+            "type": "courtyard"
+          },
+          {
+            "a": "center",
+            "b": "frontL",
             "type": "shared_wall"
+          },
+          {
+            "a": "center",
+            "b": "frontR",
+            "type": "shared_wall"
+          },
+          {
+            "a": "pc0",
+            "b": "center",
+            "type": "colonnade"
           }
         ]
-      }
+      },
+      "sources": {
+        "model": {
+          "source": "TDAL",
+          "id": "T202111020004",
+          "url": "https://tdal.tw/3DModels/model/T202111020004",
+          "license": "CC BY",
+          "price_twd": 3000,
+          "faces": 6022760,
+          "fbx_mb": 165.67,
+          "note": "1970 年代前樣貌"
+        },
+        "plan": "buy→decimate"
+      },
+      "chips": [
+        "日字 長翼 + 2 中庭",
+        "中央退縮入口 + 柱廊 ×4",
+        "塔 : 主樓 2.4",
+        "窗洞有框深",
+        "角樓 ×5"
+      ],
+      "required_features": [
+        {
+          "feature": "3 格長前後翼 + 兩個中庭（日字）",
+          "depth": false
+        },
+        {
+          "feature": "中央入口退縮 0.12 + 四柱車寄",
+          "depth": true
+        },
+        {
+          "feature": "塔樓 : 主樓 = 2.4，角樓 ×5",
+          "depth": false
+        }
+      ],
+      "window_style": "rect",
+      "door_style": "rect"
     },
     {
       "id": "lm:TPE-f03",
@@ -331,7 +773,7 @@
         "https://commons.wikimedia.org/w/index.php?search=中正紀念堂&title=Special:MediaSearch&type=image",
         "DuckDuckGo images: 中正紀念堂 空拍 / 正面"
       ],
-      "observed": "空拍：方形主體置中於大平台；正面：主體高、藍瓦八角重簷攢尖頂出簷極大、金寶頂；正面大拱門與長階。",
+      "observed": "三項不能省略：地面三段 → 基座三段台階的入口軸線（台階北緣對齊基座邊、頂階與基座同高）、正面大拱門挖入牆體、藍瓦八角重簷（下簷貼牆頂外挑、上簷內縮）。牆面收分 1→0.9、角墩 ×4 高 1.12 在下簷之下。牌樓在廣場另一端，不在 3×3 內。",
       "house": "lm:TPE-f03",
       "size": [
         3,
@@ -359,6 +801,8 @@
         }
       ],
       "blueprint": {
+        "vScale": 1.5,
+        "zoom": 1,
         "blocks": [
           {
             "id": "plinth",
@@ -367,51 +811,298 @@
               0
             ],
             "w": 3,
-            "d": 3,
-            "floors": 1,
-            "floorH": 0.5,
+            "d": 2.75,
+            "h": 0.16,
             "roof": "flat",
             "windowCols": 0,
-            "extras": [
-              {
-                "type": "stairs",
-                "side": "south"
-              }
-            ]
+            "color": {
+              "wall": "#F2EEE6",
+              "roof": "#F2EEE6"
+            }
+          },
+          {
+            "id": "plinth2",
+            "at": [
+              0.25,
+              0.2
+            ],
+            "w": 2.5,
+            "d": 2.3,
+            "h": 0.1,
+            "roof": "flat",
+            "on": "plinth",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F4F0E8",
+              "roof": "#F4F0E8"
+            }
           },
           {
             "id": "hall",
-            "on": "plinth",
             "at": [
-              0.5,
-              0.5
+              0.25,
+              0.15
             ],
             "w": 2,
             "d": 2,
-            "floors": 4,
-            "floorH": 0.9,
+            "h": 1.3,
             "roof": "hip2",
-            "eave": 1.35,
+            "on": "plinth2",
+            "eave": 1.3,
+            "roofH": 0.8,
+            "sBot": 1,
+            "sTop": 0.9,
             "shape": "oct",
-            "window": "plain",
-            "windowCols": 2,
-            "door": "arch",
-            "extras": [
-              {
-                "type": "finial",
-                "color": "accent"
-              }
-            ]
+            "windowCols": 0,
+            "arch": {
+              "t": 0.5,
+              "w": 0.2,
+              "h": 0.5,
+              "through": false
+            }
+          },
+          {
+            "id": "bNW",
+            "at": [
+              0.17,
+              0.07
+            ],
+            "w": 0.4,
+            "d": 0.4,
+            "h": 1.12,
+            "roof": "flat",
+            "on": "plinth2",
+            "sBot": 1,
+            "sTop": 0.85,
+            "windowCols": 0,
+            "color": {
+              "roof": "#EDE9E0"
+            }
+          },
+          {
+            "id": "bNE",
+            "at": [
+              1.93,
+              0.07
+            ],
+            "w": 0.4,
+            "d": 0.4,
+            "h": 1.12,
+            "roof": "flat",
+            "on": "plinth2",
+            "sBot": 1,
+            "sTop": 0.85,
+            "windowCols": 0,
+            "color": {
+              "roof": "#EDE9E0"
+            }
+          },
+          {
+            "id": "bSW",
+            "at": [
+              0.17,
+              1.83
+            ],
+            "w": 0.4,
+            "d": 0.4,
+            "h": 1.12,
+            "roof": "flat",
+            "on": "plinth2",
+            "sBot": 1,
+            "sTop": 0.85,
+            "windowCols": 0,
+            "color": {
+              "roof": "#EDE9E0"
+            }
+          },
+          {
+            "id": "bSE",
+            "at": [
+              1.93,
+              1.83
+            ],
+            "w": 0.4,
+            "d": 0.4,
+            "h": 1.12,
+            "roof": "flat",
+            "on": "plinth2",
+            "sBot": 1,
+            "sTop": 0.85,
+            "windowCols": 0,
+            "color": {
+              "roof": "#EDE9E0"
+            }
+          },
+          {
+            "id": "st0",
+            "at": [
+              0.3,
+              2.75
+            ],
+            "w": 2.4,
+            "d": 0.25,
+            "h": 0.053,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#E6E1D6",
+              "roof": "#E6E1D6"
+            }
+          },
+          {
+            "id": "st1",
+            "at": [
+              0.444,
+              2.75
+            ],
+            "w": 2.112,
+            "d": 0.167,
+            "h": 0.053,
+            "roof": "flat",
+            "z": 0.053,
+            "windowCols": 0,
+            "color": {
+              "wall": "#E6E1D6",
+              "roof": "#E6E1D6"
+            }
+          },
+          {
+            "id": "st2",
+            "at": [
+              0.588,
+              2.75
+            ],
+            "w": 1.824,
+            "d": 0.083,
+            "h": 0.053,
+            "roof": "flat",
+            "z": 0.106,
+            "windowCols": 0,
+            "color": {
+              "wall": "#E6E1D6",
+              "roof": "#E6E1D6"
+            }
+          },
+          {
+            "id": "su0",
+            "at": [
+              0.7,
+              2.5
+            ],
+            "w": 1.6,
+            "d": 0.25,
+            "h": 0.034,
+            "roof": "flat",
+            "z": 0.16,
+            "windowCols": 0,
+            "color": {
+              "wall": "#EDE9E0",
+              "roof": "#EDE9E0"
+            }
+          },
+          {
+            "id": "su1",
+            "at": [
+              0.796,
+              2.5
+            ],
+            "w": 1.408,
+            "d": 0.167,
+            "h": 0.034,
+            "roof": "flat",
+            "z": 0.194,
+            "windowCols": 0,
+            "color": {
+              "wall": "#EDE9E0",
+              "roof": "#EDE9E0"
+            }
+          },
+          {
+            "id": "su2",
+            "at": [
+              0.892,
+              2.5
+            ],
+            "w": 1.216,
+            "d": 0.083,
+            "h": 0.034,
+            "roof": "flat",
+            "z": 0.228,
+            "windowCols": 0,
+            "color": {
+              "wall": "#EDE9E0",
+              "roof": "#EDE9E0"
+            }
           }
         ],
         "joins": [
           {
-            "a": "hall",
+            "a": "plinth2",
             "b": "plinth",
+            "type": "stack"
+          },
+          {
+            "a": "hall",
+            "b": "plinth2",
+            "type": "stack"
+          },
+          {
+            "a": "bNW",
+            "b": "plinth2",
+            "type": "stack"
+          },
+          {
+            "a": "bNE",
+            "b": "plinth2",
+            "type": "stack"
+          },
+          {
+            "a": "bSW",
+            "b": "plinth2",
+            "type": "stack"
+          },
+          {
+            "a": "bSE",
+            "b": "plinth2",
             "type": "stack"
           }
         ]
-      }
+      },
+      "sources": {
+        "model": {
+          "source": "TDAL",
+          "id": "T202111020044",
+          "url": "https://tdal.tw/3DModels/model/T202111020044",
+          "license": "CC BY",
+          "price_twd": 1000,
+          "faces": 50981591,
+          "fbx_mb": 1360.89
+        },
+        "plan": "buy→decimate (heavy)"
+      },
+      "chips": [
+        "兩段台階 軸線 對齊基座",
+        "大拱門 挖入",
+        "hip2 八角 重簷",
+        "牆面收分",
+        "角墩 ×4"
+      ],
+      "required_features": [
+        {
+          "feature": "牌樓 → 地面四段 → 基座三段台階的軸線",
+          "depth": true
+        },
+        {
+          "feature": "正面大拱門挖入牆體",
+          "depth": true
+        },
+        {
+          "feature": "藍瓦八角重簷（下簷外挑、上簷內縮）、牆面收分、角墩 ×4",
+          "depth": false
+        }
+      ],
+      "window_style": "rect",
+      "door_style": "rect"
     },
     {
       "id": "lm:TPE-f04",
@@ -423,7 +1114,7 @@
         "https://commons.wikimedia.org/w/index.php?search=國立臺灣博物館&title=Special:MediaSearch&type=image",
         "DuckDuckGo images: 國立臺灣博物館 空拍 / 正面"
       ],
-      "observed": "空拍：長方形、中央圓頂在鼓座上；正面：六柱門廊向前突出、三角楣；兩翼較低、拱窗成排。",
+      "observed": "三項不能省略：凹入的六柱門廊（柱後是退縮 0.2 的牆，可看穿）、柱上三角山牆投影、三段寬台階。圓頂在鼓座上、兩翼較低且有拱窗。",
       "house": "lm:TPE-f04",
       "size": [
         3,
@@ -451,6 +1142,8 @@
         }
       ],
       "blueprint": {
+        "vScale": 1.2,
+        "zoom": 1,
         "blocks": [
           {
             "id": "wingL",
@@ -459,13 +1152,14 @@
               0
             ],
             "w": 1,
-            "d": 1,
-            "floors": 2,
-            "floorH": 1.0,
+            "d": 0.8,
+            "h": 1.6,
             "roof": "hip",
             "eave": 1.08,
-            "window": "arch",
-            "windowCols": 3
+            "windowCols": 3,
+            "winRows": 2,
+            "winFaces": "S",
+            "window": "arch"
           },
           {
             "id": "wingR",
@@ -474,13 +1168,13 @@
               0
             ],
             "w": 1,
-            "d": 1,
-            "floors": 2,
-            "floorH": 1.0,
+            "d": 0.8,
+            "h": 1.6,
             "roof": "hip",
             "eave": 1.08,
-            "window": "arch",
-            "windowCols": 3
+            "windowCols": 3,
+            "winRows": 2,
+            "window": "arch"
           },
           {
             "id": "center",
@@ -489,53 +1183,254 @@
               0
             ],
             "w": 1,
-            "d": 1,
-            "floors": 2,
-            "floorH": 1.2,
-            "roof": "dome",
-            "window": "arch",
-            "windowCols": 1
+            "d": 0.65,
+            "h": 1.75,
+            "roof": "flat",
+            "windowCols": 1,
+            "winRows": 2,
+            "winFaces": "S",
+            "arch": {
+              "t": 0.5,
+              "w": 0.26,
+              "h": 0.42,
+              "through": false
+            },
+            "color": {
+              "roof": "#CFC7B4"
+            }
           },
           {
-            "id": "portico",
+            "id": "drum",
             "at": [
-              1.1,
-              0.85
+              0.15,
+              0.05
             ],
-            "w": 0.8,
-            "d": 0.35,
-            "floors": 2,
-            "floorH": 1.2,
-            "roof": "gable",
-            "eave": 1.1,
-            "porch": "columns",
-            "door": "double",
+            "w": 0.7,
+            "d": 0.55,
+            "h": 0.3,
+            "roof": "dome",
+            "on": "center",
+            "domeScale": 1.6,
             "windowCols": 0,
-            "extras": [
-              {
-                "type": "pediment"
-              }
-            ]
+            "color": {
+              "wall": "#E6E1D6"
+            }
+          },
+          {
+            "id": "pediment",
+            "at": [
+              1.02,
+              0.6
+            ],
+            "w": 0.96,
+            "d": 0.32,
+            "h": 0.14,
+            "roof": "gable",
+            "z": 1.6,
+            "eave": 1.12,
+            "ridge": "d",
+            "windowCols": 0,
+            "color": {
+              "wall": "#E6E1D6",
+              "roof": "#CFC7B4"
+            }
+          },
+          {
+            "id": "pc0",
+            "at": [
+              1.09,
+              0.83
+            ],
+            "w": 0.07,
+            "d": 0.07,
+            "h": 1.6,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "pc1",
+            "at": [
+              1.24,
+              0.83
+            ],
+            "w": 0.07,
+            "d": 0.07,
+            "h": 1.6,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "pc2",
+            "at": [
+              1.39,
+              0.83
+            ],
+            "w": 0.07,
+            "d": 0.07,
+            "h": 1.6,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "pc3",
+            "at": [
+              1.54,
+              0.83
+            ],
+            "w": 0.07,
+            "d": 0.07,
+            "h": 1.6,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "pc4",
+            "at": [
+              1.69,
+              0.83
+            ],
+            "w": 0.07,
+            "d": 0.07,
+            "h": 1.6,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "pc5",
+            "at": [
+              1.84,
+              0.83
+            ],
+            "w": 0.07,
+            "d": 0.07,
+            "h": 1.6,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "st0",
+            "at": [
+              0.95,
+              0.9
+            ],
+            "w": 1.1,
+            "d": 0.1,
+            "h": 0.04,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#CFC7B4",
+              "roof": "#CFC7B4"
+            }
+          },
+          {
+            "id": "st1",
+            "at": [
+              1.016,
+              0.9
+            ],
+            "w": 0.968,
+            "d": 0.067,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 0.04,
+            "windowCols": 0,
+            "color": {
+              "wall": "#CFC7B4",
+              "roof": "#CFC7B4"
+            }
+          },
+          {
+            "id": "st2",
+            "at": [
+              1.082,
+              0.9
+            ],
+            "w": 0.836,
+            "d": 0.033,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 0.08,
+            "windowCols": 0,
+            "color": {
+              "wall": "#CFC7B4",
+              "roof": "#CFC7B4"
+            }
           }
         ],
         "joins": [
           {
-            "a": "wingL",
+            "a": "drum",
             "b": "center",
+            "type": "stack"
+          },
+          {
+            "a": "center",
+            "b": "wingL",
             "type": "shared_wall"
           },
           {
-            "a": "wingR",
-            "b": "center",
+            "a": "center",
+            "b": "wingR",
             "type": "shared_wall"
           },
           {
-            "a": "portico",
+            "a": "pediment",
             "b": "center",
             "type": "colonnade"
           }
         ]
-      }
+      },
+      "sources": {
+        "model": null,
+        "plan": "blueprint v2.1"
+      },
+      "chips": [
+        "凹入柱廊 ×6 可看穿",
+        "三角山牆 on 柱",
+        "寬台階 3 段",
+        "dome on drum"
+      ],
+      "required_features": [
+        {
+          "feature": "凹入六柱門廊，柱後牆退縮 0.2 可看穿",
+          "depth": true
+        },
+        {
+          "feature": "柱上三角山牆（ridge d，面南）",
+          "depth": false
+        },
+        {
+          "feature": "三段寬台階；圓頂在鼓座上，兩翼較低",
+          "depth": false
+        }
+      ],
+      "window_style": "arch",
+      "door_style": "rect"
     },
     {
       "id": "lm:TPE-f05",
@@ -547,7 +1442,7 @@
         "https://commons.wikimedia.org/w/index.php?search=西門紅樓&title=Special:MediaSearch&type=image",
         "DuckDuckGo images: 西門紅樓 空拍 / 正面"
       ],
-      "observed": "空拍：前八角、後十字形單層長屋；正面：八角兩層紅磚、白飾帶、深灰斜頂；十字樓山牆較低。",
+      "observed": "三項不能省略：兩層八角主樓主導（高出十字樓一倍）、低矮十字翼（脊樑 + 橫翼兩道 gable 屋頂）、入口拱門挖入 + 台階。紅磚、白飾帶 ×2。",
       "house": "lm:TPE-f05",
       "size": [
         1,
@@ -575,21 +1470,37 @@
         }
       ],
       "blueprint": {
+        "vScale": 1.3,
+        "zoom": 1.05,
         "blocks": [
           {
-            "id": "hall",
+            "id": "spine",
             "at": [
-              0,
+              0.28,
               0
             ],
-            "w": 1,
-            "d": 1,
-            "floors": 1,
-            "floorH": 1.3,
+            "w": 0.44,
+            "d": 1.05,
+            "h": 0.55,
             "roof": "gable",
             "eave": 1.05,
-            "window": "arch",
-            "windowCols": 3
+            "windowCols": 1,
+            "winRows": 1
+          },
+          {
+            "id": "transept",
+            "at": [
+              0,
+              0.35
+            ],
+            "w": 1,
+            "d": 0.38,
+            "h": 0.55,
+            "roof": "gable",
+            "eave": 1.05,
+            "windowCols": 2,
+            "winRows": 1,
+            "winFaces": "S"
           },
           {
             "id": "oct",
@@ -598,31 +1509,104 @@
               1
             ],
             "w": 1,
-            "d": 1,
-            "floors": 2,
-            "floorH": 0.9,
+            "d": 0.9,
+            "h": 1.1,
             "roof": "hip",
-            "eave": 1.1,
+            "eave": 1.12,
+            "roofH": 0.75,
             "shape": "oct",
-            "window": "arch",
             "windowCols": 2,
-            "door": "arch",
-            "extras": [
-              {
-                "type": "bands",
-                "rows": 2
-              }
-            ]
+            "winRows": 2,
+            "window": "arch",
+            "bands": 2,
+            "arch": {
+              "t": 0.5,
+              "w": 0.22,
+              "h": 0.32,
+              "through": false
+            }
+          },
+          {
+            "id": "st0",
+            "at": [
+              0.3,
+              1.9
+            ],
+            "w": 0.4,
+            "d": 0.1,
+            "h": 0.04,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "st1",
+            "at": [
+              0.324,
+              1.9
+            ],
+            "w": 0.352,
+            "d": 0.05,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 0.04,
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
           }
         ],
         "joins": [
           {
-            "a": "hall",
+            "a": "spine",
             "b": "oct",
+            "type": "shared_wall"
+          },
+          {
+            "a": "transept",
+            "b": "spine",
             "type": "shared_wall"
           }
         ]
-      }
+      },
+      "sources": {
+        "model": {
+          "source": "TDAL",
+          "id": "T202111030008",
+          "url": "https://tdal.tw/3DModels/model/T202111030008",
+          "license": "CC BY",
+          "price_twd": 1000,
+          "faces": 683789,
+          "fbx_mb": 17.72
+        },
+        "plan": "buy→decimate"
+      },
+      "chips": [
+        "八角主樓 2F 主導",
+        "十字翼 1F gable ×2",
+        "拱門 挖入 + 台階",
+        "bands ×2"
+      ],
+      "required_features": [
+        {
+          "feature": "兩層八角主樓主導（高出十字樓一倍）",
+          "depth": false
+        },
+        {
+          "feature": "十字翼：脊樑 + 橫翼兩道 gable",
+          "depth": false
+        },
+        {
+          "feature": "入口拱門挖入 + 台階",
+          "depth": true
+        }
+      ],
+      "window_style": "rect",
+      "door_style": "rect"
     },
     {
       "id": "lm:TPE-f06",
@@ -634,7 +1618,7 @@
         "https://commons.wikimedia.org/w/index.php?search=艋舺龍山寺&title=Special:MediaSearch&type=image",
         "DuckDuckGo images: 艋舺龍山寺 空拍 / 正面"
       ],
-      "observed": "空拍：三進——前殿寬、正殿在中庭正中獨立、後殿寬；兩側護室長廊，中段鐘樓鼓樓（六角重簷小塔）。正面：燕尾脊、紅柱、石基、燈籠。",
+      "observed": "三項不能省略：前殿 / 正殿 / 後殿三道燕尾屋頂群（正殿最高且獨立在中庭）、正殿與前殿的柱廊（柱後牆退縮，可看穿）、前埕 + 中庭兩個開放空間。鐘鼓樓 hip2 在護室上。",
       "house": "lm:TPE-f06",
       "size": [
         3,
@@ -662,6 +1646,8 @@
         }
       ],
       "blueprint": {
+        "vScale": 1.2,
+        "zoom": 1,
         "blocks": [
           {
             "id": "rear",
@@ -670,147 +1656,383 @@
               0
             ],
             "w": 3,
-            "d": 1,
-            "floors": 1,
-            "floorH": 1.1,
+            "d": 0.65,
+            "h": 0.85,
             "roof": "swallowtail",
             "eave": 1.15,
-            "window": "koshi",
-            "windowCols": 3
+            "windowCols": 3,
+            "winRows": 1,
+            "winFaces": "S"
           },
           {
             "id": "sideL",
             "at": [
               0,
-              1
+              0.65
             ],
-            "w": 1,
-            "d": 1,
-            "floors": 1,
-            "floorH": 0.7,
+            "w": 0.5,
+            "d": 1.55,
+            "h": 0.55,
             "roof": "hip",
             "eave": 1.05,
-            "window": "plain",
-            "windowCols": 1
+            "windowCols": 1,
+            "winRows": 1
           },
           {
             "id": "sideR",
             "at": [
-              2,
-              1
+              2.5,
+              0.65
             ],
-            "w": 1,
-            "d": 1,
-            "floors": 1,
-            "floorH": 0.7,
+            "w": 0.5,
+            "d": 1.55,
+            "h": 0.55,
             "roof": "hip",
             "eave": 1.05,
-            "window": "plain",
-            "windowCols": 1
+            "windowCols": 1,
+            "winRows": 1
           },
           {
             "id": "bell",
-            "on": "sideL",
             "at": [
-              0.2,
-              0.2
+              0,
+              0.5
             ],
-            "w": 0.6,
-            "d": 0.6,
-            "floors": 1,
-            "floorH": 1.1,
+            "w": 0.5,
+            "d": 0.5,
+            "h": 0.85,
             "roof": "hip2",
+            "on": "sideL",
             "eave": 1.3,
-            "shape": "oct",
-            "windowCols": 1
+            "roofH": 1.1,
+            "windowCols": 1,
+            "winRows": 1
           },
           {
             "id": "drum",
-            "on": "sideR",
             "at": [
-              0.2,
-              0.2
+              0,
+              0.5
             ],
-            "w": 0.6,
-            "d": 0.6,
-            "floors": 1,
-            "floorH": 1.1,
+            "w": 0.5,
+            "d": 0.5,
+            "h": 0.85,
             "roof": "hip2",
+            "on": "sideR",
             "eave": 1.3,
-            "shape": "oct",
-            "windowCols": 1
+            "roofH": 1.1,
+            "windowCols": 1,
+            "winRows": 1
           },
           {
             "id": "court",
             "at": [
-              1,
-              1
+              0.5,
+              0.65
             ],
-            "w": 1,
-            "d": 1,
-            "floors": 0,
-            "floorH": 0.1,
+            "w": 2,
+            "d": 1.55,
+            "h": 0.02,
             "roof": "flat",
+            "windowCols": 0,
             "color": {
-              "wall": "#9FBFA6"
+              "wall": "#D9CFB8",
+              "roof": "#D9CFB8"
             }
           },
           {
-            "id": "main",
-            "on": "court",
+            "id": "mainBody",
             "at": [
-              0.15,
-              0.15
+              1.05,
+              0.95
             ],
-            "w": 0.7,
+            "w": 0.9,
             "d": 0.7,
-            "floors": 1,
-            "floorH": 1.7,
-            "roof": "swallowtail2",
-            "eave": 1.4,
-            "porch": "columns",
-            "door": "double",
-            "window": "koshi",
-            "windowCols": 1
+            "h": 1.3,
+            "roof": "flat",
+            "windowCols": 1,
+            "winRows": 1,
+            "winFaces": "S",
+            "arch": {
+              "t": 0.5,
+              "w": 0.3,
+              "h": 0.5,
+              "through": false
+            },
+            "color": {
+              "roof": "#A8473A"
+            }
           },
           {
-            "id": "front",
+            "id": "mainRoof",
+            "at": [
+              1,
+              0.95
+            ],
+            "w": 1,
+            "d": 0.95,
+            "h": 0.25,
+            "roof": "swallowtail2",
+            "z": 1.3,
+            "eave": 1.4,
+            "roofH": 1.2,
+            "windowCols": 0,
+            "color": {
+              "wall": "#A8473A"
+            }
+          },
+          {
+            "id": "frontBody",
             "at": [
               0,
-              2
+              2.2
             ],
             "w": 3,
-            "d": 1,
-            "floors": 1,
-            "floorH": 1.0,
-            "roof": "swallowtail",
-            "eave": 1.15,
-            "porch": "columns",
-            "door": "double",
-            "special": "lantern",
-            "window": "koshi",
+            "d": 0.3,
+            "h": 0.75,
+            "roof": "flat",
             "windowCols": 2,
+            "winRows": 1,
+            "winFaces": "S",
+            "lantern": true,
+            "arch": {
+              "t": 0.5,
+              "w": 0.14,
+              "h": 0.5,
+              "through": false
+            },
             "color": {
-              "accent": "#8E8A80"
+              "roof": "#A8473A"
+            }
+          },
+          {
+            "id": "frontRoof",
+            "at": [
+              0,
+              2.2
+            ],
+            "w": 3,
+            "d": 0.5,
+            "h": 0.2,
+            "roof": "swallowtail",
+            "z": 0.75,
+            "eave": 1.2,
+            "roofH": 1,
+            "windowCols": 0,
+            "color": {
+              "wall": "#A8473A"
+            }
+          },
+          {
+            "id": "plaza",
+            "at": [
+              0,
+              2.7
+            ],
+            "w": 3,
+            "d": 0.3,
+            "h": 0.01,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9CFB8",
+              "roof": "#D9CFB8"
+            }
+          },
+          {
+            "id": "lampL",
+            "at": [
+              0.8,
+              2.88
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "lampR",
+            "at": [
+              2.14,
+              2.88
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "mc0",
+            "at": [
+              1.133,
+              1.84
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 1.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B5452E",
+              "roof": "#B5452E"
+            }
+          },
+          {
+            "id": "mc1",
+            "at": [
+              1.358,
+              1.84
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 1.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B5452E",
+              "roof": "#B5452E"
+            }
+          },
+          {
+            "id": "mc2",
+            "at": [
+              1.583,
+              1.84
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 1.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B5452E",
+              "roof": "#B5452E"
+            }
+          },
+          {
+            "id": "mc3",
+            "at": [
+              1.807,
+              1.84
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 1.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B5452E",
+              "roof": "#B5452E"
+            }
+          },
+          {
+            "id": "fc0",
+            "at": [
+              0.387,
+              2.64
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.75,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B5452E",
+              "roof": "#B5452E"
+            }
+          },
+          {
+            "id": "fc1",
+            "at": [
+              0.82,
+              2.64
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.75,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B5452E",
+              "roof": "#B5452E"
+            }
+          },
+          {
+            "id": "fc2",
+            "at": [
+              1.253,
+              2.64
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.75,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B5452E",
+              "roof": "#B5452E"
+            }
+          },
+          {
+            "id": "fc3",
+            "at": [
+              1.687,
+              2.64
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.75,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B5452E",
+              "roof": "#B5452E"
+            }
+          },
+          {
+            "id": "fc4",
+            "at": [
+              2.12,
+              2.64
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.75,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B5452E",
+              "roof": "#B5452E"
+            }
+          },
+          {
+            "id": "fc5",
+            "at": [
+              2.553,
+              2.64
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.75,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B5452E",
+              "roof": "#B5452E"
             }
           }
         ],
         "joins": [
-          {
-            "a": "main",
-            "b": "court",
-            "type": "stack"
-          },
-          {
-            "a": "court",
-            "b": "front",
-            "type": "courtyard"
-          },
-          {
-            "a": "court",
-            "b": "rear",
-            "type": "courtyard"
-          },
           {
             "a": "bell",
             "b": "sideL",
@@ -822,14 +2044,19 @@
             "type": "stack"
           },
           {
-            "a": "sideL",
-            "b": "front",
-            "type": "shared_wall"
+            "a": "court",
+            "b": "rear",
+            "type": "courtyard"
           },
           {
-            "a": "sideR",
-            "b": "front",
-            "type": "shared_wall"
+            "a": "mainRoof",
+            "b": "mainBody",
+            "type": "colonnade"
+          },
+          {
+            "a": "frontRoof",
+            "b": "frontBody",
+            "type": "colonnade"
           },
           {
             "a": "sideL",
@@ -842,7 +2069,40 @@
             "type": "shared_wall"
           }
         ]
-      }
+      },
+      "sources": {
+        "model": {
+          "source": "臺北市宗教建築3D模型庫",
+          "url": "https://canet.civil.taipei/tp90-1/model/108003.kmz",
+          "extra": "https://canet.civil.taipei/tp90-1/model/108003A.kmz",
+          "license": "政府資料開放授權條款-第1版",
+          "price_twd": 0,
+          "format": "kmz (COLLADA)"
+        },
+        "plan": "kmz→glTF→decimate"
+      },
+      "chips": [
+        "屋頂群 前 / 正 / 後",
+        "正殿 + 前殿 柱廊 可看穿",
+        "前埕 + 中庭",
+        "鐘鼓樓 hip2 ×2"
+      ],
+      "required_features": [
+        {
+          "feature": "前 / 正 / 後三道燕尾屋頂群，正殿最高且獨立在中庭",
+          "depth": false
+        },
+        {
+          "feature": "正殿與前殿柱廊（柱後牆退縮，可看穿）",
+          "depth": true
+        },
+        {
+          "feature": "前埕 + 中庭兩個開放空間；鐘鼓樓 hip2",
+          "depth": true
+        }
+      ],
+      "window_style": "lattice",
+      "door_style": "arch"
     },
     {
       "id": "lm:TPE-f07",
@@ -854,7 +2114,7 @@
         "https://commons.wikimedia.org/w/index.php?search=臺北賓館&title=Special:MediaSearch&type=image",
         "DuckDuckGo images: 臺北賓館 空拍 / 正面"
       ],
-      "observed": "空拍：橫長矩形、後方庭園；正面：兩層灰白石、馬薩式深灰頂、兩端角樓屋頂較高、中央圓頂小塔與突出柱廊門廊。",
+      "observed": "三項不能省略：中央入口退縮 0.13 + 四根有厚度的柱子撐出車寄、馬薩式屋頂兩層（下陡上緩）、兩端角樓屋頂高出主屋脊。中央圓頂小塔、拱窗 ×4。",
       "house": "lm:TPE-f07",
       "size": [
         2,
@@ -882,114 +2142,277 @@
         }
       ],
       "blueprint": {
+        "vScale": 1.3,
+        "zoom": 1.05,
         "blocks": [
           {
-            "id": "main",
+            "id": "mainL",
             "at": [
               0,
               0
             ],
-            "w": 2,
-            "d": 1,
-            "floors": 2,
-            "floorH": 1.0,
-            "roof": "hip",
+            "w": 0.75,
+            "d": 0.85,
+            "h": 1,
+            "roof": "mansard",
             "eave": 1.08,
+            "roofH": 1,
+            "windowCols": 2,
+            "winRows": 2,
+            "winFaces": "S",
             "window": "arch",
-            "windowCols": 5,
-            "extras": [
-              {
-                "type": "bands",
-                "rows": 2
-              },
-              {
-                "type": "parapet"
-              }
-            ]
+            "bands": 2
+          },
+          {
+            "id": "mainR",
+            "at": [
+              1.25,
+              0
+            ],
+            "w": 0.75,
+            "d": 0.85,
+            "h": 1,
+            "roof": "mansard",
+            "eave": 1.08,
+            "roofH": 1,
+            "windowCols": 2,
+            "winRows": 2,
+            "window": "arch",
+            "bands": 2
+          },
+          {
+            "id": "center",
+            "at": [
+              0.75,
+              0
+            ],
+            "w": 0.5,
+            "d": 0.72,
+            "h": 1,
+            "roof": "mansard",
+            "eave": 1.08,
+            "roofH": 1,
+            "windowCols": 1,
+            "winRows": 2,
+            "winFaces": "S",
+            "bands": 2,
+            "arch": {
+              "t": 0.5,
+              "w": 0.3,
+              "h": 0.42,
+              "through": false
+            }
           },
           {
             "id": "pavL",
-            "on": "main",
             "at": [
               0.02,
-              0.08
+              0.05
             ],
             "w": 0.4,
-            "d": 0.84,
-            "floors": 1,
-            "floorH": 0.45,
-            "roof": "hip",
+            "d": 0.75,
+            "h": 0.45,
+            "roof": "mansard",
+            "on": "mainL",
             "eave": 1.1,
+            "roofH": 1.4,
             "windowCols": 0
           },
           {
             "id": "pavR",
-            "on": "main",
             "at": [
-              1.58,
-              0.08
+              0.33,
+              0.05
             ],
             "w": 0.4,
-            "d": 0.84,
-            "floors": 1,
-            "floorH": 0.45,
-            "roof": "hip",
+            "d": 0.75,
+            "h": 0.45,
+            "roof": "mansard",
+            "on": "mainR",
             "eave": 1.1,
+            "roofH": 1.4,
             "windowCols": 0
           },
           {
             "id": "cupola",
-            "on": "main",
             "at": [
-              0.78,
-              0.25
+              0.05,
+              0.15
             ],
-            "w": 0.44,
-            "d": 0.5,
-            "floors": 1,
-            "floorH": 0.5,
+            "w": 0.4,
+            "d": 0.42,
+            "h": 0.3,
             "roof": "dome",
+            "on": "center",
+            "domeScale": 1.3,
             "windowCols": 0
           },
           {
             "id": "porch",
             "at": [
-              0.7,
-              0.85
+              0.72,
+              0.72
             ],
-            "w": 0.6,
-            "d": 0.32,
-            "floors": 1,
-            "floorH": 1.0,
+            "w": 0.56,
+            "d": 0.26,
+            "h": 0.04,
             "roof": "flat",
-            "porch": "columns",
-            "door": "arch",
-            "windowCols": 0
+            "z": 0.48,
+            "windowCols": 0,
+            "color": {
+              "wall": "#E6E1D6",
+              "roof": "#E6E1D6"
+            }
+          },
+          {
+            "id": "rail",
+            "at": [
+              0.72,
+              0.95
+            ],
+            "w": 0.56,
+            "d": 0.03,
+            "h": 0.08,
+            "roof": "flat",
+            "z": 0.52,
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "pc0",
+            "at": [
+              0.785,
+              0.91
+            ],
+            "w": 0.07,
+            "d": 0.07,
+            "h": 0.48,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "pc1",
+            "at": [
+              0.905,
+              0.91
+            ],
+            "w": 0.07,
+            "d": 0.07,
+            "h": 0.48,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "pc2",
+            "at": [
+              1.025,
+              0.91
+            ],
+            "w": 0.07,
+            "d": 0.07,
+            "h": 0.48,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "pc3",
+            "at": [
+              1.145,
+              0.91
+            ],
+            "w": 0.07,
+            "d": 0.07,
+            "h": 0.48,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
           }
         ],
         "joins": [
           {
             "a": "pavL",
-            "b": "main",
+            "b": "mainL",
             "type": "stack"
           },
           {
             "a": "pavR",
-            "b": "main",
+            "b": "mainR",
             "type": "stack"
           },
           {
             "a": "cupola",
-            "b": "main",
+            "b": "center",
             "type": "stack"
           },
           {
+            "a": "center",
+            "b": "mainL",
+            "type": "shared_wall"
+          },
+          {
+            "a": "center",
+            "b": "mainR",
+            "type": "shared_wall"
+          },
+          {
             "a": "porch",
-            "b": "main",
+            "b": "center",
             "type": "colonnade"
           }
         ]
-      }
+      },
+      "sources": {
+        "model": {
+          "source": "TDAL",
+          "id": "T202111020038",
+          "url": "https://tdal.tw/3DModels/model/T202111020038",
+          "license": "CC BY",
+          "price_twd": 1000,
+          "faces": 11304076,
+          "fbx_mb": 353.01
+        },
+        "plan": "buy→decimate"
+      },
+      "chips": [
+        "中央退縮 + 柱 ×4",
+        "mansard 斜面 + 平頂",
+        "角樓 ×2 高出",
+        "中央 dome"
+      ],
+      "required_features": [
+        {
+          "feature": "中央入口退縮 0.13 + 四柱車寄",
+          "depth": true
+        },
+        {
+          "feature": "mansard 斜面 + 平頂，兩端角樓高出",
+          "depth": false
+        },
+        {
+          "feature": "中央 dome 小塔；拱窗",
+          "depth": false
+        }
+      ],
+      "window_style": "arch",
+      "door_style": "rect"
     },
     {
       "id": "lm:TPE-f08",
@@ -1001,7 +2424,7 @@
         "https://commons.wikimedia.org/w/index.php?search=Control+Yuan+building&title=Special:MediaSearch&type=image",
         "DuckDuckGo images: 監察院 空拍 / 正面"
       ],
-      "observed": "空拍：L 形沿街轉角、後方中庭；正面：轉角弧形入口上方大圓頂（鼓座＋圓頂），兩翼末端各一小圓頂塔，紅磚白橫帶兩層拱窗。",
+      "observed": "三項不能省略：L 形沿街兩翼圍出後方中庭、轉角入口退縮 + 四柱門廊 + 拱門、鼓座上的大圓頂主導屋頂層級（翼端小圓頂為從）。紅磚白橫帶 ×3、拱窗。",
       "house": "lm:TPE-f08",
       "size": [
         2,
@@ -1029,6 +2452,8 @@
         }
       ],
       "blueprint": {
+        "vScale": 1.3,
+        "zoom": 1,
         "blocks": [
           {
             "id": "wingN",
@@ -1036,34 +2461,30 @@
               0,
               0
             ],
-            "w": 1,
+            "w": 0.9,
             "d": 1,
-            "floors": 2,
-            "floorH": 1.0,
+            "h": 1,
             "roof": "hip",
             "eave": 1.06,
+            "windowCols": 2,
+            "winRows": 2,
             "window": "arch",
-            "windowCols": 3,
-            "extras": [
-              {
-                "type": "bands",
-                "rows": 3
-              }
-            ]
+            "bands": 3
           },
           {
             "id": "court",
             "at": [
-              1,
+              0.9,
               0
             ],
-            "w": 1,
+            "w": 1.1,
             "d": 1,
-            "floors": 0,
-            "floorH": 0.1,
+            "h": 0.01,
             "roof": "flat",
+            "windowCols": 0,
             "color": {
-              "wall": "#9FBFA6"
+              "wall": "#9FBFA6",
+              "roof": "#9FBFA6"
             }
           },
           {
@@ -1073,81 +2494,173 @@
               1
             ],
             "w": 1,
-            "d": 1,
-            "floors": 2,
-            "floorH": 1.05,
-            "roof": "dome",
-            "porch": "columns",
-            "door": "arch",
-            "window": "arch",
+            "d": 0.85,
+            "h": 1.05,
+            "roof": "flat",
             "windowCols": 2,
-            "extras": [
-              {
-                "type": "bands",
-                "rows": 3
-              }
-            ]
+            "winRows": 2,
+            "window": "arch",
+            "bands": 3,
+            "arch": {
+              "t": 0.5,
+              "w": 0.26,
+              "h": 0.4,
+              "through": false
+            },
+            "color": {
+              "roof": "#A8473A"
+            }
           },
           {
             "id": "wingE",
             "at": [
               1,
-              1
+              1.1
             ],
             "w": 1,
-            "d": 1,
-            "floors": 2,
-            "floorH": 1.0,
+            "d": 0.9,
+            "h": 1,
             "roof": "hip",
             "eave": 1.06,
-            "window": "arch",
             "windowCols": 3,
-            "extras": [
-              {
-                "type": "bands",
-                "rows": 3
-              }
-            ]
+            "winRows": 2,
+            "winFaces": "S",
+            "window": "arch",
+            "bands": 3
+          },
+          {
+            "id": "drum",
+            "at": [
+              0.2,
+              0.15
+            ],
+            "w": 0.6,
+            "d": 0.55,
+            "h": 0.35,
+            "roof": "dome",
+            "on": "corner",
+            "domeScale": 1.3,
+            "windowCols": 0,
+            "bands": 2,
+            "color": {
+              "wall": "#C9705B"
+            }
           },
           {
             "id": "domeN",
-            "on": "wingN",
             "at": [
-              0.3,
+              0.25,
               0.05
             ],
             "w": 0.4,
             "d": 0.4,
-            "floors": 1,
-            "floorH": 0.25,
+            "h": 0.2,
             "roof": "dome",
+            "on": "wingN",
+            "domeScale": 1.1,
             "windowCols": 0
           },
           {
             "id": "domeE",
-            "on": "wingE",
             "at": [
               0.55,
-              0.3
+              0.25
             ],
             "w": 0.4,
             "d": 0.4,
-            "floors": 1,
-            "floorH": 0.25,
+            "h": 0.2,
             "roof": "dome",
+            "on": "wingE",
+            "domeScale": 1.1,
             "windowCols": 0
+          },
+          {
+            "id": "canopy",
+            "at": [
+              0.25,
+              1.85
+            ],
+            "w": 0.5,
+            "d": 0.15,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 0.45,
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "pc0",
+            "at": [
+              0.305,
+              1.94
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.45,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "pc1",
+            "at": [
+              0.415,
+              1.94
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.45,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "pc2",
+            "at": [
+              0.525,
+              1.94
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.45,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
+          },
+          {
+            "id": "pc3",
+            "at": [
+              0.635,
+              1.94
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.45,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#F7F3EE",
+              "roof": "#F7F3EE"
+            }
           }
         ],
         "joins": [
           {
-            "a": "wingN",
+            "a": "drum",
             "b": "corner",
-            "type": "shared_wall"
-          },
-          {
-            "a": "wingE",
-            "b": "corner",
-            "type": "shared_wall"
+            "type": "stack"
           },
           {
             "a": "domeN",
@@ -1165,12 +2678,57 @@
             "type": "courtyard"
           },
           {
-            "a": "court",
+            "a": "corner",
+            "b": "wingN",
+            "type": "shared_wall"
+          },
+          {
+            "a": "corner",
             "b": "wingE",
-            "type": "courtyard"
+            "type": "shared_wall"
+          },
+          {
+            "a": "canopy",
+            "b": "corner",
+            "type": "colonnade"
           }
         ]
-      }
+      },
+      "sources": {
+        "model": {
+          "source": "TDAL",
+          "id": "T202111020027",
+          "url": "https://tdal.tw/3DModels/model/T202111020027",
+          "license": "CC BY",
+          "price_twd": 1000,
+          "faces": 2763593,
+          "fbx_mb": 58.99
+        },
+        "plan": "buy→decimate"
+      },
+      "chips": [
+        "L 形 + 中庭",
+        "轉角入口退縮 + 柱 ×4",
+        "鼓座 + 大 dome",
+        "翼端小 dome ×2",
+        "bands ×3"
+      ],
+      "required_features": [
+        {
+          "feature": "L 形兩翼圍出後方中庭",
+          "depth": true
+        },
+        {
+          "feature": "轉角入口退縮 + 四柱門廊 + 拱門",
+          "depth": true
+        },
+        {
+          "feature": "鼓座上的大圓頂主導，翼端小圓頂為從",
+          "depth": false
+        }
+      ],
+      "window_style": "arch",
+      "door_style": "rect"
     },
     {
       "id": "lm:TPE-f09",
@@ -1182,7 +2740,7 @@
         "https://commons.wikimedia.org/w/index.php?search=Dihua+Street+facade&title=Special:MediaSearch&type=image",
         "DuckDuckGo images: 迪化街街屋 空拍 / 正面"
       ],
-      "observed": "空拍：窄面寬、縱深長、中段天井、後段低；正面：騎樓拱廊、二樓三連拱窗、巴洛克山牆高出屋頂。",
+      "observed": "三項不能省略：一樓退縮 0.25 的騎樓（柱有厚度、二樓跨越）、中段天井把長屋切成前後兩段、巴洛克山牆高出平頂。二樓三連拱窗、後段低矮 gable。",
       "house": "lm:TPE-f09",
       "size": [
         1,
@@ -1210,6 +2768,8 @@
         }
       ],
       "blueprint": {
+        "vScale": 1.3,
+        "zoom": 1,
         "blocks": [
           {
             "id": "rear",
@@ -1218,66 +2778,184 @@
               0
             ],
             "w": 1,
-            "d": 1,
-            "floors": 1,
-            "floorH": 1.1,
+            "d": 0.9,
+            "h": 0.7,
             "roof": "gable",
             "eave": 1.05,
-            "window": "plain",
-            "windowCols": 1
+            "windowCols": 1,
+            "winRows": 1
           },
           {
-            "id": "front",
+            "id": "well",
+            "at": [
+              0.1,
+              0.9
+            ],
+            "w": 0.8,
+            "d": 0.25,
+            "h": 0.01,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9CFB8",
+              "roof": "#D9CFB8"
+            }
+          },
+          {
+            "id": "ground",
             "at": [
               0,
-              1
+              1.15
             ],
             "w": 1,
-            "d": 1,
-            "floors": 2,
-            "floorH": 0.9,
+            "d": 0.6,
+            "h": 0.35,
             "roof": "flat",
-            "porch": "arcade",
-            "door": "double",
-            "window": "arch",
+            "windowCols": 0,
+            "color": {
+              "wall": "#BFB7A4",
+              "roof": "#BFB7A4"
+            }
+          },
+          {
+            "id": "upper",
+            "at": [
+              0,
+              1.15
+            ],
+            "w": 1,
+            "d": 0.85,
+            "h": 0.55,
+            "roof": "flat",
+            "z": 0.35,
             "windowCols": 3,
-            "extras": [
-              {
-                "type": "signboard"
-              }
-            ]
+            "winRows": 1,
+            "winFaces": "S",
+            "window": "arch",
+            "color": {
+              "roof": "#B9B5A8"
+            }
           },
           {
             "id": "parapet",
-            "on": "front",
             "at": [
-              0.05,
-              0.86
+              0.08,
+              0.72
             ],
-            "w": 0.9,
+            "w": 0.84,
             "d": 0.1,
-            "floors": 1,
-            "floorH": 0.4,
+            "h": 0.35,
             "roof": "gable",
+            "on": "upper",
+            "eave": 1,
+            "ridge": "d",
             "windowCols": 0,
             "color": {
-              "wall": "accent"
+              "wall": "#B9B5A8"
+            }
+          },
+          {
+            "id": "door",
+            "at": [
+              0.3,
+              1.75
+            ],
+            "w": 0.4,
+            "d": 0.03,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E6B50",
+              "roof": "#8E6B50"
+            }
+          },
+          {
+            "id": "ac0",
+            "at": [
+              0.21,
+              1.92
+            ],
+            "w": 0.08,
+            "d": 0.08,
+            "h": 0.35,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "ac1",
+            "at": [
+              0.71,
+              1.92
+            ],
+            "w": 0.08,
+            "d": 0.08,
+            "h": 0.35,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
             }
           }
         ],
         "joins": [
           {
-            "a": "rear",
-            "b": "front",
-            "type": "shared_wall"
+            "a": "parapet",
+            "b": "upper",
+            "type": "stack"
           },
           {
-            "a": "parapet",
-            "b": "front",
-            "type": "stack"
+            "a": "upper",
+            "b": "ground",
+            "type": "colonnade"
+          },
+          {
+            "a": "rear",
+            "b": "upper",
+            "type": "shared_wall"
           }
         ]
-      }
+      },
+      "sources": {
+        "model": {
+          "source": "TDAL",
+          "id": "T202111040012",
+          "url": "https://tdal.tw/3DModels/model/T202111040012",
+          "license": "CC BY",
+          "price_twd": 1000,
+          "faces": 395156,
+          "fbx_mb": 11.54,
+          "note": "全祥茶莊街屋，代表迪化街街屋型"
+        },
+        "plan": "buy→decimate"
+      },
+      "chips": [
+        "騎樓 退縮 + 柱 ×2",
+        "天井 切前後段",
+        "山牆 parapet 高出",
+        "三連拱窗"
+      ],
+      "required_features": [
+        {
+          "feature": "一樓退縮 0.25 騎樓，柱有厚度、二樓跨越",
+          "depth": true
+        },
+        {
+          "feature": "中段天井切成前後段",
+          "depth": true
+        },
+        {
+          "feature": "巴洛克山牆（ridge d）高出平頂；三連拱窗",
+          "depth": false
+        }
+      ],
+      "window_style": "rect",
+      "door_style": "rect"
     },
     {
       "id": "lm:TPE-f10",
@@ -1289,11 +2967,11 @@
         "https://commons.wikimedia.org/w/index.php?search=Taipei+101+tower&title=Special:MediaSearch&type=image",
         "DuckDuckGo images: 台北 101 空拍 / 正面"
       ],
-      "observed": "空拍：玻璃裙樓佔滿基地、塔樓從一角拔起；正面：25 層倒梯形基座向上收分、8 節竹節每節上寬下窄、節角如意飾、基座兩枚圓徽、頂部階梯塔冠＋尖塔。",
+      "observed": "三項不能省略：3×3 寬基座 + 兩層裙樓（塔身只佔基地 1.3×1.3）、倒梯形基座 1→0.7 向上收分、八節竹節每節上寬下窄外擴 1.1。塔冠兩段 + 尖塔。",
       "house": "lm:TPE-f10",
       "size": [
-        2,
-        2
+        3,
+        3
       ],
       "real_floors": 101,
       "palettes": [
@@ -1317,6 +2995,8 @@
         }
       ],
       "blueprint": {
+        "vScale": 1.5,
+        "zoom": 0.7,
         "blocks": [
           {
             "id": "podium",
@@ -1324,104 +3004,130 @@
               0,
               0
             ],
-            "w": 2,
-            "d": 2,
-            "floors": 3,
-            "floorH": 0.75,
+            "w": 3,
+            "d": 3,
+            "h": 0.4,
             "roof": "flat",
-            "eave": 1.04,
-            "window": "plain",
-            "windowCols": 4,
-            "door": "plain",
+            "windowCols": 3,
+            "winRows": 1,
+            "window": "strip",
             "color": {
-              "wall": "accent"
+              "wall": "#9FC8D9",
+              "roof": "#B9D6DC",
+              "window": "#DCEBF0"
+            }
+          },
+          {
+            "id": "podium2",
+            "at": [
+              0.15,
+              0.1
+            ],
+            "w": 2.7,
+            "d": 1,
+            "h": 0.3,
+            "roof": "flat",
+            "on": "podium",
+            "windowCols": 3,
+            "winRows": 1,
+            "window": "strip",
+            "color": {
+              "wall": "#9FC8D9",
+              "roof": "#B9D6DC",
+              "window": "#DCEBF0"
             }
           },
           {
             "id": "base",
-            "on": "podium",
             "at": [
-              1.05,
-              0.05
+              0.85,
+              1.2
             ],
-            "w": 0.9,
-            "d": 0.9,
-            "floors": 5,
-            "floorH": 0.95,
+            "w": 1.3,
+            "d": 1.3,
+            "h": 1.9,
             "roof": "flat",
-            "sBot": 1.0,
-            "sTop": 0.78,
-            "window": "plain",
-            "windowCols": 3,
-            "extras": [
-              {
-                "type": "medallion",
-                "n": 2
-              }
-            ]
+            "on": "podium",
+            "sBot": 1,
+            "sTop": 0.7,
+            "windowCols": 0,
+            "medallion": true
           },
           {
             "id": "seg",
-            "on": "base",
-            "at": [
-              0.1,
-              0.1
-            ],
-            "w": 0.7,
-            "d": 0.7,
-            "floors": 1,
-            "floorH": 0.62,
-            "roof": "flat",
-            "sBot": 0.82,
-            "sTop": 1.08,
-            "segments": 8,
-            "window": "plain",
-            "windowCols": 2,
-            "extras": [
-              {
-                "type": "ruyi",
-                "corners": 4
-              }
-            ]
-          },
-          {
-            "id": "cap",
-            "on": "seg",
             "at": [
               0.2,
               0.2
             ],
-            "w": 0.3,
-            "d": 0.3,
-            "floors": 1,
-            "floorH": 0.5,
+            "w": 0.9,
+            "d": 0.9,
+            "h": 0.6,
             "roof": "flat",
+            "on": "base",
+            "sBot": 0.8,
+            "sTop": 1.1,
+            "segments": 8,
+            "windowCols": 0
+          },
+          {
+            "id": "cap",
+            "at": [
+              0.22,
+              0.22
+            ],
+            "w": 0.46,
+            "d": 0.46,
+            "h": 0.3,
+            "roof": "flat",
+            "on": "seg",
             "sBot": 1,
-            "sTop": 0.8,
+            "sTop": 0.75,
             "windowCols": 0,
             "color": {
-              "wall": "roof"
+              "wall": "#5C6A72"
             }
           },
           {
-            "id": "spire",
-            "on": "cap",
+            "id": "cap2",
             "at": [
               0.1,
               0.1
             ],
-            "w": 0.1,
-            "d": 0.1,
-            "floors": 1,
-            "floorH": 1.3,
-            "roof": "spire",
+            "w": 0.26,
+            "d": 0.26,
+            "h": 0.25,
+            "roof": "flat",
+            "on": "cap",
+            "sBot": 1,
+            "sTop": 0.7,
             "windowCols": 0,
             "color": {
-              "wall": "roof"
+              "wall": "#5C6A72"
+            }
+          },
+          {
+            "id": "spire",
+            "at": [
+              0.1,
+              0.1
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.95,
+            "roof": "spire",
+            "on": "cap2",
+            "windowCols": 0,
+            "color": {
+              "wall": "#5C6A72"
             }
           }
         ],
         "joins": [
+          {
+            "a": "podium2",
+            "b": "podium",
+            "type": "stack"
+          },
           {
             "a": "base",
             "b": "podium",
@@ -1438,12 +3144,49 @@
             "type": "stack"
           },
           {
-            "a": "spire",
+            "a": "cap2",
             "b": "cap",
+            "type": "stack"
+          },
+          {
+            "a": "spire",
+            "b": "cap2",
             "type": "stack"
           }
         ]
-      }
+      },
+      "sources": {
+        "model": null,
+        "nlsc": {
+          "build_id": "2VN107ATTL",
+          "floors": 96,
+          "height_m": 395.02,
+          "source": "LiDAR DSM"
+        },
+        "plan": "blueprint v2.1"
+      },
+      "chips": [
+        "3×3 寬基座 + 裙樓兩層",
+        "倒梯形基座 1→0.7",
+        "竹節 ×8 外擴 1.1",
+        "塔冠 + 尖塔 1 格"
+      ],
+      "required_features": [
+        {
+          "feature": "3×3 寬基座 + 兩層裙樓，塔身只佔 1.3×1.3",
+          "depth": false
+        },
+        {
+          "feature": "倒梯形基座 1→0.7 收分",
+          "depth": false
+        },
+        {
+          "feature": "八節竹節上寬下窄外擴 1.1；塔冠兩段 + 尖塔",
+          "depth": false
+        }
+      ],
+      "window_style": "rect",
+      "door_style": "rect"
     },
     {
       "id": "lm:TPE-f11",
@@ -1455,7 +3198,7 @@
         "https://commons.wikimedia.org/w/index.php?search=Grand+Hotel+Taipei&title=Special:MediaSearch&type=image",
         "DuckDuckGo images: 圓山大飯店 空拍 / 正面"
       ],
-      "observed": "空拍：單一大方體在前、低矮長翼樓向後延伸；正面：14 層紅柱陽台格子、金瓦重簷歇山頂出簷極大（下簷環繞約 11 樓）、正面低矮三開間牌樓式門廊。",
+      "observed": "三項不能省略：單一 2×1.2 方體 14 層（紅柱分割 ×7 橫帶）、金瓦重簷歇山（下簷環繞 11 樓、上簷出簷 1.45 極大）、正面牌樓門廊（六根實體柱 + 屋頂，可看穿）。低矮翼樓向後延伸。",
       "house": "lm:TPE-f11",
       "size": [
         3,
@@ -1467,7 +3210,7 @@
           "wall": "#B8503A",
           "roof": "#C9A24A",
           "door": "#8F3F22",
-          "accent": "#F7F3EE"
+          "accent": "#F2E4C8"
         },
         {
           "wall": "#C7453B",
@@ -1483,82 +3226,203 @@
         }
       ],
       "blueprint": {
+        "vScale": 1.5,
+        "zoom": 1,
         "blocks": [
           {
             "id": "main",
             "at": [
               0,
-              0
+              0.1
             ],
             "w": 2,
-            "d": 1,
-            "floors": 7,
-            "floorH": 0.72,
+            "d": 1.2,
+            "h": 1.25,
             "roof": "hip2",
-            "eave": 1.4,
-            "eave2": 0.78,
-            "porch": "columns",
-            "door": "double",
-            "window": "plain",
-            "windowCols": 4,
-            "extras": [
-              {
-                "type": "bands",
-                "rows": 7,
-                "style": "balcony"
-              }
-            ],
-            "color": {
-              "column": "#C7453B"
+            "eave": 1.45,
+            "eave2": 0.8,
+            "roofH": 0.8,
+            "windowCols": 0,
+            "bands": 7,
+            "cols": true,
+            "arch": {
+              "t": 0.5,
+              "w": 0.22,
+              "h": 0.2,
+              "through": false
             }
           },
           {
             "id": "wing",
             "at": [
               2,
-              0.1
+              0.35
             ],
             "w": 1,
-            "d": 0.8,
-            "floors": 2,
-            "floorH": 0.7,
+            "d": 0.7,
+            "h": 0.35,
             "roof": "hip",
             "eave": 1.1,
-            "window": "plain",
-            "windowCols": 3,
+            "windowCols": 2,
+            "winRows": 2,
             "color": {
               "roof": "#B5452E"
             }
           },
           {
-            "id": "porte",
+            "id": "porteRoof",
             "at": [
               0.55,
-              1.05
+              1.35
             ],
             "w": 0.9,
             "d": 0.3,
-            "floors": 1,
-            "floorH": 0.55,
+            "h": 0.1,
             "roof": "hip",
+            "z": 0.28,
             "eave": 1.35,
-            "porch": "columns",
-            "windowCols": 0
+            "roofH": 1,
+            "windowCols": 0,
+            "color": {
+              "wall": "#B5452E"
+            }
+          },
+          {
+            "id": "pc0",
+            "at": [
+              0.637,
+              1.56
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.28,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#C7453B",
+              "roof": "#C7453B"
+            }
+          },
+          {
+            "id": "pc1",
+            "at": [
+              0.77,
+              1.56
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.28,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#C7453B",
+              "roof": "#C7453B"
+            }
+          },
+          {
+            "id": "pc2",
+            "at": [
+              0.903,
+              1.56
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.28,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#C7453B",
+              "roof": "#C7453B"
+            }
+          },
+          {
+            "id": "pc3",
+            "at": [
+              1.037,
+              1.56
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.28,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#C7453B",
+              "roof": "#C7453B"
+            }
+          },
+          {
+            "id": "pc4",
+            "at": [
+              1.17,
+              1.56
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.28,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#C7453B",
+              "roof": "#C7453B"
+            }
+          },
+          {
+            "id": "pc5",
+            "at": [
+              1.303,
+              1.56
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.28,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#C7453B",
+              "roof": "#C7453B"
+            }
           }
         ],
         "joins": [
           {
+            "a": "porteRoof",
+            "b": "main",
+            "type": "colonnade"
+          },
+          {
             "a": "wing",
             "b": "main",
             "type": "shared_wall"
-          },
-          {
-            "a": "porte",
-            "b": "main",
-            "type": "colonnade"
           }
         ]
-      }
+      },
+      "sources": {
+        "model": null,
+        "plan": "blueprint v2.1"
+      },
+      "chips": [
+        "2×1.2 單一方體",
+        "hip2 重簷 出簷 1.45",
+        "牌樓門廊 柱 ×6 可看穿",
+        "bands ×7 + 紅柱"
+      ],
+      "required_features": [
+        {
+          "feature": "單一 2×1.2 方體 14 層，紅柱 + 橫帶 ×7",
+          "depth": false
+        },
+        {
+          "feature": "金瓦重簷歇山（hip2，出簷 1.45）",
+          "depth": false
+        },
+        {
+          "feature": "牌樓門廊：六根實體柱 + 屋頂，可看穿",
+          "depth": true
+        }
+      ],
+      "window_style": "rect",
+      "door_style": "rect"
     },
     {
       "id": "lm:TPE-f12",
@@ -1570,7 +3434,7 @@
         "https://commons.wikimedia.org/w/index.php?search=林安泰古厝&title=Special:MediaSearch&type=image",
         "DuckDuckGo images: 林安泰古厝 空拍 / 正面"
       ],
-      "observed": "空拍：三合院——正身在後、兩護龍向前、中間埕；正面：單層紅磚、橙瓦燕尾脊、正身屋脊高於護龍、小方窗木門、半月池在前。",
+      "observed": "三項不能省略：正身高、護龍低且向前的 U 字（屋脊高度差）、挖出來的前埕 + 矮圍牆開口、半月池在前。單層紅磚、橙瓦燕尾脊 ×3、小方窗木門。",
       "house": "lm:TPE-f12",
       "size": [
         3,
@@ -1598,6 +3462,8 @@
         }
       ],
       "blueprint": {
+        "vScale": 1.2,
+        "zoom": 1,
         "blocks": [
           {
             "id": "main",
@@ -1606,63 +3472,117 @@
               0
             ],
             "w": 3,
-            "d": 1,
-            "floors": 1,
-            "floorH": 1.0,
+            "d": 0.8,
+            "h": 0.9,
             "roof": "swallowtail",
-            "eave": 1.15,
-            "porch": "eave",
-            "door": "double",
-            "window": "plain",
-            "windowCols": 3
+            "eave": 1.2,
+            "roofH": 0.6,
+            "windowCols": 3,
+            "winRows": 1,
+            "winFaces": "S",
+            "door": true
           },
           {
             "id": "wingL",
             "at": [
               0,
-              1
+              0.8
             ],
-            "w": 1,
+            "w": 0.6,
             "d": 1,
-            "floors": 1,
-            "floorH": 0.8,
+            "h": 0.65,
             "roof": "swallowtail",
             "eave": 1.1,
-            "window": "plain",
-            "windowCols": 1
+            "roofH": 0.6,
+            "windowCols": 1,
+            "winRows": 1
           },
           {
             "id": "wingR",
             "at": [
-              2,
-              1
+              2.4,
+              0.8
             ],
-            "w": 1,
+            "w": 0.6,
             "d": 1,
-            "floors": 1,
-            "floorH": 0.8,
+            "h": 0.65,
             "roof": "swallowtail",
             "eave": 1.1,
-            "window": "plain",
-            "windowCols": 1
+            "roofH": 0.6,
+            "windowCols": 1,
+            "winRows": 1
           },
           {
             "id": "court",
             "at": [
-              1,
-              1
+              0.6,
+              0.8
             ],
-            "w": 1,
+            "w": 1.8,
             "d": 1,
-            "floors": 0,
-            "floorH": 0.1,
+            "h": 0.02,
             "roof": "flat",
+            "windowCols": 0,
             "color": {
-              "wall": "#9FBFA6"
+              "wall": "#D9CFB8",
+              "roof": "#D9CFB8"
+            }
+          },
+          {
+            "id": "wallL",
+            "at": [
+              0.6,
+              1.78
+            ],
+            "w": 0.55,
+            "d": 0.05,
+            "h": 0.12,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "wallR",
+            "at": [
+              1.85,
+              1.78
+            ],
+            "w": 0.55,
+            "d": 0.05,
+            "h": 0.12,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "pond",
+            "at": [
+              0.8,
+              1.86
+            ],
+            "w": 1.4,
+            "d": 0.13,
+            "h": 0.01,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#9FC8D9",
+              "roof": "#9FC8D9"
             }
           }
         ],
         "joins": [
+          {
+            "a": "court",
+            "b": "main",
+            "type": "courtyard"
+          },
           {
             "a": "wingL",
             "b": "main",
@@ -1672,14 +3592,43 @@
             "a": "wingR",
             "b": "main",
             "type": "shared_wall"
-          },
-          {
-            "a": "court",
-            "b": "main",
-            "type": "courtyard"
           }
         ]
-      }
+      },
+      "sources": {
+        "model": {
+          "source": "TDAL",
+          "id": "T202111020040",
+          "url": "https://tdal.tw/3DModels/model/T202111020040",
+          "license": "CC BY",
+          "price_twd": 1000,
+          "faces": 6159627,
+          "fbx_mb": 214.57
+        },
+        "plan": "buy→decimate"
+      },
+      "chips": [
+        "正身高 / 護龍低",
+        "埕 + 矮牆開口",
+        "半月池",
+        "swallowtail ×3"
+      ],
+      "required_features": [
+        {
+          "feature": "正身高、護龍低且向前的 U 字",
+          "depth": false
+        },
+        {
+          "feature": "挖出來的前埕 + 矮圍牆開口",
+          "depth": true
+        },
+        {
+          "feature": "半月池在前；燕尾脊 ×3",
+          "depth": false
+        }
+      ],
+      "window_style": "lattice",
+      "door_style": "rect"
     }
   ]
 }

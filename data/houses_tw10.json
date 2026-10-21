@@ -1,0 +1,2820 @@
+{
+  "_meta": {
+    "version": "2026-10-22.4",
+    "blueprint_version": "2.2",
+    "note": "台灣一般建築 10 型（通用房型），依「幾何語彙與模型本體檢討 Memo」重做：輪廓優先、風格化尺度（樓層 0.3 格、窗 0.14×0.16、欄杆 0.03、簷深 0.12–0.25）、每型 required_features 三項且至少一項為負空間或深度（騎樓、陽台、鐵窗籠、前埕、柱廊）。blueprint v2.1 同 landmarks_tpe12.json，新增 z（底部抬高，格單位）與 winFaces（S = 只開南面）。sys:iron / sys:shophouse 為 houses.json 既有房型的 v2.1 版。增生物（鐵窗籠、冷氣、雨棚、水塔）是獨立 block，kit.js 可依 palettes 變體決定要不要畫。 v2.2：屋頂改為斜面（roofH 為 45° 基準倍率：工廠 0.35、眷村 0.8）、地面板（h ≤ 0.03）永遠先畫、ground-slab 之上的量體用 z。",
+    "scale": {
+      "floorH": 0.3,
+      "window": [
+        0.14,
+        0.16
+      ],
+      "rail": 0.03,
+      "eave": [
+        0.12,
+        0.25
+      ],
+      "ac": [
+        0.1,
+        0.08,
+        0.08
+      ],
+      "cage": [
+        0.14,
+        0.1,
+        0.17
+      ],
+      "column": 0.06,
+      "tank": 0.14
+    },
+    "enums_ref": "docs/blueprint_v2_proposal.md",
+    "supersedes": "data/houses.json（sys:minnan 刪除，由 sys:sanheyuan 取代；sys:shophouse 改 3×1）",
+    "palettes_truth": "每型 palettes[] 以本檔為準；palette.json three.house 只引用本檔，不再重複列色。",
+    "acquire": {
+      "sys:iron": "每日簽到（daily:true，持有 ≤3 → 碎片）",
+      "其餘 9 型": "非精選地標打卡：type_map.csv 依文資局類型對照；對不到 → 該縣市通用房型（見 docs/design_reply_2026-10-22.md B4，待使用者裁決）"
+    }
+  },
+  "houses": [
+    {
+      "id": "sys:iron",
+      "name": "鐵窗透天厝",
+      "size": [
+        1,
+        1
+      ],
+      "floors": 4,
+      "daily": true,
+      "mark": "外推鐵窗籠",
+      "required_features": [
+        {
+          "feature": "窄面寬高樓：0.6 格寬 × 4 層，平頂",
+          "depth": false
+        },
+        {
+          "feature": "外推鐵窗籠 ×6：每層兩籠、外推 0.1",
+          "depth": true
+        },
+        {
+          "feature": "頂樓鐵皮加蓋 + 不鏽鋼水塔",
+          "depth": false
+        }
+      ],
+      "observed": "不可省略：窄面寬高樓（0.6 格寬、4 層）、外推鐵窗籠（深度）、頂樓鐵皮加蓋 + 水塔。一樓鐵捲門、招牌附著在二樓牆面。",
+      "chips": [
+        "窄高 0.6×1",
+        "鐵窗籠 ×8 外推",
+        "加蓋 + 水塔",
+        "鐵捲門"
+      ],
+      "palettes": [
+        {
+          "wall": "#D9D4C7",
+          "roof": "#B9B5A8",
+          "door": "#4F5B6B",
+          "accent": "#C7453B"
+        },
+        {
+          "wall": "#E8DCC8",
+          "roof": "#7A8B99",
+          "door": "#3A3A48",
+          "accent": "#5B8BC9"
+        },
+        {
+          "wall": "#CFD6D2",
+          "roof": "#6F7F8C",
+          "door": "#8E6B50",
+          "accent": "#E2B45A"
+        }
+      ],
+      "blueprint": {
+        "vScale": 1.3,
+        "blocks": [
+          {
+            "id": "body",
+            "at": [
+              0.2,
+              0
+            ],
+            "w": 0.6,
+            "d": 1,
+            "h": 1.2,
+            "roof": "flat",
+            "windowCols": 2,
+            "winRows": 4,
+            "winFaces": "S",
+            "color": {
+              "roof": "#B9B5A8",
+              "window": "#5C6A72"
+            }
+          },
+          {
+            "id": "door",
+            "at": [
+              0.3,
+              1
+            ],
+            "w": 0.4,
+            "d": 0.03,
+            "h": 0.26,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#4F5B6B",
+              "roof": "#4F5B6B"
+            }
+          },
+          {
+            "id": "sign",
+            "at": [
+              0.22,
+              1
+            ],
+            "w": 0.56,
+            "d": 0.05,
+            "h": 0.12,
+            "roof": "flat",
+            "z": 0.36,
+            "windowCols": 0,
+            "color": {
+              "wall": "#C7453B",
+              "roof": "#C7453B"
+            }
+          },
+          {
+            "id": "fc00",
+            "at": [
+              0.28,
+              1
+            ],
+            "w": 0.14,
+            "d": 0.1,
+            "h": 0.17,
+            "roof": "flat",
+            "z": 0.38,
+            "windowCols": 0,
+            "color": {
+              "wall": "#4F5B6B",
+              "roof": "#4F5B6B"
+            }
+          },
+          {
+            "id": "fc01",
+            "at": [
+              0.58,
+              1
+            ],
+            "w": 0.14,
+            "d": 0.1,
+            "h": 0.17,
+            "roof": "flat",
+            "z": 0.38,
+            "windowCols": 0,
+            "color": {
+              "wall": "#4F5B6B",
+              "roof": "#4F5B6B"
+            }
+          },
+          {
+            "id": "fc10",
+            "at": [
+              0.28,
+              1
+            ],
+            "w": 0.14,
+            "d": 0.1,
+            "h": 0.17,
+            "roof": "flat",
+            "z": 0.68,
+            "windowCols": 0,
+            "color": {
+              "wall": "#4F5B6B",
+              "roof": "#4F5B6B"
+            }
+          },
+          {
+            "id": "fc11",
+            "at": [
+              0.58,
+              1
+            ],
+            "w": 0.14,
+            "d": 0.1,
+            "h": 0.17,
+            "roof": "flat",
+            "z": 0.68,
+            "windowCols": 0,
+            "color": {
+              "wall": "#4F5B6B",
+              "roof": "#4F5B6B"
+            }
+          },
+          {
+            "id": "fc20",
+            "at": [
+              0.28,
+              1
+            ],
+            "w": 0.14,
+            "d": 0.1,
+            "h": 0.17,
+            "roof": "flat",
+            "z": 0.98,
+            "windowCols": 0,
+            "color": {
+              "wall": "#4F5B6B",
+              "roof": "#4F5B6B"
+            }
+          },
+          {
+            "id": "fc21",
+            "at": [
+              0.58,
+              1
+            ],
+            "w": 0.14,
+            "d": 0.1,
+            "h": 0.17,
+            "roof": "flat",
+            "z": 0.98,
+            "windowCols": 0,
+            "color": {
+              "wall": "#4F5B6B",
+              "roof": "#4F5B6B"
+            }
+          },
+          {
+            "id": "shed",
+            "at": [
+              0.05,
+              0.1
+            ],
+            "w": 0.5,
+            "d": 0.8,
+            "h": 0.22,
+            "roof": "gable",
+            "on": "body",
+            "roofH": 0.6,
+            "windowCols": 0,
+            "color": {
+              "wall": "#9A9A94",
+              "roof": "#6E8A9C"
+            }
+          },
+          {
+            "id": "tank",
+            "at": [
+              0.44,
+              0.05
+            ],
+            "w": 0.14,
+            "d": 0.14,
+            "h": 0.16,
+            "roof": "dome",
+            "on": "body",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9BEC2",
+              "roof": "#B9BEC2"
+            }
+          }
+        ],
+        "joins": [
+          {
+            "a": "shed",
+            "b": "body",
+            "type": "stack"
+          },
+          {
+            "a": "tank",
+            "b": "body",
+            "type": "stack"
+          }
+        ]
+      },
+      "window_style": "rect"
+    },
+    {
+      "id": "sys:apartment",
+      "name": "老公寓（五樓）",
+      "size": [
+        1,
+        1
+      ],
+      "floors": 5,
+      "daily": false,
+      "mark": "懸挑陽台 ×5",
+      "required_features": [
+        {
+          "feature": "寬面量體：整格寬、進深 0.8、5 層",
+          "depth": false
+        },
+        {
+          "feature": "每層懸挑陽台：樓板 0.12 深 + 欄杆 0.03 厚",
+          "depth": true
+        },
+        {
+          "feature": "後方樓梯間高出屋頂 + 水塔；外掛冷氣 ×4",
+          "depth": false
+        }
+      ],
+      "observed": "不可省略：寬面量體（整格寬、進深 0.8）、每層兩戶的重複懸挑陽台 + 欄杆厚度、外掛冷氣與鐵窗。後方樓梯間量體高出屋頂，頂樓水塔。",
+      "chips": [
+        "整格寬 1×0.8",
+        "陽台 ×5 懸挑",
+        "冷氣 ×4",
+        "樓梯間 + 水塔"
+      ],
+      "palettes": [
+        {
+          "wall": "#CFC7B4",
+          "roof": "#B9B5A8",
+          "door": "#4F5B6B",
+          "accent": "#8E8A80"
+        },
+        {
+          "wall": "#E6DCCB",
+          "roof": "#B9B5A8",
+          "door": "#3A3A48",
+          "accent": "#7F9A8C"
+        },
+        {
+          "wall": "#D4C9C2",
+          "roof": "#9A9A94",
+          "door": "#4F5B6B",
+          "accent": "#B5452E"
+        }
+      ],
+      "blueprint": {
+        "vScale": 1.3,
+        "blocks": [
+          {
+            "id": "body",
+            "at": [
+              0,
+              0.1
+            ],
+            "w": 1,
+            "d": 0.8,
+            "h": 1.5,
+            "roof": "flat",
+            "windowCols": 3,
+            "winRows": 5,
+            "winFaces": "S",
+            "color": {
+              "roof": "#B9B5A8",
+              "window": "#5C6A72"
+            }
+          },
+          {
+            "id": "stair",
+            "at": [
+              0.4,
+              0.08
+            ],
+            "w": 0.22,
+            "d": 0.12,
+            "h": 1.7,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#C4BBA8",
+              "roof": "#C4BBA8"
+            }
+          },
+          {
+            "id": "shop",
+            "at": [
+              0.05,
+              0.9
+            ],
+            "w": 0.9,
+            "d": 0.03,
+            "h": 0.26,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#4F5B6B",
+              "roof": "#4F5B6B"
+            }
+          },
+          {
+            "id": "ab1",
+            "at": [
+              0.08,
+              0.9
+            ],
+            "w": 0.84,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 0.26,
+            "windowCols": 0,
+            "color": {
+              "wall": "#E6E1D6",
+              "roof": "#E6E1D6"
+            }
+          },
+          {
+            "id": "ar1",
+            "at": [
+              0.08,
+              0.99
+            ],
+            "w": 0.84,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 0.3,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "ab2",
+            "at": [
+              0.08,
+              0.9
+            ],
+            "w": 0.84,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 0.56,
+            "windowCols": 0,
+            "color": {
+              "wall": "#E6E1D6",
+              "roof": "#E6E1D6"
+            }
+          },
+          {
+            "id": "ar2",
+            "at": [
+              0.08,
+              0.99
+            ],
+            "w": 0.84,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 0.6,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "ab3",
+            "at": [
+              0.08,
+              0.9
+            ],
+            "w": 0.84,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 0.86,
+            "windowCols": 0,
+            "color": {
+              "wall": "#E6E1D6",
+              "roof": "#E6E1D6"
+            }
+          },
+          {
+            "id": "ar3",
+            "at": [
+              0.08,
+              0.99
+            ],
+            "w": 0.84,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 0.9,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "ab4",
+            "at": [
+              0.08,
+              0.9
+            ],
+            "w": 0.84,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 1.16,
+            "windowCols": 0,
+            "color": {
+              "wall": "#E6E1D6",
+              "roof": "#E6E1D6"
+            }
+          },
+          {
+            "id": "ar4",
+            "at": [
+              0.08,
+              0.99
+            ],
+            "w": 0.84,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 1.2,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "ab5",
+            "at": [
+              0.08,
+              0.9
+            ],
+            "w": 0.84,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 1.46,
+            "windowCols": 0,
+            "color": {
+              "wall": "#E6E1D6",
+              "roof": "#E6E1D6"
+            }
+          },
+          {
+            "id": "ar5",
+            "at": [
+              0.08,
+              0.99
+            ],
+            "w": 0.84,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 1.5,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "aac0",
+            "at": [
+              0.12,
+              0.9
+            ],
+            "w": 0.1,
+            "d": 0.08,
+            "h": 0.08,
+            "roof": "flat",
+            "z": 0.62,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "aac1",
+            "at": [
+              0.78,
+              0.9
+            ],
+            "w": 0.1,
+            "d": 0.08,
+            "h": 0.08,
+            "roof": "flat",
+            "z": 0.62,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "aac2",
+            "at": [
+              0.12,
+              0.9
+            ],
+            "w": 0.1,
+            "d": 0.08,
+            "h": 0.08,
+            "roof": "flat",
+            "z": 1.22,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "aac3",
+            "at": [
+              0.78,
+              0.9
+            ],
+            "w": 0.1,
+            "d": 0.08,
+            "h": 0.08,
+            "roof": "flat",
+            "z": 0.92,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "tank",
+            "at": [
+              0.08,
+              0.1
+            ],
+            "w": 0.14,
+            "d": 0.14,
+            "h": 0.16,
+            "roof": "dome",
+            "on": "body",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9BEC2",
+              "roof": "#B9BEC2"
+            }
+          }
+        ],
+        "joins": [
+          {
+            "a": "tank",
+            "b": "body",
+            "type": "stack"
+          }
+        ]
+      },
+      "window_style": "rect"
+    },
+    {
+      "id": "sys:tilehighrise",
+      "name": "磁磚電梯大樓",
+      "size": [
+        1,
+        1
+      ],
+      "floors": 12,
+      "daily": false,
+      "mark": "雨遮節奏 + 核心筒",
+      "required_features": [
+        {
+          "feature": "整格寬 12 層量體、磁磚分割線 bands 12",
+          "depth": false
+        },
+        {
+          "feature": "每層雨遮（懸挑 0.12）+ 內凹窗洞 3×6",
+          "depth": true
+        },
+        {
+          "feature": "梯廳核心筒突出屋頂 + 機房",
+          "depth": false
+        }
+      ],
+      "observed": "不可省略：整格寬 12 層量體、每層雨遮 + 內凹窗洞的節奏、梯廳核心筒突出屋頂。磁磚用細分割線（bands）而非單色。",
+      "chips": [
+        "1×0.9 12F",
+        "雨遮 ×12",
+        "窗洞內凹 3×6",
+        "核心筒 + 機房"
+      ],
+      "palettes": [
+        {
+          "wall": "#E6DCCB",
+          "roof": "#9A9A94",
+          "door": "#4F5B6B",
+          "accent": "#B9B5A8"
+        },
+        {
+          "wall": "#E9D5CF",
+          "roof": "#9A9A94",
+          "door": "#4F5B6B",
+          "accent": "#B9B5A8"
+        },
+        {
+          "wall": "#D9D4C7",
+          "roof": "#8A8F95",
+          "door": "#3A3A48",
+          "accent": "#7A8B99"
+        }
+      ],
+      "blueprint": {
+        "vScale": 1.3,
+        "blocks": [
+          {
+            "id": "body",
+            "at": [
+              0.05,
+              0.05
+            ],
+            "w": 0.9,
+            "d": 0.9,
+            "h": 3,
+            "roof": "flat",
+            "windowCols": 3,
+            "winRows": 12,
+            "winFaces": "S",
+            "bands": 12,
+            "color": {
+              "roof": "#9A9A94",
+              "window": "#7A8B99"
+            }
+          },
+          {
+            "id": "core",
+            "at": [
+              0.35,
+              0.02
+            ],
+            "w": 0.3,
+            "d": 0.2,
+            "h": 3.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D4C9BA",
+              "roof": "#D4C9BA"
+            }
+          },
+          {
+            "id": "lobby",
+            "at": [
+              0.3,
+              0.95
+            ],
+            "w": 0.4,
+            "d": 0.03,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#7A8B99",
+              "roof": "#7A8B99"
+            }
+          },
+          {
+            "id": "tb1",
+            "at": [
+              0.08,
+              0.95
+            ],
+            "w": 0.35,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 0.21,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "tr1",
+            "at": [
+              0.08,
+              1.04
+            ],
+            "w": 0.35,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 0.25,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "tb2",
+            "at": [
+              0.08,
+              0.95
+            ],
+            "w": 0.35,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 0.46,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "tr2",
+            "at": [
+              0.08,
+              1.04
+            ],
+            "w": 0.35,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 0.5,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "tb3",
+            "at": [
+              0.08,
+              0.95
+            ],
+            "w": 0.35,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 0.71,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "tr3",
+            "at": [
+              0.08,
+              1.04
+            ],
+            "w": 0.35,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 0.75,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "tb4",
+            "at": [
+              0.08,
+              0.95
+            ],
+            "w": 0.35,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 0.96,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "tr4",
+            "at": [
+              0.08,
+              1.04
+            ],
+            "w": 0.35,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 1,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "tb5",
+            "at": [
+              0.08,
+              0.95
+            ],
+            "w": 0.35,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 1.21,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "tr5",
+            "at": [
+              0.08,
+              1.04
+            ],
+            "w": 0.35,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 1.25,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "tb6",
+            "at": [
+              0.08,
+              0.95
+            ],
+            "w": 0.35,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 1.46,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "tr6",
+            "at": [
+              0.08,
+              1.04
+            ],
+            "w": 0.35,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 1.5,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "tb7",
+            "at": [
+              0.08,
+              0.95
+            ],
+            "w": 0.35,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 1.71,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "tr7",
+            "at": [
+              0.08,
+              1.04
+            ],
+            "w": 0.35,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 1.75,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "tb8",
+            "at": [
+              0.08,
+              0.95
+            ],
+            "w": 0.35,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 1.96,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "tr8",
+            "at": [
+              0.08,
+              1.04
+            ],
+            "w": 0.35,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 2,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "tb9",
+            "at": [
+              0.08,
+              0.95
+            ],
+            "w": 0.35,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 2.21,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "tr9",
+            "at": [
+              0.08,
+              1.04
+            ],
+            "w": 0.35,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 2.25,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "tb10",
+            "at": [
+              0.08,
+              0.95
+            ],
+            "w": 0.35,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 2.46,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "tr10",
+            "at": [
+              0.08,
+              1.04
+            ],
+            "w": 0.35,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 2.5,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "tb11",
+            "at": [
+              0.08,
+              0.95
+            ],
+            "w": 0.35,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 2.71,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "tr11",
+            "at": [
+              0.08,
+              1.04
+            ],
+            "w": 0.35,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 2.75,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          },
+          {
+            "id": "tank",
+            "at": [
+              0.08,
+              0.7
+            ],
+            "w": 0.14,
+            "d": 0.14,
+            "h": 0.16,
+            "roof": "dome",
+            "on": "body",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9BEC2",
+              "roof": "#B9BEC2"
+            }
+          },
+          {
+            "id": "mech",
+            "at": [
+              0.1,
+              0.1
+            ],
+            "w": 0.25,
+            "d": 0.25,
+            "h": 0.12,
+            "roof": "flat",
+            "on": "body",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          }
+        ],
+        "joins": [
+          {
+            "a": "tank",
+            "b": "body",
+            "type": "stack"
+          },
+          {
+            "a": "mech",
+            "b": "body",
+            "type": "stack"
+          }
+        ]
+      },
+      "window_style": "rect"
+    },
+    {
+      "id": "sys:shophouse",
+      "name": "連棟騎樓街屋",
+      "size": [
+        3,
+        1
+      ],
+      "floors": 3,
+      "daily": false,
+      "mark": "騎樓負空間",
+      "required_features": [
+        {
+          "feature": "一樓退縮騎樓：進深 0.3 的負空間，柱列 0.06 有厚度，上層跨越",
+          "depth": true
+        },
+        {
+          "feature": "三戶連棟各自不同高度（0.85 / 1.0 / 0.9）與牆色",
+          "depth": false
+        },
+        {
+          "feature": "鐵捲門與招牌附著在柱間",
+          "depth": false
+        }
+      ],
+      "observed": "不可省略：一樓退縮的騎樓負空間（柱列有厚度、上層跨越）、三戶連續量體各自不同高度與顏色、鐵捲門與招牌附著在柱間。",
+      "chips": [
+        "3×1 三連棟",
+        "騎樓退縮 0.3",
+        "柱列 ×6",
+        "招牌附柱間"
+      ],
+      "palettes": [
+        {
+          "wall": "#D9D4C7",
+          "roof": "#8E8A80",
+          "door": "#8E6B50",
+          "accent": "#C9705B"
+        },
+        {
+          "wall": "#E9C9A8",
+          "roof": "#6F7F8C",
+          "door": "#3A3A48",
+          "accent": "#5B8BC9"
+        },
+        {
+          "wall": "#CFC7B4",
+          "roof": "#4F5B6B",
+          "door": "#8E6B50",
+          "accent": "#6FA88A"
+        }
+      ],
+      "blueprint": {
+        "vScale": 1.3,
+        "blocks": [
+          {
+            "id": "g0",
+            "at": [
+              0,
+              0
+            ],
+            "w": 1,
+            "d": 0.7,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#c3bfb3",
+              "roof": "#c3bfb3"
+            }
+          },
+          {
+            "id": "u0",
+            "at": [
+              0,
+              0
+            ],
+            "w": 1,
+            "d": 1,
+            "h": 0.6,
+            "roof": "flat",
+            "z": 0.3,
+            "windowCols": 2,
+            "winRows": 2,
+            "winFaces": "S",
+            "bands": 2,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "d0",
+            "at": [
+              0.25,
+              0.7
+            ],
+            "w": 0.5,
+            "d": 0.03,
+            "h": 0.26,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#4F5B6B",
+              "roof": "#4F5B6B"
+            }
+          },
+          {
+            "id": "s0",
+            "at": [
+              0.1,
+              1
+            ],
+            "w": 0.8,
+            "d": 0.05,
+            "h": 0.12,
+            "roof": "flat",
+            "z": 0.36,
+            "windowCols": 0,
+            "color": {
+              "wall": "#C9705B",
+              "roof": "#C9705B"
+            }
+          },
+          {
+            "id": "p0col0",
+            "at": [
+              0.22,
+              0.94
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "p0col1",
+            "at": [
+              0.72,
+              0.94
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "g1",
+            "at": [
+              1,
+              0
+            ],
+            "w": 1,
+            "d": 0.7,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#d2b597",
+              "roof": "#d2b597"
+            }
+          },
+          {
+            "id": "u1",
+            "at": [
+              1,
+              0
+            ],
+            "w": 1,
+            "d": 1,
+            "h": 0.7,
+            "roof": "flat",
+            "z": 0.3,
+            "windowCols": 2,
+            "winRows": 2,
+            "winFaces": "S",
+            "bands": 2,
+            "color": {
+              "wall": "#E9C9A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "d1",
+            "at": [
+              1.25,
+              0.7
+            ],
+            "w": 0.5,
+            "d": 0.03,
+            "h": 0.26,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#4F5B6B",
+              "roof": "#4F5B6B"
+            }
+          },
+          {
+            "id": "s1",
+            "at": [
+              1.1,
+              1
+            ],
+            "w": 0.8,
+            "d": 0.05,
+            "h": 0.12,
+            "roof": "flat",
+            "z": 0.36,
+            "windowCols": 0,
+            "color": {
+              "wall": "#4A6FA5",
+              "roof": "#4A6FA5"
+            }
+          },
+          {
+            "id": "p1col0",
+            "at": [
+              1.22,
+              0.94
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "p1col1",
+            "at": [
+              1.72,
+              0.94
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "g2",
+            "at": [
+              2,
+              0
+            ],
+            "w": 1,
+            "d": 0.7,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#bab3a2",
+              "roof": "#bab3a2"
+            }
+          },
+          {
+            "id": "u2",
+            "at": [
+              2,
+              0
+            ],
+            "w": 1,
+            "d": 1,
+            "h": 0.55,
+            "roof": "flat",
+            "z": 0.3,
+            "windowCols": 2,
+            "winRows": 2,
+            "winFaces": "S",
+            "bands": 2,
+            "color": {
+              "wall": "#CFC7B4",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "d2",
+            "at": [
+              2.25,
+              0.7
+            ],
+            "w": 0.5,
+            "d": 0.03,
+            "h": 0.26,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#4F5B6B",
+              "roof": "#4F5B6B"
+            }
+          },
+          {
+            "id": "s2",
+            "at": [
+              2.1,
+              1
+            ],
+            "w": 0.8,
+            "d": 0.05,
+            "h": 0.12,
+            "roof": "flat",
+            "z": 0.36,
+            "windowCols": 0,
+            "color": {
+              "wall": "#2F7A5C",
+              "roof": "#2F7A5C"
+            }
+          },
+          {
+            "id": "p2col0",
+            "at": [
+              2.22,
+              0.94
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "p2col1",
+            "at": [
+              2.72,
+              0.94
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          }
+        ],
+        "joins": [
+          {
+            "a": "u0",
+            "b": "u1",
+            "type": "shared_wall"
+          },
+          {
+            "a": "u1",
+            "b": "u2",
+            "type": "shared_wall"
+          },
+          {
+            "a": "u0",
+            "b": "g0",
+            "type": "colonnade"
+          },
+          {
+            "a": "u1",
+            "b": "g1",
+            "type": "colonnade"
+          },
+          {
+            "a": "u2",
+            "b": "g2",
+            "type": "colonnade"
+          }
+        ]
+      },
+      "window_style": "rect"
+    },
+    {
+      "id": "sys:factory",
+      "name": "鐵皮工廠",
+      "size": [
+        3,
+        2
+      ],
+      "floors": 1,
+      "daily": false,
+      "mark": "大跨距雙坡 + 通風球",
+      "required_features": [
+        {
+          "feature": "橫向大跨距量體 2.4×1.6、挑高 0.75",
+          "depth": false
+        },
+        {
+          "feature": "雙坡鐵皮屋頂 + 屋脊通風球 ×3",
+          "depth": false
+        },
+        {
+          "feature": "正面大鐵捲門洞 + 懸挑卸貨雨棚（柱 ×2）",
+          "depth": true
+        }
+      ],
+      "observed": "不可省略：橫向大跨距量體（3×1.6）、挑高雙坡鐵皮屋頂（屋脊 + 通風球）、正面大鐵捲門洞。側邊低矮辦公室、卸貨雨棚。",
+      "chips": [
+        "3×1.6 大跨距",
+        "挑高 0.75",
+        "通風球 ×3",
+        "大門洞 + 卸貨棚"
+      ],
+      "palettes": [
+        {
+          "wall": "#9FB3BF",
+          "roof": "#6E8A9C",
+          "door": "#4F5B6B",
+          "accent": "#B9BEC2"
+        },
+        {
+          "wall": "#B9BEC2",
+          "roof": "#8A8F95",
+          "door": "#3A3A48",
+          "accent": "#D9D4C7"
+        },
+        {
+          "wall": "#9FB8A6",
+          "roof": "#7F9A8C",
+          "door": "#4F5B6B",
+          "accent": "#B9BEC2"
+        }
+      ],
+      "blueprint": {
+        "vScale": 1.3,
+        "blocks": [
+          {
+            "id": "hall",
+            "at": [
+              0,
+              0
+            ],
+            "w": 2.4,
+            "d": 1.6,
+            "h": 0.75,
+            "roof": "gable",
+            "eave": 1.05,
+            "roofH": 0.35,
+            "windowCols": 2,
+            "winRows": 1,
+            "color": {
+              "window": "#D9E2E8"
+            }
+          },
+          {
+            "id": "door",
+            "at": [
+              0.5,
+              1.6
+            ],
+            "w": 0.8,
+            "d": 0.03,
+            "h": 0.55,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#4F5B6B",
+              "roof": "#4F5B6B"
+            }
+          },
+          {
+            "id": "canopy",
+            "at": [
+              0.4,
+              1.6
+            ],
+            "w": 1,
+            "d": 0.3,
+            "h": 0.03,
+            "roof": "flat",
+            "z": 0.58,
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9BEC2",
+              "roof": "#B9BEC2"
+            }
+          },
+          {
+            "id": "office",
+            "at": [
+              2.4,
+              0.3
+            ],
+            "w": 0.6,
+            "d": 0.9,
+            "h": 0.32,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "v1",
+            "at": [
+              0.5,
+              0.75
+            ],
+            "w": 0.12,
+            "d": 0.12,
+            "h": 0.08,
+            "roof": "dome",
+            "on": "hall",
+            "z": 0.3,
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9BEC2",
+              "roof": "#B9BEC2"
+            }
+          },
+          {
+            "id": "v2",
+            "at": [
+              1.15,
+              0.75
+            ],
+            "w": 0.12,
+            "d": 0.12,
+            "h": 0.08,
+            "roof": "dome",
+            "on": "hall",
+            "z": 0.3,
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9BEC2",
+              "roof": "#B9BEC2"
+            }
+          },
+          {
+            "id": "v3",
+            "at": [
+              1.8,
+              0.75
+            ],
+            "w": 0.12,
+            "d": 0.12,
+            "h": 0.08,
+            "roof": "dome",
+            "on": "hall",
+            "z": 0.3,
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9BEC2",
+              "roof": "#B9BEC2"
+            }
+          },
+          {
+            "id": "cpcol0",
+            "at": [
+              0.62,
+              1.84
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.58,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9BEC2",
+              "roof": "#B9BEC2"
+            }
+          },
+          {
+            "id": "cpcol1",
+            "at": [
+              1.12,
+              1.84
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.58,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9BEC2",
+              "roof": "#B9BEC2"
+            }
+          }
+        ],
+        "joins": [
+          {
+            "a": "v1",
+            "b": "hall",
+            "type": "stack"
+          },
+          {
+            "a": "v2",
+            "b": "hall",
+            "type": "stack"
+          },
+          {
+            "a": "v3",
+            "b": "hall",
+            "type": "stack"
+          },
+          {
+            "a": "office",
+            "b": "hall",
+            "type": "shared_wall"
+          }
+        ]
+      },
+      "window_style": "strip"
+    },
+    {
+      "id": "sys:sanheyuan",
+      "name": "三合院",
+      "size": [
+        3,
+        2
+      ],
+      "floors": 1,
+      "daily": false,
+      "mark": "U 字前埕",
+      "required_features": [
+        {
+          "feature": "U 字平面：正身高（燕尾脊）、護龍低且向前",
+          "depth": false
+        },
+        {
+          "feature": "挖出來的前埕（court 佔格但 h≈0）",
+          "depth": true
+        },
+        {
+          "feature": "前方矮圍牆開口",
+          "depth": false
+        }
+      ],
+      "observed": "不可省略：正身（高、燕尾脊）主、護龍（低、向前）從的 U 字平面、挖出來的前埕與院落、前方矮圍牆開口。",
+      "chips": [
+        "3×2 U 字",
+        "正身高 / 護龍低",
+        "埕 + 圍牆",
+        "swallowtail"
+      ],
+      "palettes": [
+        {
+          "wall": "#C9705B",
+          "roof": "#C97D4B",
+          "door": "#8E6B50",
+          "accent": "#E2B45A"
+        },
+        {
+          "wall": "#B8604E",
+          "roof": "#8A5A3C",
+          "door": "#3A3A48",
+          "accent": "#F7F3EE"
+        },
+        {
+          "wall": "#D4836C",
+          "roof": "#C97D4B",
+          "door": "#2F5D50",
+          "accent": "#F7F3EE"
+        }
+      ],
+      "blueprint": {
+        "vScale": 1.3,
+        "blocks": [
+          {
+            "id": "main",
+            "at": [
+              0,
+              0
+            ],
+            "w": 3,
+            "d": 0.75,
+            "h": 0.48,
+            "roof": "swallowtail",
+            "eave": 1.15,
+            "windowCols": 3,
+            "winRows": 1,
+            "winFaces": "S",
+            "door": true
+          },
+          {
+            "id": "wingL",
+            "at": [
+              0,
+              0.75
+            ],
+            "w": 0.6,
+            "d": 1.1,
+            "h": 0.32,
+            "roof": "hip",
+            "eave": 1.1,
+            "windowCols": 1,
+            "winRows": 1
+          },
+          {
+            "id": "wingR",
+            "at": [
+              2.4,
+              0.75
+            ],
+            "w": 0.6,
+            "d": 1.1,
+            "h": 0.32,
+            "roof": "hip",
+            "eave": 1.1,
+            "windowCols": 1,
+            "winRows": 1
+          },
+          {
+            "id": "court",
+            "at": [
+              0.6,
+              0.75
+            ],
+            "w": 1.8,
+            "d": 1.1,
+            "h": 0.01,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9CFB8",
+              "roof": "#D9CFB8"
+            }
+          },
+          {
+            "id": "wallL",
+            "at": [
+              0.6,
+              1.9
+            ],
+            "w": 0.6,
+            "d": 0.05,
+            "h": 0.1,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "wallR",
+            "at": [
+              1.8,
+              1.9
+            ],
+            "w": 0.6,
+            "d": 0.05,
+            "h": 0.1,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          }
+        ],
+        "joins": [
+          {
+            "a": "court",
+            "b": "main",
+            "type": "courtyard"
+          },
+          {
+            "a": "wingL",
+            "b": "main",
+            "type": "shared_wall"
+          },
+          {
+            "a": "wingR",
+            "b": "main",
+            "type": "shared_wall"
+          }
+        ]
+      },
+      "window_style": "lattice"
+    },
+    {
+      "id": "sys:temple",
+      "name": "小廟（土地公廟）",
+      "size": [
+        1,
+        1
+      ],
+      "floors": 1,
+      "daily": false,
+      "mark": "軸線層級 + 重簷燕尾",
+      "required_features": [
+        {
+          "feature": "主軸線層級：台階 → 前埕 → 拜亭 → 正殿",
+          "depth": false
+        },
+        {
+          "feature": "拜亭柱廊（colonnade，無牆）+ 深簷 1.35",
+          "depth": true
+        },
+        {
+          "feature": "重簷燕尾脊 + 燈籠",
+          "depth": false
+        }
+      ],
+      "observed": "不可省略：主入口軸線上的層級——台階、前埕、柱廊拜亭、深簷正殿；重簷燕尾脊 + 脊飾；燈籠在柱上。",
+      "chips": [
+        "軸線層級 4 段",
+        "重簷燕尾 出簷 1.35",
+        "拜亭柱廊",
+        "台階 + 前埕"
+      ],
+      "palettes": [
+        {
+          "wall": "#B8503A",
+          "roof": "#C97D4B",
+          "door": "#C7453B",
+          "accent": "#E2B45A"
+        },
+        {
+          "wall": "#B8604E",
+          "roof": "#8A5A3C",
+          "door": "#3A3A48",
+          "accent": "#E2B45A"
+        },
+        {
+          "wall": "#C9705B",
+          "roof": "#C97D4B",
+          "door": "#C7453B",
+          "accent": "#F7F3EE"
+        }
+      ],
+      "blueprint": {
+        "vScale": 1.3,
+        "blocks": [
+          {
+            "id": "plinth",
+            "at": [
+              0.1,
+              0.05
+            ],
+            "w": 0.8,
+            "d": 0.9,
+            "h": 0.06,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "hall",
+            "at": [
+              0.18,
+              0.08
+            ],
+            "w": 0.64,
+            "d": 0.5,
+            "h": 0.5,
+            "roof": "swallowtail2",
+            "on": "plinth",
+            "eave": 1.35,
+            "roofH": 1.2,
+            "windowCols": 1,
+            "winRows": 1,
+            "winFaces": "S",
+            "door": true,
+            "lantern": true
+          },
+          {
+            "id": "porch",
+            "at": [
+              0.22,
+              0.58
+            ],
+            "w": 0.56,
+            "d": 0.3,
+            "h": 0.38,
+            "roof": "swallowtail",
+            "on": "plinth",
+            "eave": 1.3,
+            "windowCols": 0,
+            "cols": true
+          },
+          {
+            "id": "steps",
+            "at": [
+              0.3,
+              0.95
+            ],
+            "w": 0.4,
+            "d": 0.08,
+            "h": 0.03,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#CFC7B4",
+              "roof": "#CFC7B4"
+            }
+          }
+        ],
+        "joins": [
+          {
+            "a": "hall",
+            "b": "plinth",
+            "type": "stack"
+          },
+          {
+            "a": "porch",
+            "b": "plinth",
+            "type": "stack"
+          },
+          {
+            "a": "porch",
+            "b": "hall",
+            "type": "colonnade"
+          }
+        ]
+      },
+      "window_style": "lattice"
+    },
+    {
+      "id": "sys:jpdorm",
+      "name": "日式木造宿舍",
+      "size": [
+        1,
+        1
+      ],
+      "floors": 1,
+      "daily": false,
+      "mark": "架高基座 + 大出簷",
+      "required_features": [
+        {
+          "feature": "架高基座 0.12（通風）",
+          "depth": false
+        },
+        {
+          "feature": "黑瓦寄棟大出簷 1.3 + 前方深雨庇",
+          "depth": true
+        },
+        {
+          "feature": "緣側 + 玄關小屋頂",
+          "depth": false
+        }
+      ],
+      "observed": "不可省略：抬高基座（通風）、黑瓦寄棟大出簷（1.3）、前方緣側 + 深雨庇；雨淋板木牆、玄關小屋頂。台灣脈絡：高基座、深簷、通風口。",
+      "chips": [
+        "基座 0.12 架高",
+        "黑瓦 hip 出簷 1.3",
+        "緣側 + 雨庇",
+        "玄關 gable"
+      ],
+      "palettes": [
+        {
+          "wall": "#8E6B50",
+          "roof": "#4F5B6B",
+          "door": "#5E5A55",
+          "accent": "#D9D4C7"
+        },
+        {
+          "wall": "#A68A6C",
+          "roof": "#5E5A55",
+          "door": "#4A4642",
+          "accent": "#E6E1D6"
+        },
+        {
+          "wall": "#6F5A48",
+          "roof": "#4F5B6B",
+          "door": "#3A3A48",
+          "accent": "#D9D4C7"
+        }
+      ],
+      "blueprint": {
+        "vScale": 1.3,
+        "blocks": [
+          {
+            "id": "plinth",
+            "at": [
+              0.05,
+              0.05
+            ],
+            "w": 0.9,
+            "d": 0.9,
+            "h": 0.12,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#9A9A94",
+              "roof": "#9A9A94"
+            }
+          },
+          {
+            "id": "house",
+            "at": [
+              0.1,
+              0.05
+            ],
+            "w": 0.8,
+            "d": 0.62,
+            "h": 0.4,
+            "roof": "hip",
+            "on": "plinth",
+            "eave": 1.3,
+            "roofH": 1.2,
+            "windowCols": 3,
+            "winRows": 1,
+            "door": true,
+            "color": {
+              "window": "#F3E7C8"
+            }
+          },
+          {
+            "id": "engawa",
+            "at": [
+              0.1,
+              0.67
+            ],
+            "w": 0.8,
+            "d": 0.18,
+            "h": 0.03,
+            "roof": "flat",
+            "z": 0.12,
+            "windowCols": 0,
+            "color": {
+              "wall": "#A68A6C",
+              "roof": "#A68A6C"
+            }
+          },
+          {
+            "id": "hisashi",
+            "at": [
+              0.08,
+              0.66
+            ],
+            "w": 0.84,
+            "d": 0.22,
+            "h": 0.03,
+            "roof": "flat",
+            "z": 0.46,
+            "windowCols": 0,
+            "color": {
+              "wall": "#4F5B6B",
+              "roof": "#4F5B6B"
+            }
+          },
+          {
+            "id": "genkan",
+            "at": [
+              0.62,
+              0.84
+            ],
+            "w": 0.26,
+            "d": 0.1,
+            "h": 0.3,
+            "roof": "gable",
+            "on": "plinth",
+            "eave": 1.2,
+            "windowCols": 0
+          }
+        ],
+        "joins": [
+          {
+            "a": "house",
+            "b": "plinth",
+            "type": "stack"
+          },
+          {
+            "a": "genkan",
+            "b": "plinth",
+            "type": "stack"
+          }
+        ]
+      },
+      "window_style": "shoji"
+    },
+    {
+      "id": "sys:village",
+      "name": "眷村連棟平房",
+      "size": [
+        3,
+        1
+      ],
+      "floors": 1,
+      "daily": false,
+      "mark": "共用屋頂 + 異色雨棚",
+      "required_features": [
+        {
+          "feature": "共用一片 gable 屋頂的四個重複單元、戶界牆露出",
+          "depth": false
+        },
+        {
+          "feature": "每戶前院矮牆圍出的院落",
+          "depth": true
+        },
+        {
+          "feature": "各戶自加異色鐵皮雨棚 + 水塔",
+          "depth": false
+        }
+      ],
+      "observed": "不可省略：共用一片屋頂的重複單元（戶界牆露出）、每戶前院矮牆、各戶自加的鐵皮雨棚顏色不同；水塔、曬衣架等增生物。",
+      "chips": [
+        "3×1 四連棟",
+        "共用 gable 頂",
+        "前院 ×4 矮牆",
+        "雨棚 ×4 異色"
+      ],
+      "palettes": [
+        {
+          "wall": "#CFC7B4",
+          "roof": "#9A9A94",
+          "door": "#4F5B6B",
+          "accent": "#7F9A8C"
+        },
+        {
+          "wall": "#E6DCCB",
+          "roof": "#6E8A9C",
+          "door": "#3A3A48",
+          "accent": "#C9705B"
+        },
+        {
+          "wall": "#D4C9C2",
+          "roof": "#B5452E",
+          "door": "#4F5B6B",
+          "accent": "#9FB3BF"
+        }
+      ],
+      "blueprint": {
+        "vScale": 1.3,
+        "blocks": [
+          {
+            "id": "row",
+            "at": [
+              0,
+              0
+            ],
+            "w": 3,
+            "d": 0.55,
+            "h": 0.32,
+            "roof": "gable",
+            "eave": 1.04,
+            "roofH": 0.8,
+            "windowCols": 4,
+            "winRows": 1,
+            "winFaces": "S",
+            "door": true
+          },
+          {
+            "id": "yard",
+            "at": [
+              0,
+              0.55
+            ],
+            "w": 3,
+            "d": 0.45,
+            "h": 0.01,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9CFB8",
+              "roof": "#D9CFB8"
+            }
+          },
+          {
+            "id": "div0",
+            "at": [
+              0,
+              0.55
+            ],
+            "w": 0.03,
+            "d": 0.45,
+            "h": 0.1,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "fw0",
+            "at": [
+              0.05,
+              0.97
+            ],
+            "w": 0.65,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "awn0",
+            "at": [
+              0.05,
+              0.55
+            ],
+            "w": 0.65,
+            "d": 0.28,
+            "h": 0.03,
+            "roof": "flat",
+            "z": 0.22,
+            "windowCols": 0,
+            "color": {
+              "wall": "#7F9A8C",
+              "roof": "#7F9A8C"
+            }
+          },
+          {
+            "id": "div1",
+            "at": [
+              0.75,
+              0.55
+            ],
+            "w": 0.03,
+            "d": 0.45,
+            "h": 0.1,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "fw1",
+            "at": [
+              0.8,
+              0.97
+            ],
+            "w": 0.65,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "awn1",
+            "at": [
+              0.8,
+              0.55
+            ],
+            "w": 0.65,
+            "d": 0.28,
+            "h": 0.03,
+            "roof": "flat",
+            "z": 0.22,
+            "windowCols": 0,
+            "color": {
+              "wall": "#6E8A9C",
+              "roof": "#6E8A9C"
+            }
+          },
+          {
+            "id": "div2",
+            "at": [
+              1.5,
+              0.55
+            ],
+            "w": 0.03,
+            "d": 0.45,
+            "h": 0.1,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "fw2",
+            "at": [
+              1.55,
+              0.97
+            ],
+            "w": 0.65,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "awn2",
+            "at": [
+              1.55,
+              0.55
+            ],
+            "w": 0.65,
+            "d": 0.28,
+            "h": 0.03,
+            "roof": "flat",
+            "z": 0.22,
+            "windowCols": 0,
+            "color": {
+              "wall": "#B5452E",
+              "roof": "#B5452E"
+            }
+          },
+          {
+            "id": "div3",
+            "at": [
+              2.25,
+              0.55
+            ],
+            "w": 0.03,
+            "d": 0.45,
+            "h": 0.1,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "fw3",
+            "at": [
+              2.3,
+              0.97
+            ],
+            "w": 0.65,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "awn3",
+            "at": [
+              2.3,
+              0.55
+            ],
+            "w": 0.65,
+            "d": 0.28,
+            "h": 0.03,
+            "roof": "flat",
+            "z": 0.22,
+            "windowCols": 0,
+            "color": {
+              "wall": "#9A9A94",
+              "roof": "#9A9A94"
+            }
+          },
+          {
+            "id": "tank",
+            "at": [
+              2.3,
+              0.1
+            ],
+            "w": 0.14,
+            "d": 0.14,
+            "h": 0.16,
+            "roof": "dome",
+            "on": "row",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9BEC2",
+              "roof": "#B9BEC2"
+            }
+          }
+        ],
+        "joins": [
+          {
+            "a": "tank",
+            "b": "row",
+            "type": "stack"
+          }
+        ]
+      },
+      "window_style": "rect"
+    },
+    {
+      "id": "sys:farmhouse",
+      "name": "新式農舍",
+      "size": [
+        2,
+        2
+      ],
+      "floors": 3,
+      "daily": false,
+      "mark": "一樓半開放柱廊",
+      "required_features": [
+        {
+          "feature": "基地比例：房子只佔 2×2 的 1×0.8，其餘是田與前庭",
+          "depth": false
+        },
+        {
+          "feature": "一樓半開放柱廊（停車空間），二樓量體架在 z 0.3",
+          "depth": true
+        },
+        {
+          "feature": "hip 寬簷 1.25 + 二樓陽台；角落儲藏間",
+          "depth": false
+        }
+      ],
+      "observed": "不可省略：基地比例（房子只佔 2×2 的四分之一，其餘是田與前庭）、一樓半開放的柱廊停車空間、寬簷斜頂 + 二三樓陽台；角落儲藏工作間。",
+      "chips": [
+        "2×2 基地 / 房 1×0.8",
+        "一樓半開放",
+        "hip 出簷 1.25",
+        "儲藏間 + 圍牆"
+      ],
+      "palettes": [
+        {
+          "wall": "#E6DCCB",
+          "roof": "#B5452E",
+          "door": "#8E6B50",
+          "accent": "#D9D4C7"
+        },
+        {
+          "wall": "#F2EEE6",
+          "roof": "#7F9A8C",
+          "door": "#8E6B50",
+          "accent": "#D9D4C7"
+        },
+        {
+          "wall": "#E9C9A8",
+          "roof": "#6F7F8C",
+          "door": "#3A3A48",
+          "accent": "#B9B5A8"
+        }
+      ],
+      "blueprint": {
+        "vScale": 1.3,
+        "blocks": [
+          {
+            "id": "field",
+            "at": [
+              0,
+              0
+            ],
+            "w": 2,
+            "d": 2,
+            "h": 0.01,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9C9A4",
+              "roof": "#B9C9A4"
+            }
+          },
+          {
+            "id": "wallF",
+            "at": [
+              0,
+              1.97
+            ],
+            "w": 2,
+            "d": 0.03,
+            "h": 0.08,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#B9B5A8",
+              "roof": "#B9B5A8"
+            }
+          },
+          {
+            "id": "ground",
+            "at": [
+              0.5,
+              0.3
+            ],
+            "w": 1,
+            "d": 0.55,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "body",
+            "at": [
+              0.5,
+              0.3
+            ],
+            "w": 1,
+            "d": 0.8,
+            "h": 0.6,
+            "roof": "hip",
+            "z": 0.3,
+            "eave": 1.25,
+            "roofH": 1.3,
+            "windowCols": 2,
+            "winRows": 2,
+            "winFaces": "S",
+            "bands": 2
+          },
+          {
+            "id": "shed",
+            "at": [
+              1.55,
+              1.5
+            ],
+            "w": 0.4,
+            "d": 0.4,
+            "h": 0.25,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#9FB3BF",
+              "roof": "#9FB3BF"
+            }
+          },
+          {
+            "id": "fccol0",
+            "at": [
+              0.637,
+              1.04
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "fccol1",
+            "at": [
+              0.97,
+              1.04
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "fccol2",
+            "at": [
+              1.303,
+              1.04
+            ],
+            "w": 0.06,
+            "d": 0.06,
+            "h": 0.3,
+            "roof": "flat",
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "fb1",
+            "at": [
+              0.5,
+              1.1
+            ],
+            "w": 1,
+            "d": 0.12,
+            "h": 0.04,
+            "roof": "flat",
+            "z": 0.56,
+            "windowCols": 0,
+            "color": {
+              "wall": "#D9D4C7",
+              "roof": "#D9D4C7"
+            }
+          },
+          {
+            "id": "fr1",
+            "at": [
+              0.5,
+              1.19
+            ],
+            "w": 1,
+            "d": 0.03,
+            "h": 0.1,
+            "roof": "flat",
+            "z": 0.6,
+            "windowCols": 0,
+            "color": {
+              "wall": "#8E8A80",
+              "roof": "#8E8A80"
+            }
+          }
+        ],
+        "joins": [
+          {
+            "a": "body",
+            "b": "ground",
+            "type": "colonnade"
+          }
+        ]
+      },
+      "window_style": "rect"
+    }
+  ]
+}
