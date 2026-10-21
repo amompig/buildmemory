@@ -296,3 +296,44 @@ test('§9 首啟 grid：validateGrid 必為 ok', () => {
   assert.deepEqual(R.validateGrid(R.starterGrid(), gs, HOUSES), { ok: true });
 });
 test('§9 首啟 grid：unlockedSize = 8', () => assert.equal(R.unlockedSize(R.starterGrid()), 8));
+
+// ---------- blueprint v2 提案（docs/blueprint_v2_proposal.md §3）：任意 w×d、rot 對調 ----------
+test('v2 footprint：size [3,1] 錨 idx(5,5) rot 0 → [85,86,87]；rot 1 → [85,101,117]', () => {
+  assert.deepEqual(R.footprint([3, 1], idx(5, 5), 0), [85, 86, 87]);
+  assert.deepEqual(R.footprint([3, 1], idx(5, 5), 1), [85, 101, 117]);
+  assert.deepEqual(R.footprint([3, 1], idx(5, 5), 2), [85, 86, 87]);
+  assert.deepEqual(R.footprint([3, 1], idx(5, 5), 3), [85, 101, 117]);
+});
+
+test('v2 footprint：size [2,3] 錨 c=15 → null（出界）；r=14 rot 0（d=3）→ null', () => {
+  assert.equal(R.footprint([2, 3], idx(5, 15)), null);
+  assert.equal(R.footprint([2, 3], idx(14, 5)), null);
+  assert.deepEqual(R.footprint([2, 3], idx(14, 5), 1), [idx(14, 5), idx(14, 6), idx(14, 7), idx(15, 5), idx(15, 6), idx(15, 7)]);
+});
+
+test('v2 canPlace：3×3 錨 (4,9) 在 8×8 視窗內 ok；錨 (4,10) → c=12 出視窗 → locked', () => {
+  const H3 = { id: 'test:3x3', size: [3, 3] };
+  const g = empty(); g[idx(7, 9)] = road;
+  assert.equal(R.canPlace(g, H3, idx(4, 9), 0, 8).ok, true);
+  assert.equal(R.canPlace(g, H3, idx(4, 10), 0, 8).reason, 'locked');
+});
+
+test('v2 canPlace：非方形旋轉後佔格不同 → 判定跟著變', () => {
+  const H31 = { id: 'test:3x1', size: [3, 1] };
+  const g = empty(); g[idx(8, 5)] = road;
+  assert.equal(R.canPlace(g, H31, idx(5, 5), 1, 8).ok, true);   // 直放 (5..7,5)，(7,5) 貼著 (8,5) 的路
+  assert.equal(R.canPlace(g, H31, idx(5, 5), 0, 8).reason, 'no_road'); // 橫放 (5,5..7) 碰不到路
+});
+
+test('v2 validateGrid：rot 1 的 3×1 從屬格要照旋轉後的佔格；照 rot 0 擺 → footprint', () => {
+  const houses = [...HOUSES, { id: 'test:3x1', size: [3, 1] }];
+  const grants = [grant('g1', 'test:3x1')];
+  const ok = empty(); ok[idx(8, 5)] = road;
+  ok[idx(5, 5)] = { t: 'house', id: 'test:3x1', ref: 'g1', rot: 1 };
+  ok[idx(6, 5)] = { t: 'part', of: idx(5, 5) }; ok[idx(7, 5)] = { t: 'part', of: idx(5, 5) };
+  assert.equal(R.validateGrid(ok, grants, houses).ok, true);
+  const bad = empty(); bad[idx(6, 5)] = road;
+  bad[idx(5, 5)] = { t: 'house', id: 'test:3x1', ref: 'g1', rot: 1 };
+  bad[idx(5, 6)] = { t: 'part', of: idx(5, 5) }; bad[idx(5, 7)] = { t: 'part', of: idx(5, 5) };
+  assert.equal(R.validateGrid(bad, grants, houses).reason, 'footprint');
+});

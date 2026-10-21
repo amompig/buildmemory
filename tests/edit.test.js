@@ -9,7 +9,7 @@ import { createEditor } from '../src/edit.js';
 
 const { idx } = R;
 const HOUSES = [...JSON.parse(readFileSync(new URL('../data/houses.json', import.meta.url), 'utf8')).houses,
-  { id: 'test:big', size: [2, 2] }];
+  { id: 'test:big', size: [2, 2] }, { id: 'test:3x1', size: [3, 1] }];
 
 // 假 localStorage
 function memStorage(init = {}) {
@@ -314,4 +314,23 @@ test('同步：送出途中又編輯 → 那筆不會漏，送完會再送一次
   ed.paintRoad(idx(6, 7));
   await tick(150);
   assert.deepEqual([srv.grid[idx(6, 6)], srv.grid[idx(6, 7)], store.get().dirty], [{ t: 'road' }, { t: 'road' }, false]);
+});
+
+test('v2 旋轉：3×1 轉向後佔格跟著換；轉向會撞到東西 → 拒絕、不改', () => {
+  const store = createStore(memStorage());
+  store.set({ grants: [...store.get().grants, { id: 'w1', kind: 'house', item_id: 'test:3x1', state: 'stock', seed: 0, consumed_at: null }] });
+  const ed = createEditor(store, HOUSES);
+  const g = () => store.get().grid;
+  // 橫放 (6,5..7) 貼著 (7,*) 的路；轉直會壓到 (7,5) 的路 → occupied
+  assert.equal(ed.placeHouse('w1', idx(6, 5), 0).ok, true);
+  assert.equal(ed.rotate(idx(6, 5)).reason, 'occupied');
+  assert.deepEqual([g()[idx(6, 5)].rot, g()[idx(6, 7)]], [0, { t: 'part', of: idx(6, 5) }]);
+  ed.removeHouse(idx(6, 5));
+  // 直放 (4..6,5)；加一格路 (5,6) 後轉橫 (4,5..7) → (4,6) 貼著路 → ok，舊從屬格清掉
+  ed.paintRoad(idx(5, 6));
+  assert.equal(ed.placeHouse('w1', idx(4, 5), 1).ok, true);
+  assert.equal(ed.rotate(idx(5, 5)).ok, true); // 點從屬格也可以
+  assert.deepEqual([g()[idx(4, 5)].rot, g()[idx(4, 6)], g()[idx(4, 7)], g()[idx(5, 5)], g()[idx(6, 5)]],
+    [2, { t: 'part', of: idx(4, 5) }, { t: 'part', of: idx(4, 5) }, null, null]);
+  assert.equal(R.validateGrid(g(), store.get().grants, HOUSES).ok, true);
 });

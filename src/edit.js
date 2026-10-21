@@ -64,11 +64,17 @@ export function createEditor(store, houses) {
       return apply({ grid: next, grants: grants.map((x) => (x.id === ref ? { ...x, state: 'stock' } : x)) });
     },
 
+    // 非方形房轉向後佔格會變：先拿掉自己，再用新 rot 檢查一次能不能放
     rotate(i) {
       const { grid } = store.get();
       const a = anchorOf(grid, i);
       if (grid[a]?.t !== 'house') return fail('not_house');
-      const next = grid.slice(); next[a] = { ...grid[a], rot: (grid[a].rot + 1) % 4 };
+      const house = grid[a], rot = (house.rot + 1) % 4;
+      const { grid: without } = R.removeHouse(grid, a);
+      const r = R.canPlace(without, byId.get(house.id) ?? { size: [1, 1] }, a, rot, R.unlockedSize(grid));
+      if (!r.ok) return r;
+      const next = without;
+      for (const c of r.cells) next[c] = c === a ? { ...house, rot } : { t: 'part', of: a };
       return apply({ grid: next });
     },
 

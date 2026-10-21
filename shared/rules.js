@@ -44,12 +44,15 @@ export function unlockedSize(grid) {
 }
 
 // ---------- §3 佔格與放置 ----------
-// hs = 房型 size，[1,1] 或 [2,2]；2×2 錨點為左上，越界回 null
-export function footprint(hs, a) {
-  if (hs[0] === 1 && hs[1] === 1) return [a];
+// hs = 房型 size [w, d]（w = c 方向、d = r 方向，各 1–3；blueprint v2 提案）
+// rot 1 / 3 時 w、d 對調；錨點 = 旋轉後矩形的左上（最小 r、最小 c）；任一格出界回 null
+export function footprint(hs, a, rot = 0) {
+  const [w, d] = rot % 2 ? [hs[1], hs[0]] : hs;
   const [r, c] = rc(a);
-  if (r >= N - 1 || c >= N - 1) return null;
-  return [a, a + 1, a + N, a + N + 1];
+  if (r + d > N || c + w > N) return null;
+  const out = [];
+  for (let dr = 0; dr < d; dr++) for (let dc = 0; dc < w; dc++) out.push(a + dr * N + dc);
+  return out;
 }
 // cells 以外的上下左右鄰格中至少一格是路
 function touchesRoad(grid, cells) {
@@ -64,7 +67,7 @@ function cellsOf(grid, a) {
 
 export function canPlace(grid, house, anchor, rot, size) {
   if (![0, 1, 2, 3].includes(rot)) return invalid('rot');
-  const cells = footprint(house.size, anchor);
+  const cells = footprint(house.size, anchor, rot);
   if (!cells || !cells.every((i) => inBounds(...rc(i)) && isUnlocked(i, size))) return invalid('locked');
   if (!cells.every((i) => grid[i] === null)) return invalid('occupied');
   if (!touchesRoad(grid, cells)) return invalid('no_road');
@@ -125,7 +128,7 @@ export function validateGrid(grid, grants, houses) {
 
   const fps = new Map();
   for (const a of anchors) {
-    const fp = footprint(sizeOf.get(grid[a].id), a);
+    const fp = footprint(sizeOf.get(grid[a].id), a, grid[a].rot);
     if (!fp || fp.some((i) => i !== a && !(grid[i]?.t === 'part' && grid[i].of === a))) return invalid('footprint');
     fps.set(a, fp);
   }
