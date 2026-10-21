@@ -1,8 +1,8 @@
 {
   "_meta": {
-    "version": "2026-10-21.2",
-    "blueprint_version": 2,
-    "note": "台北 12 棟地標（精選 tier）。blueprint v2：一棟 = 多個 block，各自有佔格偏移、尺寸、層數、屋頂；joins 說明 block 之間怎麼接。size 可為任意 w×d（1–3）。photo_ref 只做觀察，不隨 App 發布。色票吸附到 palette.json 家族，家族外新色列在 _new_colors。契約變更見 docs/blueprint_v2_proposal.md。",
+    "version": "2026-10-21.3",
+    "blueprint_version": "2.1",
+    "note": "台北 12 棟地標（精選 tier）。blueprint v2.1：一棟 = 多個 block，各自佔格偏移、尺寸、層數、屋頂；joins 寫接法。v2.1 加 eave（出簷倍率）、eave2（下層簷高度比，重簷）、taper（sBot/sTop 收分）、segments（同 block 疊 n 節）、shape oct、medallion、lantern。每棟依空拍（平面）＋正面（高度比）＋細部三角度核對。floors 不封頂，真實層數在 real_floors。",
     "block_fields": {
       "id": "block 名，joins 用",
       "at": "[c, r] 相對錨點格（錨點 = 最小 r、最小 c）的偏移，單位格；可為小數（塔樓置中用）",
@@ -11,7 +11,13 @@
       "floors / floorH": "層數 × 層高（格單位）；h = floors × floorH。courtyard 用 floors 0 floorH 0.1",
       "roof": "flat | gable | hip | hip2（雙層）| swallowtail | swallowtail2 | dome | pagoda | spire",
       "window / windowCols / door / porch / special / extras": "同 v1",
-      "color": "可覆寫 wall / roof / door / accent（例如石基）"
+      "color": "可覆寫 wall / roof / door / accent（例如石基）",
+      "eave": "屋頂投影相對牆身的倍率（1 = 無出簷；歇山大屋頂 1.3–1.4）",
+      "eave2": "下層簷所在高度比（0–1），有值 = 重簷",
+      "sBot / sTop": "底面 / 頂面相對 w×d 的縮放（收分）；101 基座 1→0.78、竹節 0.82→1.08",
+      "segments": "同一 block 往上重複 n 節（每節 on 前一節）",
+      "shape": "oct = 八角平面（第一版可用方體）",
+      "medallion / lantern": "南面裝飾件：圓徽 ×2 / 燈籠 ×2"
     },
     "join_types": {
       "shared_wall": "相鄰、共用一面牆，bake 時合併面、不畫內牆",
@@ -21,11 +27,45 @@
     },
     "rot": "rot 旋轉整棟（所有 block 的 at / w / d 一起轉）；rot 1 / 3 時 size 的 w、d 對調，佔格也跟著變——這是 v1 契約的變更點",
     "enums": {
-      "roof": ["flat", "gable", "hip", "hip2", "swallowtail", "swallowtail2", "dome", "pagoda", "spire"],
-      "window": ["plain", "arch", "round", "koshi", "grille", "shutter"],
-      "door": ["plain", "arch", "double", "noren"],
-      "porch": ["none", "eave", "columns", "arcade", "stilts"],
-      "special": ["none", "tower", "lantern", "windcatcher", "timber"]
+      "roof": [
+        "flat",
+        "gable",
+        "hip",
+        "hip2",
+        "swallowtail",
+        "swallowtail2",
+        "dome",
+        "pagoda",
+        "spire"
+      ],
+      "window": [
+        "plain",
+        "arch",
+        "round",
+        "koshi",
+        "grille",
+        "shutter"
+      ],
+      "door": [
+        "plain",
+        "arch",
+        "double",
+        "noren"
+      ],
+      "porch": [
+        "none",
+        "eave",
+        "columns",
+        "arcade",
+        "stilts"
+      ],
+      "special": [
+        "none",
+        "tower",
+        "lantern",
+        "windcatcher",
+        "timber"
+      ]
     },
     "_new_colors": {
       "#B8503A": "深紅磚（北門、紅樓、總統府、監察院、龍山寺、圓山）",
@@ -40,238 +80,1604 @@
   },
   "landmarks": [
     {
-      "id": "lm:TPE-f01", "name": "北門（承恩門）", "county": "TPE", "tier": "featured", "r": 150,
-      "photo_ref": "https://commons.wikimedia.org/w/index.php?search=台北府城北門&title=Special:MediaSearch&type=image",
-      "observed": "灰石方形基座、上層紅磚牆、歇山屋頂翹角、正面一圓窗兩方窗、拱形城門洞",
-      "house": "lm:TPE-f01", "size": [1, 1], "real_floors": 2,
+      "id": "lm:TPE-f01",
+      "name": "北門（承恩門）",
+      "county": "TPE",
+      "tier": "featured",
+      "r": 150,
+      "photo_ref": [
+        "https://commons.wikimedia.org/w/index.php?search=台北府城北門&title=Special:MediaSearch&type=image",
+        "DuckDuckGo images: 北門（承恩門） 空拍 / 正面"
+      ],
+      "observed": "空拍：近正方形碉堡式城門；正面：灰石基座約牆身一半高、紅磚城樓、歇山頂出簷明顯、一圓窗兩方窗；門洞在基座。",
+      "house": "lm:TPE-f01",
+      "size": [
+        1,
+        1
+      ],
+      "real_floors": 2,
       "palettes": [
-        { "wall": "#B8503A", "roof": "#5E5A55", "door": "#4A4642", "accent": "#8E8A80" },
-        { "wall": "#B8604E", "roof": "#6F7F8C", "door": "#3A3A48", "accent": "#B9B5A8" },
-        { "wall": "#C9705B", "roof": "#4F5B6B", "door": "#4A4642", "accent": "#D9D4C7" }
+        {
+          "wall": "#B8503A",
+          "roof": "#5E5A55",
+          "door": "#4A4642",
+          "accent": "#8E8A80"
+        },
+        {
+          "wall": "#B8604E",
+          "roof": "#6F7F8C",
+          "door": "#3A3A48",
+          "accent": "#B9B5A8"
+        },
+        {
+          "wall": "#C9705B",
+          "roof": "#4F5B6B",
+          "door": "#4A4642",
+          "accent": "#D9D4C7"
+        }
       ],
       "blueprint": {
         "blocks": [
-          { "id": "base", "at": [0, 0], "w": 1, "d": 1, "floors": 1, "floorH": 0.9, "roof": "flat", "window": "plain", "windowCols": 0, "door": "arch", "color": { "wall": "accent" } },
-          { "id": "gate", "on": "base", "at": [0.05, 0.05], "w": 0.9, "d": 0.9, "floors": 1, "floorH": 0.9, "roof": "hip", "window": "round", "windowCols": 3, "door": "plain" }
-        ],
-        "joins": [ { "a": "gate", "b": "base", "type": "stack" } ]
-      }
-    },
-    {
-      "id": "lm:TPE-f02", "name": "總統府", "county": "TPE", "tier": "featured", "r": 200,
-      "photo_ref": "https://commons.wikimedia.org/w/index.php?search=Presidential+Office+Building+Taipei&title=Special:MediaSearch&type=image",
-      "observed": "紅磚＋白色橫帶、長條對稱立面、中央高塔、拱窗成排、斜屋頂石板灰、後方兩個中庭（日字形）",
-      "house": "lm:TPE-f02", "size": [3, 2], "real_floors": 5,
-      "palettes": [
-        { "wall": "#B8503A", "roof": "#6F7F8C", "door": "#4F5B6B", "accent": "#F7F3EE" },
-        { "wall": "#B8604E", "roof": "#4F5B6B", "door": "#3A3A48", "accent": "#F2DDB5" },
-        { "wall": "#C9705B", "roof": "#7A8B99", "door": "#4F5B6B", "accent": "#F7F3EE" }
-      ],
-      "blueprint": {
-        "blocks": [
-          { "id": "front", "at": [0, 1], "w": 3, "d": 1, "floors": 4, "floorH": 0.85, "roof": "hip", "window": "arch", "windowCols": 6, "door": "arch", "extras": [ { "type": "bands", "rows": 4 } ] },
-          { "id": "tower", "on": "front", "at": [1.2, 0.2], "w": 0.6, "d": 0.6, "floors": 3, "floorH": 0.9, "roof": "hip", "window": "arch", "windowCols": 1, "extras": [ { "type": "bands", "rows": 3 } ] },
-          { "id": "rear", "at": [0, 0], "w": 3, "d": 1, "floors": 3, "floorH": 0.85, "roof": "hip", "window": "arch", "windowCols": 6 }
-        ],
-        "joins": [ { "a": "tower", "b": "front", "type": "stack" }, { "a": "rear", "b": "front", "type": "shared_wall" } ]
-      }
-    },
-    {
-      "id": "lm:TPE-f03", "name": "中正紀念堂", "county": "TPE", "tier": "featured", "r": 200,
-      "photo_ref": "https://commons.wikimedia.org/w/index.php?search=中正紀念堂&title=Special:MediaSearch&type=image",
-      "observed": "白牆方體、藍色八角攢尖雙層屋頂、金色寶頂、正面大拱門、寬大白色石階基座",
-      "house": "lm:TPE-f03", "size": [3, 3], "real_floors": 3,
-      "palettes": [
-        { "wall": "#F7F3EE", "roof": "#4A6FA5", "door": "#3A3A48", "accent": "#E2B45A" },
-        { "wall": "#F2EEE6", "roof": "#5B8BC9", "door": "#4F5B6B", "accent": "#E2B45A" },
-        { "wall": "#D9D4C7", "roof": "#4F5B6B", "door": "#3A3A48", "accent": "#F7F3EE" }
-      ],
-      "blueprint": {
-        "blocks": [
-          { "id": "plinth", "at": [0, 0], "w": 3, "d": 3, "floors": 1, "floorH": 0.45, "roof": "flat", "window": "plain", "windowCols": 0, "extras": [ { "type": "stairs", "side": "south" } ] },
-          { "id": "hall", "on": "plinth", "at": [0.5, 0.5], "w": 2, "d": 2, "floors": 3, "floorH": 1.0, "roof": "hip2", "window": "plain", "windowCols": 2, "door": "arch", "extras": [ { "type": "finial", "color": "accent" } ] }
-        ],
-        "joins": [ { "a": "hall", "b": "plinth", "type": "stack" } ]
-      }
-    },
-    {
-      "id": "lm:TPE-f04", "name": "國立臺灣博物館", "county": "TPE", "tier": "featured", "r": 150,
-      "photo_ref": "https://commons.wikimedia.org/w/index.php?search=國立臺灣博物館&title=Special:MediaSearch&type=image",
-      "observed": "灰白石造新古典、中央六柱門廊＋三角楣、中央銅綠圓頂、左右對稱兩翼兩層拱窗",
-      "house": "lm:TPE-f04", "size": [3, 1], "real_floors": 2,
-      "palettes": [
-        { "wall": "#D9D4C7", "roof": "#7F9A8C", "door": "#4F5B6B", "accent": "#F7F3EE" },
-        { "wall": "#E6E1D6", "roof": "#6F7F8C", "door": "#3A3A48", "accent": "#D9D4C7" },
-        { "wall": "#CFC7B4", "roof": "#8A9680", "door": "#8E6B50", "accent": "#F7F3EE" }
-      ],
-      "blueprint": {
-        "blocks": [
-          { "id": "center", "at": [1, 0], "w": 1, "d": 1, "floors": 2, "floorH": 1.2, "roof": "dome", "window": "arch", "windowCols": 1, "door": "double", "porch": "columns", "extras": [ { "type": "pediment" } ] },
-          { "id": "wingL", "at": [0, 0], "w": 1, "d": 1, "floors": 2, "floorH": 1.0, "roof": "hip", "window": "arch", "windowCols": 3 },
-          { "id": "wingR", "at": [2, 0], "w": 1, "d": 1, "floors": 2, "floorH": 1.0, "roof": "hip", "window": "arch", "windowCols": 3 }
-        ],
-        "joins": [ { "a": "wingL", "b": "center", "type": "shared_wall" }, { "a": "wingR", "b": "center", "type": "shared_wall" } ]
-      }
-    },
-    {
-      "id": "lm:TPE-f05", "name": "西門紅樓", "county": "TPE", "tier": "featured", "r": 100,
-      "photo_ref": "https://commons.wikimedia.org/w/index.php?search=西門紅樓&title=Special:MediaSearch&type=image",
-      "observed": "前段八角形紅磚兩層＋白飾帶＋深灰斜頂；後段十字形單層長屋，山牆較低",
-      "house": "lm:TPE-f05", "size": [1, 2], "real_floors": 2,
-      "palettes": [
-        { "wall": "#B8503A", "roof": "#4F5B6B", "door": "#8E6B50", "accent": "#F7F3EE" },
-        { "wall": "#B8604E", "roof": "#6F7F8C", "door": "#3A3A48", "accent": "#F2DDB5" },
-        { "wall": "#D4836C", "roof": "#4F5B6B", "door": "#8E6B50", "accent": "#F7F3EE" }
-      ],
-      "blueprint": {
-        "blocks": [
-          { "id": "oct", "at": [0, 1], "w": 1, "d": 1, "floors": 2, "floorH": 0.9, "roof": "hip", "window": "arch", "windowCols": 2, "door": "arch", "extras": [ { "type": "bands", "rows": 2 } ], "_needs": ["八角 body"] },
-          { "id": "hall", "at": [0, 0], "w": 1, "d": 1, "floors": 1, "floorH": 1.3, "roof": "gable", "window": "arch", "windowCols": 3 }
-        ],
-        "joins": [ { "a": "hall", "b": "oct", "type": "shared_wall" } ]
-      }
-    },
-    {
-      "id": "lm:TPE-f06", "name": "艋舺龍山寺", "county": "TPE", "tier": "featured", "r": 150,
-      "photo_ref": "https://commons.wikimedia.org/w/index.php?search=艋舺龍山寺&title=Special:MediaSearch&type=image",
-      "observed": "前殿三開間燕尾脊、中庭、正殿較高雙層燕尾脊、兩側護室低矮長廊、石基石柱、紅燈籠",
-      "house": "lm:TPE-f06", "size": [3, 3], "real_floors": 1,
-      "palettes": [
-        { "wall": "#B8503A", "roof": "#C97D4B", "door": "#C7453B", "accent": "#E2B45A" },
-        { "wall": "#B8604E", "roof": "#8A5A3C", "door": "#3A3A48", "accent": "#E2B45A" },
-        { "wall": "#8E8A80", "roof": "#C97D4B", "door": "#C7453B", "accent": "#F7F3EE" }
-      ],
-      "blueprint": {
-        "blocks": [
-          { "id": "front", "at": [0, 2], "w": 3, "d": 1, "floors": 1, "floorH": 1.0, "roof": "swallowtail", "window": "koshi", "windowCols": 2, "door": "double", "porch": "columns", "special": "lantern", "color": { "accent": "#8E8A80" } },
-          { "id": "court", "at": [1, 1], "w": 1, "d": 1, "floors": 0, "floorH": 0.1, "roof": "flat", "color": { "wall": "#9FBFA6" } },
-          { "id": "main", "at": [1, 0], "w": 1, "d": 1, "floors": 1, "floorH": 1.6, "roof": "swallowtail2", "window": "koshi", "windowCols": 1, "door": "double", "porch": "columns" },
-          { "id": "sideL", "at": [0, 0], "w": 1, "d": 2, "floors": 1, "floorH": 0.7, "roof": "hip", "window": "plain", "windowCols": 2 },
-          { "id": "sideR", "at": [2, 0], "w": 1, "d": 2, "floors": 1, "floorH": 0.7, "roof": "hip", "window": "plain", "windowCols": 2 }
+          {
+            "id": "base",
+            "at": [
+              0,
+              0
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 1,
+            "floorH": 0.9,
+            "roof": "flat",
+            "window": "plain",
+            "windowCols": 0,
+            "door": "arch",
+            "color": {
+              "wall": "accent"
+            }
+          },
+          {
+            "id": "gate",
+            "on": "base",
+            "at": [
+              0.08,
+              0.08
+            ],
+            "w": 0.84,
+            "d": 0.84,
+            "floors": 1,
+            "floorH": 0.95,
+            "roof": "hip",
+            "eave": 1.3,
+            "window": "round",
+            "windowCols": 3
+          }
         ],
         "joins": [
-          { "a": "court", "b": "front", "type": "courtyard" }, { "a": "court", "b": "main", "type": "courtyard" },
-          { "a": "sideL", "b": "front", "type": "shared_wall" }, { "a": "sideR", "b": "front", "type": "shared_wall" },
-          { "a": "sideL", "b": "main", "type": "colonnade" }, { "a": "sideR", "b": "main", "type": "colonnade" }
+          {
+            "a": "gate",
+            "b": "base",
+            "type": "stack"
+          }
         ]
       }
     },
     {
-      "id": "lm:TPE-f07", "name": "臺北賓館", "county": "TPE", "tier": "featured", "r": 150,
-      "photo_ref": "https://commons.wikimedia.org/w/index.php?search=臺北賓館&title=Special:MediaSearch&type=image",
-      "observed": "灰白石造巴洛克、橫長立面、兩層拱窗、正面柱廊門廊突出、深灰馬薩式斜頂＋老虎窗、欄杆女兒牆",
-      "house": "lm:TPE-f07", "size": [2, 1], "real_floors": 2,
+      "id": "lm:TPE-f02",
+      "name": "總統府",
+      "county": "TPE",
+      "tier": "featured",
+      "r": 200,
+      "photo_ref": [
+        "https://commons.wikimedia.org/w/index.php?search=Presidential+Office+Building+Taipei&title=Special:MediaSearch&type=image",
+        "DuckDuckGo images: 總統府 空拍 / 正面"
+      ],
+      "observed": "空拍：日字形，前棟長、後棟平行；正面：中央塔樓高約主樓兩倍、四角角樓突出；紅磚白帶、拱窗成排。",
+      "house": "lm:TPE-f02",
+      "size": [
+        3,
+        2
+      ],
+      "real_floors": 5,
       "palettes": [
-        { "wall": "#E6E1D6", "roof": "#4F5B6B", "door": "#4A4642", "accent": "#B9B5A8" },
-        { "wall": "#D9D4C7", "roof": "#6F7F8C", "door": "#3A3A48", "accent": "#F7F3EE" },
-        { "wall": "#F2EEE6", "roof": "#5E5A55", "door": "#8E6B50", "accent": "#D9D4C7" }
+        {
+          "wall": "#B8503A",
+          "roof": "#6F7F8C",
+          "door": "#4F5B6B",
+          "accent": "#F7F3EE"
+        },
+        {
+          "wall": "#B8604E",
+          "roof": "#4F5B6B",
+          "door": "#3A3A48",
+          "accent": "#F2DDB5"
+        },
+        {
+          "wall": "#C9705B",
+          "roof": "#7A8B99",
+          "door": "#4F5B6B",
+          "accent": "#F7F3EE"
+        }
       ],
       "blueprint": {
         "blocks": [
-          { "id": "main", "at": [0, 0], "w": 2, "d": 1, "floors": 2, "floorH": 1.0, "roof": "hip", "window": "arch", "windowCols": 5, "door": "arch", "extras": [ { "type": "parapet" }, { "type": "balcony", "y": 1.0 } ], "_needs": ["mansard（hip 加高）"] },
-          { "id": "porch", "at": [0.6, 0.85], "w": 0.8, "d": 0.3, "floors": 1, "floorH": 1.0, "roof": "flat", "porch": "columns", "window": "plain", "windowCols": 0 }
-        ],
-        "joins": [ { "a": "porch", "b": "main", "type": "colonnade" } ]
-      }
-    },
-    {
-      "id": "lm:TPE-f08", "name": "監察院", "county": "TPE", "tier": "featured", "r": 150,
-      "photo_ref": "https://commons.wikimedia.org/w/index.php?search=Control+Yuan+building&title=Special:MediaSearch&type=image",
-      "observed": "L 形沿街轉角建築：轉角弧形入口上方銅綠圓頂、兩翼紅磚白橫帶兩層拱窗、翼端小圓頂塔、後方中庭",
-      "house": "lm:TPE-f08", "size": [2, 2], "real_floors": 2,
-      "palettes": [
-        { "wall": "#B8503A", "roof": "#7F9A8C", "door": "#4F5B6B", "accent": "#F7F3EE" },
-        { "wall": "#B8604E", "roof": "#6F7F8C", "door": "#3A3A48", "accent": "#F2DDB5" },
-        { "wall": "#C9705B", "roof": "#8A9680", "door": "#8E6B50", "accent": "#F7F3EE" }
-      ],
-      "blueprint": {
-        "blocks": [
-          { "id": "corner", "at": [0, 1], "w": 1, "d": 1, "floors": 2, "floorH": 1.05, "roof": "dome", "window": "arch", "windowCols": 2, "door": "arch", "porch": "columns", "extras": [ { "type": "bands", "rows": 3 } ] },
-          { "id": "wingE", "at": [1, 1], "w": 1, "d": 1, "floors": 2, "floorH": 1.0, "roof": "hip", "window": "arch", "windowCols": 3, "extras": [ { "type": "bands", "rows": 3 }, { "type": "dome", "scale": 0.35, "at": "end" } ] },
-          { "id": "wingN", "at": [0, 0], "w": 1, "d": 1, "floors": 2, "floorH": 1.0, "roof": "hip", "window": "arch", "windowCols": 3, "extras": [ { "type": "bands", "rows": 3 }, { "type": "dome", "scale": 0.35, "at": "end" } ] },
-          { "id": "court", "at": [1, 0], "w": 1, "d": 1, "floors": 0, "floorH": 0.1, "roof": "flat", "color": { "wall": "#9FBFA6" } }
+          {
+            "id": "rear",
+            "at": [
+              0,
+              0
+            ],
+            "w": 3,
+            "d": 1,
+            "floors": 3,
+            "floorH": 0.85,
+            "roof": "hip",
+            "eave": 1.08,
+            "window": "arch",
+            "windowCols": 6,
+            "extras": [
+              {
+                "type": "bands",
+                "rows": 3
+              }
+            ]
+          },
+          {
+            "id": "front",
+            "at": [
+              0,
+              1
+            ],
+            "w": 3,
+            "d": 1,
+            "floors": 4,
+            "floorH": 0.85,
+            "roof": "hip",
+            "eave": 1.08,
+            "window": "arch",
+            "windowCols": 6,
+            "door": "arch",
+            "extras": [
+              {
+                "type": "bands",
+                "rows": 4
+              }
+            ]
+          },
+          {
+            "id": "pavL",
+            "on": "front",
+            "at": [
+              0,
+              0.05
+            ],
+            "w": 0.45,
+            "d": 0.9,
+            "floors": 1,
+            "floorH": 0.6,
+            "roof": "hip",
+            "eave": 1.15,
+            "windowCols": 0
+          },
+          {
+            "id": "pavR",
+            "on": "front",
+            "at": [
+              2.55,
+              0.05
+            ],
+            "w": 0.45,
+            "d": 0.9,
+            "floors": 1,
+            "floorH": 0.6,
+            "roof": "hip",
+            "eave": 1.15,
+            "windowCols": 0
+          },
+          {
+            "id": "tower",
+            "on": "front",
+            "at": [
+              1.25,
+              0.15
+            ],
+            "w": 0.5,
+            "d": 0.7,
+            "floors": 7,
+            "floorH": 0.85,
+            "roof": "hip",
+            "eave": 1.3,
+            "window": "arch",
+            "windowCols": 1,
+            "extras": [
+              {
+                "type": "bands",
+                "rows": 7
+              }
+            ]
+          }
         ],
         "joins": [
-          { "a": "wingE", "b": "corner", "type": "shared_wall" }, { "a": "wingN", "b": "corner", "type": "shared_wall" },
-          { "a": "court", "b": "wingE", "type": "courtyard" }, { "a": "court", "b": "wingN", "type": "courtyard" }
+          {
+            "a": "tower",
+            "b": "front",
+            "type": "stack"
+          },
+          {
+            "a": "pavL",
+            "b": "front",
+            "type": "stack"
+          },
+          {
+            "a": "pavR",
+            "b": "front",
+            "type": "stack"
+          },
+          {
+            "a": "rear",
+            "b": "front",
+            "type": "shared_wall"
+          }
         ]
       }
     },
     {
-      "id": "lm:TPE-f09", "name": "迪化街街屋", "county": "TPE", "tier": "featured", "r": 100,
-      "photo_ref": "https://commons.wikimedia.org/w/index.php?search=Dihua+Street+facade&title=Special:MediaSearch&type=image",
-      "observed": "窄面寬、縱深長：前段兩層（騎樓拱廊、三連拱窗、巴洛克山牆），後段單層倉儲，中間天井",
-      "house": "lm:TPE-f09", "size": [1, 2], "real_floors": 2,
+      "id": "lm:TPE-f03",
+      "name": "中正紀念堂",
+      "county": "TPE",
+      "tier": "featured",
+      "r": 200,
+      "photo_ref": [
+        "https://commons.wikimedia.org/w/index.php?search=中正紀念堂&title=Special:MediaSearch&type=image",
+        "DuckDuckGo images: 中正紀念堂 空拍 / 正面"
+      ],
+      "observed": "空拍：方形主體置中於大平台；正面：主體高、藍瓦八角重簷攢尖頂出簷極大、金寶頂；正面大拱門與長階。",
+      "house": "lm:TPE-f03",
+      "size": [
+        3,
+        3
+      ],
+      "real_floors": 3,
       "palettes": [
-        { "wall": "#CFC7B4", "roof": "#6F7F8C", "door": "#8E6B50", "accent": "#B9B5A8" },
-        { "wall": "#B8503A", "roof": "#6F7F8C", "door": "#3A3A48", "accent": "#F7F3EE" },
-        { "wall": "#E9C9A8", "roof": "#4F5B6B", "door": "#8E6B50", "accent": "#6FA88A" }
+        {
+          "wall": "#F7F3EE",
+          "roof": "#4A6FA5",
+          "door": "#3A3A48",
+          "accent": "#E2B45A"
+        },
+        {
+          "wall": "#F2EEE6",
+          "roof": "#5B8BC9",
+          "door": "#4F5B6B",
+          "accent": "#E2B45A"
+        },
+        {
+          "wall": "#D9D4C7",
+          "roof": "#4F5B6B",
+          "door": "#3A3A48",
+          "accent": "#F7F3EE"
+        }
       ],
       "blueprint": {
         "blocks": [
-          { "id": "front", "at": [0, 1], "w": 1, "d": 1, "floors": 2, "floorH": 0.9, "roof": "flat", "window": "arch", "windowCols": 3, "door": "double", "porch": "arcade", "extras": [ { "type": "parapet", "style": "baroque" }, { "type": "signboard" } ] },
-          { "id": "rear", "at": [0, 0], "w": 1, "d": 1, "floors": 1, "floorH": 1.1, "roof": "gable", "window": "plain", "windowCols": 1 }
-        ],
-        "joins": [ { "a": "rear", "b": "front", "type": "shared_wall" } ]
-      }
-    },
-    {
-      "id": "lm:TPE-f10", "name": "台北 101", "county": "TPE", "tier": "featured", "r": 200,
-      "photo_ref": "https://commons.wikimedia.org/w/index.php?search=Taipei+101+tower&title=Special:MediaSearch&type=image",
-      "observed": "低矮玻璃裙樓佔大半基地，塔樓偏一角拔起：藍綠玻璃帷幕、八節竹節段上寬下窄、尖塔",
-      "house": "lm:TPE-f10", "size": [2, 2], "real_floors": 101,
-      "palettes": [
-        { "wall": "#7A9E99", "roof": "#5C6A72", "door": "#3A3A48", "accent": "#9FC8D9" },
-        { "wall": "#6F7F8C", "roof": "#4F5B6B", "door": "#3A3A48", "accent": "#9FC8D9" },
-        { "wall": "#8A9680", "roof": "#5E5A55", "door": "#3A3A48", "accent": "#F7F3EE" }
-      ],
-      "blueprint": {
-        "blocks": [
-          { "id": "podium", "at": [0, 0], "w": 2, "d": 2, "floors": 2, "floorH": 0.9, "roof": "flat", "window": "plain", "windowCols": 4, "door": "plain", "color": { "wall": "accent" } },
-          { "id": "tower", "on": "podium", "at": [1, 0], "w": 1, "d": 1, "floors": 4, "floorH": 1.4, "roof": "pagoda", "window": "plain", "windowCols": 3, "special": "tower", "extras": [ { "type": "segments", "n": 8, "flare": 0.12 }, { "type": "spire", "h": 0.8 } ] }
-        ],
-        "joins": [ { "a": "tower", "b": "podium", "type": "stack" } ]
-      }
-    },
-    {
-      "id": "lm:TPE-f11", "name": "圓山大飯店", "county": "TPE", "tier": "featured", "r": 200,
-      "photo_ref": "https://commons.wikimedia.org/w/index.php?search=Grand+Hotel+Taipei&title=Special:MediaSearch&type=image",
-      "observed": "中央高聳主樓朱紅柱列＋金黃琉璃瓦大歇山頂，兩側較低翼樓同色系，底層紅柱門廊",
-      "house": "lm:TPE-f11", "size": [3, 1], "real_floors": 14,
-      "palettes": [
-        { "wall": "#B8503A", "roof": "#C9A24A", "door": "#8F3F22", "accent": "#F7F3EE" },
-        { "wall": "#C7453B", "roof": "#E2B45A", "door": "#3A3A48", "accent": "#F2DDB5" },
-        { "wall": "#B8604E", "roof": "#8A5A3C", "door": "#8F3F22", "accent": "#D9D4C7" }
-      ],
-      "blueprint": {
-        "blocks": [
-          { "id": "main", "at": [1, 0], "w": 1, "d": 1, "floors": 4, "floorH": 1.1, "roof": "hip", "window": "plain", "windowCols": 3, "door": "double", "porch": "columns", "special": "lantern", "extras": [ { "type": "balcony", "y": 1.1 }, { "type": "balcony", "y": 2.2 }, { "type": "balcony", "y": 3.3 } ] },
-          { "id": "wingL", "at": [0, 0], "w": 1, "d": 1, "floors": 2, "floorH": 1.0, "roof": "hip", "window": "plain", "windowCols": 3 },
-          { "id": "wingR", "at": [2, 0], "w": 1, "d": 1, "floors": 2, "floorH": 1.0, "roof": "hip", "window": "plain", "windowCols": 3 }
-        ],
-        "joins": [ { "a": "wingL", "b": "main", "type": "shared_wall" }, { "a": "wingR", "b": "main", "type": "shared_wall" } ]
-      }
-    },
-    {
-      "id": "lm:TPE-f12", "name": "林安泰古厝", "county": "TPE", "tier": "featured", "r": 150,
-      "photo_ref": "https://commons.wikimedia.org/w/index.php?search=林安泰古厝&title=Special:MediaSearch&type=image",
-      "observed": "三合院：正身三開間燕尾脊在後，兩側護龍向前伸、較低，中間埕（前庭），紅磚牆橙瓦，小方窗木門",
-      "house": "lm:TPE-f12", "size": [3, 2], "real_floors": 1,
-      "palettes": [
-        { "wall": "#C9705B", "roof": "#C97D4B", "door": "#8E6B50", "accent": "#E2B45A" },
-        { "wall": "#B8604E", "roof": "#8A5A3C", "door": "#3A3A48", "accent": "#F7F3EE" },
-        { "wall": "#D4836C", "roof": "#C97D4B", "door": "#2F5D50", "accent": "#F7F3EE" }
-      ],
-      "blueprint": {
-        "blocks": [
-          { "id": "main", "at": [0, 0], "w": 3, "d": 1, "floors": 1, "floorH": 1.0, "roof": "swallowtail", "window": "plain", "windowCols": 3, "door": "double", "porch": "eave" },
-          { "id": "wingL", "at": [0, 1], "w": 1, "d": 1, "floors": 1, "floorH": 0.8, "roof": "swallowtail", "window": "plain", "windowCols": 1 },
-          { "id": "wingR", "at": [2, 1], "w": 1, "d": 1, "floors": 1, "floorH": 0.8, "roof": "swallowtail", "window": "plain", "windowCols": 1 },
-          { "id": "court", "at": [1, 1], "w": 1, "d": 1, "floors": 0, "floorH": 0.1, "roof": "flat", "color": { "wall": "#9FBFA6" } }
+          {
+            "id": "plinth",
+            "at": [
+              0,
+              0
+            ],
+            "w": 3,
+            "d": 3,
+            "floors": 1,
+            "floorH": 0.5,
+            "roof": "flat",
+            "windowCols": 0,
+            "extras": [
+              {
+                "type": "stairs",
+                "side": "south"
+              }
+            ]
+          },
+          {
+            "id": "hall",
+            "on": "plinth",
+            "at": [
+              0.5,
+              0.5
+            ],
+            "w": 2,
+            "d": 2,
+            "floors": 4,
+            "floorH": 0.9,
+            "roof": "hip2",
+            "eave": 1.35,
+            "shape": "oct",
+            "window": "plain",
+            "windowCols": 2,
+            "door": "arch",
+            "extras": [
+              {
+                "type": "finial",
+                "color": "accent"
+              }
+            ]
+          }
         ],
         "joins": [
-          { "a": "wingL", "b": "main", "type": "shared_wall" }, { "a": "wingR", "b": "main", "type": "shared_wall" },
-          { "a": "court", "b": "main", "type": "courtyard" }
+          {
+            "a": "hall",
+            "b": "plinth",
+            "type": "stack"
+          }
+        ]
+      }
+    },
+    {
+      "id": "lm:TPE-f04",
+      "name": "國立臺灣博物館",
+      "county": "TPE",
+      "tier": "featured",
+      "r": 150,
+      "photo_ref": [
+        "https://commons.wikimedia.org/w/index.php?search=國立臺灣博物館&title=Special:MediaSearch&type=image",
+        "DuckDuckGo images: 國立臺灣博物館 空拍 / 正面"
+      ],
+      "observed": "空拍：長方形、中央圓頂在鼓座上；正面：六柱門廊向前突出、三角楣；兩翼較低、拱窗成排。",
+      "house": "lm:TPE-f04",
+      "size": [
+        3,
+        1
+      ],
+      "real_floors": 2,
+      "palettes": [
+        {
+          "wall": "#D9D4C7",
+          "roof": "#7F9A8C",
+          "door": "#4F5B6B",
+          "accent": "#F7F3EE"
+        },
+        {
+          "wall": "#E6E1D6",
+          "roof": "#6F7F8C",
+          "door": "#3A3A48",
+          "accent": "#D9D4C7"
+        },
+        {
+          "wall": "#CFC7B4",
+          "roof": "#8A9680",
+          "door": "#8E6B50",
+          "accent": "#F7F3EE"
+        }
+      ],
+      "blueprint": {
+        "blocks": [
+          {
+            "id": "wingL",
+            "at": [
+              0,
+              0
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 2,
+            "floorH": 1.0,
+            "roof": "hip",
+            "eave": 1.08,
+            "window": "arch",
+            "windowCols": 3
+          },
+          {
+            "id": "wingR",
+            "at": [
+              2,
+              0
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 2,
+            "floorH": 1.0,
+            "roof": "hip",
+            "eave": 1.08,
+            "window": "arch",
+            "windowCols": 3
+          },
+          {
+            "id": "center",
+            "at": [
+              1,
+              0
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 2,
+            "floorH": 1.2,
+            "roof": "dome",
+            "window": "arch",
+            "windowCols": 1
+          },
+          {
+            "id": "portico",
+            "at": [
+              1.1,
+              0.85
+            ],
+            "w": 0.8,
+            "d": 0.35,
+            "floors": 2,
+            "floorH": 1.2,
+            "roof": "gable",
+            "eave": 1.1,
+            "porch": "columns",
+            "door": "double",
+            "windowCols": 0,
+            "extras": [
+              {
+                "type": "pediment"
+              }
+            ]
+          }
+        ],
+        "joins": [
+          {
+            "a": "wingL",
+            "b": "center",
+            "type": "shared_wall"
+          },
+          {
+            "a": "wingR",
+            "b": "center",
+            "type": "shared_wall"
+          },
+          {
+            "a": "portico",
+            "b": "center",
+            "type": "colonnade"
+          }
+        ]
+      }
+    },
+    {
+      "id": "lm:TPE-f05",
+      "name": "西門紅樓",
+      "county": "TPE",
+      "tier": "featured",
+      "r": 100,
+      "photo_ref": [
+        "https://commons.wikimedia.org/w/index.php?search=西門紅樓&title=Special:MediaSearch&type=image",
+        "DuckDuckGo images: 西門紅樓 空拍 / 正面"
+      ],
+      "observed": "空拍：前八角、後十字形單層長屋；正面：八角兩層紅磚、白飾帶、深灰斜頂；十字樓山牆較低。",
+      "house": "lm:TPE-f05",
+      "size": [
+        1,
+        2
+      ],
+      "real_floors": 2,
+      "palettes": [
+        {
+          "wall": "#B8503A",
+          "roof": "#4F5B6B",
+          "door": "#8E6B50",
+          "accent": "#F7F3EE"
+        },
+        {
+          "wall": "#B8604E",
+          "roof": "#6F7F8C",
+          "door": "#3A3A48",
+          "accent": "#F2DDB5"
+        },
+        {
+          "wall": "#D4836C",
+          "roof": "#4F5B6B",
+          "door": "#8E6B50",
+          "accent": "#F7F3EE"
+        }
+      ],
+      "blueprint": {
+        "blocks": [
+          {
+            "id": "hall",
+            "at": [
+              0,
+              0
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 1,
+            "floorH": 1.3,
+            "roof": "gable",
+            "eave": 1.05,
+            "window": "arch",
+            "windowCols": 3
+          },
+          {
+            "id": "oct",
+            "at": [
+              0,
+              1
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 2,
+            "floorH": 0.9,
+            "roof": "hip",
+            "eave": 1.1,
+            "shape": "oct",
+            "window": "arch",
+            "windowCols": 2,
+            "door": "arch",
+            "extras": [
+              {
+                "type": "bands",
+                "rows": 2
+              }
+            ]
+          }
+        ],
+        "joins": [
+          {
+            "a": "hall",
+            "b": "oct",
+            "type": "shared_wall"
+          }
+        ]
+      }
+    },
+    {
+      "id": "lm:TPE-f06",
+      "name": "艋舺龍山寺",
+      "county": "TPE",
+      "tier": "featured",
+      "r": 150,
+      "photo_ref": [
+        "https://commons.wikimedia.org/w/index.php?search=艋舺龍山寺&title=Special:MediaSearch&type=image",
+        "DuckDuckGo images: 艋舺龍山寺 空拍 / 正面"
+      ],
+      "observed": "空拍：三進——前殿寬、正殿在中庭正中獨立、後殿寬；兩側護室長廊，中段鐘樓鼓樓（六角重簷小塔）。正面：燕尾脊、紅柱、石基、燈籠。",
+      "house": "lm:TPE-f06",
+      "size": [
+        3,
+        3
+      ],
+      "real_floors": 1,
+      "palettes": [
+        {
+          "wall": "#B8503A",
+          "roof": "#C97D4B",
+          "door": "#C7453B",
+          "accent": "#E2B45A"
+        },
+        {
+          "wall": "#B8604E",
+          "roof": "#8A5A3C",
+          "door": "#3A3A48",
+          "accent": "#E2B45A"
+        },
+        {
+          "wall": "#8E8A80",
+          "roof": "#C97D4B",
+          "door": "#C7453B",
+          "accent": "#F7F3EE"
+        }
+      ],
+      "blueprint": {
+        "blocks": [
+          {
+            "id": "rear",
+            "at": [
+              0,
+              0
+            ],
+            "w": 3,
+            "d": 1,
+            "floors": 1,
+            "floorH": 1.1,
+            "roof": "swallowtail",
+            "eave": 1.15,
+            "window": "koshi",
+            "windowCols": 3
+          },
+          {
+            "id": "sideL",
+            "at": [
+              0,
+              1
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 1,
+            "floorH": 0.7,
+            "roof": "hip",
+            "eave": 1.05,
+            "window": "plain",
+            "windowCols": 1
+          },
+          {
+            "id": "sideR",
+            "at": [
+              2,
+              1
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 1,
+            "floorH": 0.7,
+            "roof": "hip",
+            "eave": 1.05,
+            "window": "plain",
+            "windowCols": 1
+          },
+          {
+            "id": "bell",
+            "on": "sideL",
+            "at": [
+              0.2,
+              0.2
+            ],
+            "w": 0.6,
+            "d": 0.6,
+            "floors": 1,
+            "floorH": 1.1,
+            "roof": "hip2",
+            "eave": 1.3,
+            "shape": "oct",
+            "windowCols": 1
+          },
+          {
+            "id": "drum",
+            "on": "sideR",
+            "at": [
+              0.2,
+              0.2
+            ],
+            "w": 0.6,
+            "d": 0.6,
+            "floors": 1,
+            "floorH": 1.1,
+            "roof": "hip2",
+            "eave": 1.3,
+            "shape": "oct",
+            "windowCols": 1
+          },
+          {
+            "id": "court",
+            "at": [
+              1,
+              1
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 0,
+            "floorH": 0.1,
+            "roof": "flat",
+            "color": {
+              "wall": "#9FBFA6"
+            }
+          },
+          {
+            "id": "main",
+            "on": "court",
+            "at": [
+              0.15,
+              0.15
+            ],
+            "w": 0.7,
+            "d": 0.7,
+            "floors": 1,
+            "floorH": 1.7,
+            "roof": "swallowtail2",
+            "eave": 1.4,
+            "porch": "columns",
+            "door": "double",
+            "window": "koshi",
+            "windowCols": 1
+          },
+          {
+            "id": "front",
+            "at": [
+              0,
+              2
+            ],
+            "w": 3,
+            "d": 1,
+            "floors": 1,
+            "floorH": 1.0,
+            "roof": "swallowtail",
+            "eave": 1.15,
+            "porch": "columns",
+            "door": "double",
+            "special": "lantern",
+            "window": "koshi",
+            "windowCols": 2,
+            "color": {
+              "accent": "#8E8A80"
+            }
+          }
+        ],
+        "joins": [
+          {
+            "a": "main",
+            "b": "court",
+            "type": "stack"
+          },
+          {
+            "a": "court",
+            "b": "front",
+            "type": "courtyard"
+          },
+          {
+            "a": "court",
+            "b": "rear",
+            "type": "courtyard"
+          },
+          {
+            "a": "bell",
+            "b": "sideL",
+            "type": "stack"
+          },
+          {
+            "a": "drum",
+            "b": "sideR",
+            "type": "stack"
+          },
+          {
+            "a": "sideL",
+            "b": "front",
+            "type": "shared_wall"
+          },
+          {
+            "a": "sideR",
+            "b": "front",
+            "type": "shared_wall"
+          },
+          {
+            "a": "sideL",
+            "b": "rear",
+            "type": "shared_wall"
+          },
+          {
+            "a": "sideR",
+            "b": "rear",
+            "type": "shared_wall"
+          }
+        ]
+      }
+    },
+    {
+      "id": "lm:TPE-f07",
+      "name": "臺北賓館",
+      "county": "TPE",
+      "tier": "featured",
+      "r": 150,
+      "photo_ref": [
+        "https://commons.wikimedia.org/w/index.php?search=臺北賓館&title=Special:MediaSearch&type=image",
+        "DuckDuckGo images: 臺北賓館 空拍 / 正面"
+      ],
+      "observed": "空拍：橫長矩形、後方庭園；正面：兩層灰白石、馬薩式深灰頂、兩端角樓屋頂較高、中央圓頂小塔與突出柱廊門廊。",
+      "house": "lm:TPE-f07",
+      "size": [
+        2,
+        1
+      ],
+      "real_floors": 2,
+      "palettes": [
+        {
+          "wall": "#E6E1D6",
+          "roof": "#4F5B6B",
+          "door": "#4A4642",
+          "accent": "#B9B5A8"
+        },
+        {
+          "wall": "#D9D4C7",
+          "roof": "#6F7F8C",
+          "door": "#3A3A48",
+          "accent": "#F7F3EE"
+        },
+        {
+          "wall": "#F2EEE6",
+          "roof": "#5E5A55",
+          "door": "#8E6B50",
+          "accent": "#D9D4C7"
+        }
+      ],
+      "blueprint": {
+        "blocks": [
+          {
+            "id": "main",
+            "at": [
+              0,
+              0
+            ],
+            "w": 2,
+            "d": 1,
+            "floors": 2,
+            "floorH": 1.0,
+            "roof": "hip",
+            "eave": 1.08,
+            "window": "arch",
+            "windowCols": 5,
+            "extras": [
+              {
+                "type": "bands",
+                "rows": 2
+              },
+              {
+                "type": "parapet"
+              }
+            ]
+          },
+          {
+            "id": "pavL",
+            "on": "main",
+            "at": [
+              0.02,
+              0.08
+            ],
+            "w": 0.4,
+            "d": 0.84,
+            "floors": 1,
+            "floorH": 0.45,
+            "roof": "hip",
+            "eave": 1.1,
+            "windowCols": 0
+          },
+          {
+            "id": "pavR",
+            "on": "main",
+            "at": [
+              1.58,
+              0.08
+            ],
+            "w": 0.4,
+            "d": 0.84,
+            "floors": 1,
+            "floorH": 0.45,
+            "roof": "hip",
+            "eave": 1.1,
+            "windowCols": 0
+          },
+          {
+            "id": "cupola",
+            "on": "main",
+            "at": [
+              0.78,
+              0.25
+            ],
+            "w": 0.44,
+            "d": 0.5,
+            "floors": 1,
+            "floorH": 0.5,
+            "roof": "dome",
+            "windowCols": 0
+          },
+          {
+            "id": "porch",
+            "at": [
+              0.7,
+              0.85
+            ],
+            "w": 0.6,
+            "d": 0.32,
+            "floors": 1,
+            "floorH": 1.0,
+            "roof": "flat",
+            "porch": "columns",
+            "door": "arch",
+            "windowCols": 0
+          }
+        ],
+        "joins": [
+          {
+            "a": "pavL",
+            "b": "main",
+            "type": "stack"
+          },
+          {
+            "a": "pavR",
+            "b": "main",
+            "type": "stack"
+          },
+          {
+            "a": "cupola",
+            "b": "main",
+            "type": "stack"
+          },
+          {
+            "a": "porch",
+            "b": "main",
+            "type": "colonnade"
+          }
+        ]
+      }
+    },
+    {
+      "id": "lm:TPE-f08",
+      "name": "監察院",
+      "county": "TPE",
+      "tier": "featured",
+      "r": 150,
+      "photo_ref": [
+        "https://commons.wikimedia.org/w/index.php?search=Control+Yuan+building&title=Special:MediaSearch&type=image",
+        "DuckDuckGo images: 監察院 空拍 / 正面"
+      ],
+      "observed": "空拍：L 形沿街轉角、後方中庭；正面：轉角弧形入口上方大圓頂（鼓座＋圓頂），兩翼末端各一小圓頂塔，紅磚白橫帶兩層拱窗。",
+      "house": "lm:TPE-f08",
+      "size": [
+        2,
+        2
+      ],
+      "real_floors": 2,
+      "palettes": [
+        {
+          "wall": "#B8503A",
+          "roof": "#7F9A8C",
+          "door": "#4F5B6B",
+          "accent": "#F7F3EE"
+        },
+        {
+          "wall": "#B8604E",
+          "roof": "#6F7F8C",
+          "door": "#3A3A48",
+          "accent": "#F2DDB5"
+        },
+        {
+          "wall": "#C9705B",
+          "roof": "#8A9680",
+          "door": "#8E6B50",
+          "accent": "#F7F3EE"
+        }
+      ],
+      "blueprint": {
+        "blocks": [
+          {
+            "id": "wingN",
+            "at": [
+              0,
+              0
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 2,
+            "floorH": 1.0,
+            "roof": "hip",
+            "eave": 1.06,
+            "window": "arch",
+            "windowCols": 3,
+            "extras": [
+              {
+                "type": "bands",
+                "rows": 3
+              }
+            ]
+          },
+          {
+            "id": "court",
+            "at": [
+              1,
+              0
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 0,
+            "floorH": 0.1,
+            "roof": "flat",
+            "color": {
+              "wall": "#9FBFA6"
+            }
+          },
+          {
+            "id": "corner",
+            "at": [
+              0,
+              1
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 2,
+            "floorH": 1.05,
+            "roof": "dome",
+            "porch": "columns",
+            "door": "arch",
+            "window": "arch",
+            "windowCols": 2,
+            "extras": [
+              {
+                "type": "bands",
+                "rows": 3
+              }
+            ]
+          },
+          {
+            "id": "wingE",
+            "at": [
+              1,
+              1
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 2,
+            "floorH": 1.0,
+            "roof": "hip",
+            "eave": 1.06,
+            "window": "arch",
+            "windowCols": 3,
+            "extras": [
+              {
+                "type": "bands",
+                "rows": 3
+              }
+            ]
+          },
+          {
+            "id": "domeN",
+            "on": "wingN",
+            "at": [
+              0.3,
+              0.05
+            ],
+            "w": 0.4,
+            "d": 0.4,
+            "floors": 1,
+            "floorH": 0.25,
+            "roof": "dome",
+            "windowCols": 0
+          },
+          {
+            "id": "domeE",
+            "on": "wingE",
+            "at": [
+              0.55,
+              0.3
+            ],
+            "w": 0.4,
+            "d": 0.4,
+            "floors": 1,
+            "floorH": 0.25,
+            "roof": "dome",
+            "windowCols": 0
+          }
+        ],
+        "joins": [
+          {
+            "a": "wingN",
+            "b": "corner",
+            "type": "shared_wall"
+          },
+          {
+            "a": "wingE",
+            "b": "corner",
+            "type": "shared_wall"
+          },
+          {
+            "a": "domeN",
+            "b": "wingN",
+            "type": "stack"
+          },
+          {
+            "a": "domeE",
+            "b": "wingE",
+            "type": "stack"
+          },
+          {
+            "a": "court",
+            "b": "wingN",
+            "type": "courtyard"
+          },
+          {
+            "a": "court",
+            "b": "wingE",
+            "type": "courtyard"
+          }
+        ]
+      }
+    },
+    {
+      "id": "lm:TPE-f09",
+      "name": "迪化街街屋",
+      "county": "TPE",
+      "tier": "featured",
+      "r": 100,
+      "photo_ref": [
+        "https://commons.wikimedia.org/w/index.php?search=Dihua+Street+facade&title=Special:MediaSearch&type=image",
+        "DuckDuckGo images: 迪化街街屋 空拍 / 正面"
+      ],
+      "observed": "空拍：窄面寬、縱深長、中段天井、後段低；正面：騎樓拱廊、二樓三連拱窗、巴洛克山牆高出屋頂。",
+      "house": "lm:TPE-f09",
+      "size": [
+        1,
+        2
+      ],
+      "real_floors": 2,
+      "palettes": [
+        {
+          "wall": "#CFC7B4",
+          "roof": "#6F7F8C",
+          "door": "#8E6B50",
+          "accent": "#B9B5A8"
+        },
+        {
+          "wall": "#B8503A",
+          "roof": "#6F7F8C",
+          "door": "#3A3A48",
+          "accent": "#F7F3EE"
+        },
+        {
+          "wall": "#E9C9A8",
+          "roof": "#4F5B6B",
+          "door": "#8E6B50",
+          "accent": "#6FA88A"
+        }
+      ],
+      "blueprint": {
+        "blocks": [
+          {
+            "id": "rear",
+            "at": [
+              0,
+              0
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 1,
+            "floorH": 1.1,
+            "roof": "gable",
+            "eave": 1.05,
+            "window": "plain",
+            "windowCols": 1
+          },
+          {
+            "id": "front",
+            "at": [
+              0,
+              1
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 2,
+            "floorH": 0.9,
+            "roof": "flat",
+            "porch": "arcade",
+            "door": "double",
+            "window": "arch",
+            "windowCols": 3,
+            "extras": [
+              {
+                "type": "signboard"
+              }
+            ]
+          },
+          {
+            "id": "parapet",
+            "on": "front",
+            "at": [
+              0.05,
+              0.86
+            ],
+            "w": 0.9,
+            "d": 0.1,
+            "floors": 1,
+            "floorH": 0.4,
+            "roof": "gable",
+            "windowCols": 0,
+            "color": {
+              "wall": "accent"
+            }
+          }
+        ],
+        "joins": [
+          {
+            "a": "rear",
+            "b": "front",
+            "type": "shared_wall"
+          },
+          {
+            "a": "parapet",
+            "b": "front",
+            "type": "stack"
+          }
+        ]
+      }
+    },
+    {
+      "id": "lm:TPE-f10",
+      "name": "台北 101",
+      "county": "TPE",
+      "tier": "featured",
+      "r": 200,
+      "photo_ref": [
+        "https://commons.wikimedia.org/w/index.php?search=Taipei+101+tower&title=Special:MediaSearch&type=image",
+        "DuckDuckGo images: 台北 101 空拍 / 正面"
+      ],
+      "observed": "空拍：玻璃裙樓佔滿基地、塔樓從一角拔起；正面：25 層倒梯形基座向上收分、8 節竹節每節上寬下窄、節角如意飾、基座兩枚圓徽、頂部階梯塔冠＋尖塔。",
+      "house": "lm:TPE-f10",
+      "size": [
+        2,
+        2
+      ],
+      "real_floors": 101,
+      "palettes": [
+        {
+          "wall": "#7A9E99",
+          "roof": "#5C6A72",
+          "door": "#3A3A48",
+          "accent": "#9FC8D9"
+        },
+        {
+          "wall": "#6F7F8C",
+          "roof": "#4F5B6B",
+          "door": "#3A3A48",
+          "accent": "#9FC8D9"
+        },
+        {
+          "wall": "#8A9680",
+          "roof": "#5E5A55",
+          "door": "#3A3A48",
+          "accent": "#F7F3EE"
+        }
+      ],
+      "blueprint": {
+        "blocks": [
+          {
+            "id": "podium",
+            "at": [
+              0,
+              0
+            ],
+            "w": 2,
+            "d": 2,
+            "floors": 3,
+            "floorH": 0.75,
+            "roof": "flat",
+            "eave": 1.04,
+            "window": "plain",
+            "windowCols": 4,
+            "door": "plain",
+            "color": {
+              "wall": "accent"
+            }
+          },
+          {
+            "id": "base",
+            "on": "podium",
+            "at": [
+              1.05,
+              0.05
+            ],
+            "w": 0.9,
+            "d": 0.9,
+            "floors": 5,
+            "floorH": 0.95,
+            "roof": "flat",
+            "sBot": 1.0,
+            "sTop": 0.78,
+            "window": "plain",
+            "windowCols": 3,
+            "extras": [
+              {
+                "type": "medallion",
+                "n": 2
+              }
+            ]
+          },
+          {
+            "id": "seg",
+            "on": "base",
+            "at": [
+              0.1,
+              0.1
+            ],
+            "w": 0.7,
+            "d": 0.7,
+            "floors": 1,
+            "floorH": 0.62,
+            "roof": "flat",
+            "sBot": 0.82,
+            "sTop": 1.08,
+            "segments": 8,
+            "window": "plain",
+            "windowCols": 2,
+            "extras": [
+              {
+                "type": "ruyi",
+                "corners": 4
+              }
+            ]
+          },
+          {
+            "id": "cap",
+            "on": "seg",
+            "at": [
+              0.2,
+              0.2
+            ],
+            "w": 0.3,
+            "d": 0.3,
+            "floors": 1,
+            "floorH": 0.5,
+            "roof": "flat",
+            "sBot": 1,
+            "sTop": 0.8,
+            "windowCols": 0,
+            "color": {
+              "wall": "roof"
+            }
+          },
+          {
+            "id": "spire",
+            "on": "cap",
+            "at": [
+              0.1,
+              0.1
+            ],
+            "w": 0.1,
+            "d": 0.1,
+            "floors": 1,
+            "floorH": 1.3,
+            "roof": "spire",
+            "windowCols": 0,
+            "color": {
+              "wall": "roof"
+            }
+          }
+        ],
+        "joins": [
+          {
+            "a": "base",
+            "b": "podium",
+            "type": "stack"
+          },
+          {
+            "a": "seg",
+            "b": "base",
+            "type": "stack"
+          },
+          {
+            "a": "cap",
+            "b": "seg",
+            "type": "stack"
+          },
+          {
+            "a": "spire",
+            "b": "cap",
+            "type": "stack"
+          }
+        ]
+      }
+    },
+    {
+      "id": "lm:TPE-f11",
+      "name": "圓山大飯店",
+      "county": "TPE",
+      "tier": "featured",
+      "r": 200,
+      "photo_ref": [
+        "https://commons.wikimedia.org/w/index.php?search=Grand+Hotel+Taipei&title=Special:MediaSearch&type=image",
+        "DuckDuckGo images: 圓山大飯店 空拍 / 正面"
+      ],
+      "observed": "空拍：單一大方體在前、低矮長翼樓向後延伸；正面：14 層紅柱陽台格子、金瓦重簷歇山頂出簷極大（下簷環繞約 11 樓）、正面低矮三開間牌樓式門廊。",
+      "house": "lm:TPE-f11",
+      "size": [
+        3,
+        2
+      ],
+      "real_floors": 14,
+      "palettes": [
+        {
+          "wall": "#B8503A",
+          "roof": "#C9A24A",
+          "door": "#8F3F22",
+          "accent": "#F7F3EE"
+        },
+        {
+          "wall": "#C7453B",
+          "roof": "#E2B45A",
+          "door": "#3A3A48",
+          "accent": "#F2DDB5"
+        },
+        {
+          "wall": "#B8604E",
+          "roof": "#8A5A3C",
+          "door": "#8F3F22",
+          "accent": "#D9D4C7"
+        }
+      ],
+      "blueprint": {
+        "blocks": [
+          {
+            "id": "main",
+            "at": [
+              0,
+              0
+            ],
+            "w": 2,
+            "d": 1,
+            "floors": 7,
+            "floorH": 0.72,
+            "roof": "hip2",
+            "eave": 1.4,
+            "eave2": 0.78,
+            "porch": "columns",
+            "door": "double",
+            "window": "plain",
+            "windowCols": 4,
+            "extras": [
+              {
+                "type": "bands",
+                "rows": 7,
+                "style": "balcony"
+              }
+            ],
+            "color": {
+              "column": "#C7453B"
+            }
+          },
+          {
+            "id": "wing",
+            "at": [
+              2,
+              0.1
+            ],
+            "w": 1,
+            "d": 0.8,
+            "floors": 2,
+            "floorH": 0.7,
+            "roof": "hip",
+            "eave": 1.1,
+            "window": "plain",
+            "windowCols": 3,
+            "color": {
+              "roof": "#B5452E"
+            }
+          },
+          {
+            "id": "porte",
+            "at": [
+              0.55,
+              1.05
+            ],
+            "w": 0.9,
+            "d": 0.3,
+            "floors": 1,
+            "floorH": 0.55,
+            "roof": "hip",
+            "eave": 1.35,
+            "porch": "columns",
+            "windowCols": 0
+          }
+        ],
+        "joins": [
+          {
+            "a": "wing",
+            "b": "main",
+            "type": "shared_wall"
+          },
+          {
+            "a": "porte",
+            "b": "main",
+            "type": "colonnade"
+          }
+        ]
+      }
+    },
+    {
+      "id": "lm:TPE-f12",
+      "name": "林安泰古厝",
+      "county": "TPE",
+      "tier": "featured",
+      "r": 150,
+      "photo_ref": [
+        "https://commons.wikimedia.org/w/index.php?search=林安泰古厝&title=Special:MediaSearch&type=image",
+        "DuckDuckGo images: 林安泰古厝 空拍 / 正面"
+      ],
+      "observed": "空拍：三合院——正身在後、兩護龍向前、中間埕；正面：單層紅磚、橙瓦燕尾脊、正身屋脊高於護龍、小方窗木門、半月池在前。",
+      "house": "lm:TPE-f12",
+      "size": [
+        3,
+        2
+      ],
+      "real_floors": 1,
+      "palettes": [
+        {
+          "wall": "#C9705B",
+          "roof": "#C97D4B",
+          "door": "#8E6B50",
+          "accent": "#E2B45A"
+        },
+        {
+          "wall": "#B8604E",
+          "roof": "#8A5A3C",
+          "door": "#3A3A48",
+          "accent": "#F7F3EE"
+        },
+        {
+          "wall": "#D4836C",
+          "roof": "#C97D4B",
+          "door": "#2F5D50",
+          "accent": "#F7F3EE"
+        }
+      ],
+      "blueprint": {
+        "blocks": [
+          {
+            "id": "main",
+            "at": [
+              0,
+              0
+            ],
+            "w": 3,
+            "d": 1,
+            "floors": 1,
+            "floorH": 1.0,
+            "roof": "swallowtail",
+            "eave": 1.15,
+            "porch": "eave",
+            "door": "double",
+            "window": "plain",
+            "windowCols": 3
+          },
+          {
+            "id": "wingL",
+            "at": [
+              0,
+              1
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 1,
+            "floorH": 0.8,
+            "roof": "swallowtail",
+            "eave": 1.1,
+            "window": "plain",
+            "windowCols": 1
+          },
+          {
+            "id": "wingR",
+            "at": [
+              2,
+              1
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 1,
+            "floorH": 0.8,
+            "roof": "swallowtail",
+            "eave": 1.1,
+            "window": "plain",
+            "windowCols": 1
+          },
+          {
+            "id": "court",
+            "at": [
+              1,
+              1
+            ],
+            "w": 1,
+            "d": 1,
+            "floors": 0,
+            "floorH": 0.1,
+            "roof": "flat",
+            "color": {
+              "wall": "#9FBFA6"
+            }
+          }
+        ],
+        "joins": [
+          {
+            "a": "wingL",
+            "b": "main",
+            "type": "shared_wall"
+          },
+          {
+            "a": "wingR",
+            "b": "main",
+            "type": "shared_wall"
+          },
+          {
+            "a": "court",
+            "b": "main",
+            "type": "courtyard"
+          }
         ]
       }
     }

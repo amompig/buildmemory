@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BuildingYourMemory · components v1</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="./tokens.css">
+<style>
+/* ===== 本檔只放元件 class；顏色與尺寸一律取 tokens.css 變數。Code 直接複製 .c-* 區塊即可。===== */
+
+/* 展示用外框（不屬於產品） */
+.demo { max-width: 430px; margin: 0 auto; padding: var(--space-6) var(--page-x) 120px; display: flex; flex-direction: column; gap: 40px; }
+.demo h2 { margin: 0 0 var(--space-3); font-size: var(--fs-title); }
+.demo h2 small { font-weight: 500; font-size: var(--fs-label); color: var(--ink-2); margin-left: 8px; }
+.demo-note { font-size: var(--fs-label); color: var(--ink-2); line-height: 1.6; margin-top: var(--space-2); }
+.demo-scene { background: #DCE8E2; border-radius: var(--radius-lg); padding: var(--space-4); position: relative; }
+.stack { display: flex; flex-direction: column; gap: var(--space-3); }
+.row { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+
+/* ---------- 按鈕 ---------- */
+.c-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: var(--btn-h); padding: 0 16px; border: 0; border-radius: var(--radius); font: 700 16px/1 var(--font); cursor: pointer; text-decoration: none; }
+.c-btn--primary { background: var(--accent); color: var(--accent-ink); }
+.c-btn--primary:active { background: var(--accent-press); }
+.c-btn--primary:disabled { background: var(--surface-2); color: var(--ink-2); cursor: default; }
+.c-btn--secondary { height: var(--btn-h-sm); background: var(--surface); color: var(--accent); border: 1.5px solid var(--accent); font-size: 15px; }
+.c-btn--ghost { height: var(--btn-h-sm); background: var(--surface); color: var(--ink); border: 1px solid var(--line); font-size: 15px; }
+.c-btn--danger { background: var(--danger); color: #fff; }
+.c-btn--danger:disabled { background: var(--surface-2); color: var(--ink-2); }
+.c-btn--outline-muted { background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); }
+.c-btn--big { height: 56px; font-size: 17px; }
+.c-btn--float { box-shadow: var(--shadow); }
+.c-iconbtn { width: var(--touch-min); height: var(--touch-min); display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-pill); border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.c-iconbtn--float { box-shadow: var(--shadow); }
+.c-icon { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.c-icon--s { width: 18px; height: 18px; }
+
+/* ---------- chips ---------- */
+.c-chip { display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: var(--radius-pill); border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 500 13px/1 var(--font); cursor: pointer; }
+.c-chip[aria-pressed="true"] { background: var(--accent-tint); border: 1.5px solid var(--accent); color: var(--accent-press); }
+.c-tag { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: var(--radius-pill); background: var(--surface-2); color: var(--ink); font: 500 11px/1 var(--font); }
+.c-tag--accent { background: var(--accent-tint); color: var(--accent-press); }
+
+/* ---------- 卡片 / 底板 / 橫幅 / toast ---------- */
+.c-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4); }
+.c-card--hot { border: 1.5px solid var(--accent); }
+.c-sheet { background: var(--surface); border-radius: var(--radius-lg) var(--radius-lg) 0 0; box-shadow: var(--shadow-sheet); padding: 20px var(--page-x) 24px; display: flex; flex-direction: column; gap: 14px; }
+.c-banner { display: flex; align-items: center; justify-content: space-between; height: 44px; padding: 0 6px 0 14px; border-radius: var(--radius); background: var(--ink); color: var(--surface); box-shadow: var(--shadow); }
+.c-banner__title { font: 700 13px/1 var(--font); }
+.c-banner__btn { height: 36px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--surface); font: 500 13px/1 var(--font); cursor: pointer; }
+.c-banner__btn--primary { background: var(--accent); color: var(--accent-ink); font-weight: 700; padding: 0 14px; }
+.c-toast { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: var(--radius); background: var(--ink); color: var(--surface); font: 400 13px/1.4 var(--font); box-shadow: var(--shadow); }
+.c-toast__code { font: 500 11px/1 var(--font); color: #AFC0E0; width: 88px; flex: 0 0 auto; }
+.c-label { font: 500 var(--fs-label)/var(--lh-label) var(--font); letter-spacing: var(--ls-label); color: var(--ink-2); }
+.c-progress { height: 6px; border-radius: var(--radius-pill); background: var(--surface-2); overflow: hidden; }
+.c-progress > span { display: block; height: 100%; background: var(--accent); }
+
+/* ---------- 底欄三 tab ---------- */
+.c-tabbar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); background: var(--surface); padding: 6px 8px 24px; }
+.c-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: var(--touch-min); text-decoration: none; color: var(--ink-2); font: 500 11px/1 var(--font); }
+.c-tab[aria-current="page"] { color: var(--accent); }
+
+/* ---------- 擺放態倉庫抽屜 ---------- */
+.c-drawer { background: var(--surface); border-top: 1px solid var(--line); box-shadow: var(--shadow-sheet); padding: 12px 0 20px; display: flex; flex-direction: column; gap: 10px; }
+.c-drawer__head { display: flex; justify-content: space-between; align-items: center; padding: 0 var(--page-x); }
+.c-drawer__scroll { display: flex; gap: 8px; overflow-x: auto; padding: 0 var(--page-x) 4px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.c-drawer__scroll::-webkit-scrollbar { display: none; }
+.c-slot { flex: 0 0 auto; width: 108px; height: 132px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 10px 8px; box-sizing: border-box; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: var(--font); cursor: pointer; scroll-snap-align: start; }
+.c-slot[aria-pressed="true"] { background: var(--accent-tint); border: 1.5px solid var(--accent); color: var(--accent-press); }
+.c-slot__img { width: 56px; height: 56px; object-fit: contain; }
+.c-slot__name { font: 700 12px/1.2 var(--font); text-align: center; }
+.c-slot__meta { font: 400 11px/1.2 var(--font); color: var(--ink-2); }
+
+/* ---------- 倉庫列 ---------- */
+.c-stockrow { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 72px; padding: 10px 12px; box-sizing: border-box; text-align: left; border-radius: var(--radius-lg); border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-family: var(--font); cursor: pointer; }
+.c-stockrow[aria-pressed="true"] { border: 1.5px solid var(--danger); background: var(--danger-tint); }
+.c-stockrow--placed { opacity: 1; }
+.c-stockrow.is-dim { opacity: .45; }
+.c-stockrow__img { width: 44px; height: 52px; object-fit: contain; flex: 0 0 auto; }
+.c-stockrow__body { display: flex; flex-direction: column; gap: 4px; flex: 1 1 0; min-width: 0; }
+.c-stockrow__name { font: 700 15px/1.3 var(--font); }
+.c-stockrow__tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.c-stockrow__right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex: 0 0 auto; }
+.c-stockrow__qty { font: 700 15px/1 var(--font); font-variant-numeric: tabular-nums; }
+.c-stockrow__state { font: 400 11px/1 var(--font); color: var(--ink-2); }
+.c-stockrow__state--stock { color: var(--accent-press); }
+.c-check { width: 24px; height: 24px; border-radius: 8px; box-sizing: border-box; border: 1.5px solid var(--line); background: var(--surface); display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.c-check[aria-checked="true"] { background: var(--danger); border-color: var(--danger); }
+.c-check svg { width: 14px; height: 14px; stroke: #fff; stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- 格子狀態（DOM 示意；three 端用同色） ---------- */
+.c-cell { width: 44px; height: 44px; border-radius: 6px; box-sizing: border-box; }
+.c-cell--empty { background: #C3DDCC; }
+.c-cell--locked { background: #D5E0D9; }
+.c-cell--road { background: #6F7F8C; }
+.c-cell--ghost-ok { background: #C3DDCC; box-shadow: inset 0 0 0 2px var(--ok); background-color: rgba(79,154,122,.45); }
+.c-cell--ghost-bad { border: 2px solid var(--danger); background: repeating-linear-gradient(45deg, rgba(199,69,59,.35) 0 4px, rgba(199,69,59,0) 4px 9px), #C3DDCC; }
+
+/* ---------- 記憶卡 ---------- */
+.c-memory__top { display: flex; justify-content: space-between; align-items: center; }
+.c-memory__ok { display: flex; align-items: center; gap: 6px; color: var(--accent); font: 700 13px/1 var(--font); }
+.c-memory__date { font: 500 12px/1 var(--font); letter-spacing: .06em; color: var(--ink-2); }
+.c-memory__name { margin: 0; font: 700 var(--fs-display)/var(--lh-display) var(--font-display); color: var(--ink); }
+.c-memory__preview { display: flex; align-items: center; gap: 16px; padding: 12px 16px; border-radius: var(--radius-lg); background: var(--surface-2); }
+.c-memory__preview img { width: 150px; height: 150px; object-fit: contain; flex: 0 0 auto; }
+.c-memory__house { font: 700 16px/1.3 var(--font); }
+.c-memory__sub { font: 400 12px/1.5 var(--font); color: var(--ink-2); }
+.c-moods { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.c-mood { height: 48px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.c-mood[aria-pressed="true"] { border: 1.5px solid var(--accent); background: var(--accent-tint); color: var(--accent-press); }
+.c-mood svg { width: 24px; height: 24px; }
+.c-input { display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 14px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); }
+.c-input input { flex: 1 1 0; min-width: 0; border: 0; outline: none; background: transparent; font: 400 15px/1 var(--font); color: var(--ink); }
+.c-input input::placeholder { color: var(--ink-2); }
+.c-input:focus-within { border-color: var(--accent); }
+.c-input__count { font: 400 12px/1 var(--font); font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.c-memory__pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+/* ---------- 409 對話 ---------- */
+.c-dialog { background: var(--surface); border-radius: var(--radius-lg); padding: 20px var(--page-x); display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
+.c-dialog__title { margin: 0; font: 700 var(--fs-title)/var(--lh-title) var(--font); }
+.c-dialog__body { font: 400 14px/1.6 var(--font); color: var(--ink-2); }
+.c-conflict { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.c-conflict__opt { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); cursor: pointer; text-align: left; font-family: var(--font); color: var(--ink); }
+.c-conflict__opt[aria-pressed="true"] { border: 1.5px solid var(--accent); background: var(--accent-tint); }
+.c-conflict__thumb { width: 100%; aspect-ratio: 1 / 1; border-radius: 8px; background: #DCE8E2; display: block; }
+.c-conflict__label { font: 700 12px/1.3 var(--font); }
+.c-conflict__time { font: 400 11px/1.3 var(--font); color: var(--ink-2); }
+
+/* ---------- 分享面板 ---------- */
+.c-share__preview { aspect-ratio: 4 / 3; border-radius: var(--radius); background: #DCE8E2; display: flex; align-items: flex-end; padding: 12px; box-sizing: border-box; }
+.c-share__caption { font: 700 13px/1 var(--font); color: var(--ink); background: var(--surface); padding: 6px 10px; border-radius: 8px; }
+.c-switchrow { display: flex; align-items: center; justify-content: space-between; min-height: var(--touch-min); }
+.c-switchrow label { font: 400 15px/1 var(--font); }
+.c-switch { position: relative; width: 48px; height: 28px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); appearance: none; cursor: pointer; margin: 0; }
+.c-switch::after { content: ""; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line); box-sizing: border-box; transition: transform var(--t-snap) var(--ease); }
+.c-switch:checked { background: var(--accent); border-color: var(--accent); }
+.c-switch:checked::after { transform: translateX(20px); border-color: var(--accent); }
+
+/* ---------- 引導卡 ---------- */
+.c-guide { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.c-guide__step { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; display: inline-flex; align-items: center; justify-content: center; font: 700 13px/1 var(--font); flex: 0 0 auto; }
+.c-guide__text { flex: 1 1 0; font: 500 14px/1.4 var(--font); }
+.c-guide__skip { border: 0; background: transparent; color: var(--ink-2); font: 500 12px/1 var(--font); padding: 8px; cursor: pointer; }
+</style>
+</head>
+<body>
+<main class="demo">
+
+  <header class="stack">
+    <div class="c-label">COMPONENTS v1 · 2026-10-21 · 純 HTML/CSS，吃 tokens.css</div>
+    <h1 style="margin:0;font:700 var(--fs-h1)/var(--lh-h1) var(--font-display)">BuildingYourMemory 元件</h1>
+    <p class="demo-note">每個區塊的 class 直接對應 ui.js 要產的 DOM。房型縮圖以 <code>&lt;img&gt;</code> 佔位，Code 端換成啟動時預渲的 PNG。文案鍵見 ui_strings.json。</p>
+  </header>
+
+  <section>
+    <h2>1. 打卡大鈕三態 <small>F4</small></h2>
+    <div class="stack">
+      <button class="c-btn c-btn--primary c-btn--big c-btn--float">打卡 · 北門</button>
+      <button class="c-btn c-btn--primary c-btn--big" disabled>再走約 30 m</button>
+      <button class="c-btn c-btn--outline-muted c-btn--big" disabled>有訊號再按</button>
+      <div class="c-label" style="text-align:center">只在按下時取一次，只存地標名</div>
+    </div>
+    <p class="demo-note">灰鈕一定帶原因；沒有無說明的灰按鈕。</p>
+  </section>
+
+  <section>
+    <h2>2. 地標卡 <small>F4 最近 3 個</small></h2>
+    <div class="stack">
+      <div class="c-card c-card--hot" style="display:flex;align-items:center;gap:12px;padding:12px 14px">
+        <img class="c-stockrow__img" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='52'></svg>" style="background:#F0E9DD;border-radius:8px">
+        <div class="c-stockrow__body"><div class="c-stockrow__name" style="font-size:16px">北門（承恩門）</div><div class="c-stockrow__state">會拿到：閩南紅磚厝 · 第 3 次到訪</div></div>
+        <div class="c-stockrow__right"><div class="c-stockrow__qty" style="font-size:18px;color:var(--accent)">32 m</div><div class="c-stockrow__state">1 分鐘</div></div>
+      </div>
+      <div class="c-card" style="display:flex;align-items:center;gap:12px;padding:10px 14px">
+        <img class="c-stockrow__img" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='52'></svg>" style="background:#F0E9DD;border-radius:8px">
+        <div class="c-stockrow__body"><div class="c-stockrow__name" style="font-weight:500">撫臺街洋樓</div><div class="c-stockrow__state">會拿到：閩南街屋（騎樓）</div></div>
+        <div class="c-stockrow__right"><div class="c-stockrow__qty" style="color:var(--ink-2)">210 m</div><div class="c-stockrow__state">3 分鐘</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. 記憶卡 <small>F5 · 底板 .c-sheet</small></h2>
+    <div class="c-sheet" style="border-radius:var(--radius-lg)">
+      <div class="c-memory__top">
+        <div class="c-memory__ok"><svg class="c-icon c-icon--s" viewBox="0 0 24 24"><path d="m5 12 4.5 4.5L19 7"/></svg><span>打卡成功 · 第 3 次到訪</span></div>
+        <div class="c-memory__date">2026.10.21 · 14:32</div>
+      </div>
+      <h3 class="c-memory__name">北門（承恩門）</h3>
+      <div class="c-memory__preview">
+        <img alt="閩南紅磚厝 預覽" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150'></svg>" style="background:#E6DFD0;border-radius:12px">
+        <div><div class="c-memory__house">閩南紅磚厝</div><div class="c-memory__sub">燕尾脊 · 圓窗 · 原色</div><div class="c-memory__sub">佔 1 格 · 進倉庫</div></div>
+      </div>
+      <div>
+        <div class="c-label" style="display:flex;justify-content:space-between"><span>此刻的心情</span><span>可跳過</span></div>
+        <div class="c-moods" style="margin-top:8px">
+          <button class="c-mood" aria-label="開心" aria-pressed="true"><svg class="c-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 13.5c1 2 2.5 3 4 3s3-1 4-3"/><path d="M9 9.5h.01M15 9.5h.01"/></svg></button>
+          <button class="c-mood" aria-label="平靜" aria-pressed="false"><svg class="c-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 14.5c1 .8 2 1.2 3 1.2s2-.4 3-1.2"/><path d="M9 9.5h.01M15 9.5h.01"/></svg></button>
+          <button class="c-mood" aria-label="懷念" aria-pressed="false"><svg class="c-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 15h6"/><path d="M8 9.5c.6-.6 1.4-.6 2 0M14 9.5c.6-.6 1.4-.6 2 0"/></svg></button>
+          <button class="c-mood" aria-label="感動" aria-pressed="false"><svg class="c-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 14.5c1 .8 2 1.2 3 1.2s2-.4 3-1.2"/><path d="M9 9.5h.01M15 9.5h.01"/><path d="M16.5 12.5v2.5"/></svg></button>
+          <button class="c-mood" aria-label="累" aria-pressed="false"><svg class="c-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 15.5h6"/><path d="M8 10h3M13 10h3"/></svg></button>
+        </div>
+      </div>
+      <div>
+        <label class="c-label" for="note">一句話</label>
+        <div class="c-input" style="margin-top:6px"><input id="note" type="text" maxlength="40" placeholder="寫給這裡的一句話，可留白"><span class="c-input__count">0/40</span></div>
+      </div>
+      <div class="c-memory__pair">
+        <button class="c-btn c-btn--ghost">略過</button>
+        <button class="c-btn c-btn--secondary">存</button>
+      </div>
+      <button class="c-btn c-btn--primary">放進小鎮</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. 擺放橫幅 + 倉庫抽屜 <small>F2 / F3</small></h2>
+    <div class="stack">
+      <div class="c-banner"><span class="c-banner__title">擺放中 · 點格子落房</span><div class="row" style="gap:4px"><button class="c-banner__btn">復原</button><button class="c-banner__btn c-banner__btn--primary">完成</button></div></div>
+      <div class="c-drawer" style="border-radius:var(--radius-lg)">
+        <div class="c-drawer__head"><span class="c-label">倉庫 · 依日期</span><div class="row" style="gap:6px"><span class="c-tag c-tag--accent">日期</span><span class="c-tag" style="background:transparent;border:1px solid var(--line);color:var(--ink-2)">縣市</span></div></div>
+        <div class="c-drawer__scroll">
+          <button class="c-slot" aria-pressed="false"><span class="c-slot__img" style="display:flex;align-items:center;justify-content:center"><span style="width:44px;height:22px;background:#6F7F8C;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)"></span></span><span><span class="c-slot__name">道路</span><br><span class="c-slot__meta">無限</span></span></button>
+          <button class="c-slot" aria-pressed="true"><img class="c-slot__img" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56'></svg>" style="background:#E6DFD0;border-radius:8px"><span><span class="c-slot__name">閩南紅磚厝</span><br><span class="c-slot__meta">台北 · 10.21 · ×1</span></span></button>
+          <button class="c-slot" aria-pressed="false"><img class="c-slot__img" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56'></svg>" style="background:#E6DFD0;border-radius:8px"><span><span class="c-slot__name">鐵窗透天厝</span><br><span class="c-slot__meta">新北 · 10.19 · ×2</span></span></button>
+          <button class="c-slot" aria-pressed="false"><img class="c-slot__img" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56'></svg>" style="background:#E6DFD0;border-radius:8px"><span><span class="c-slot__name">閩南街屋</span><br><span class="c-slot__meta">台北 · 10.18 · ×1</span></span></button>
+        </div>
+      </div>
+    </div>
+    <p class="demo-note">第一格永遠是道路；選中 = aria-pressed="true"。抽屜在時底欄三 tab 隱藏。</p>
+  </section>
+
+  <section>
+    <h2>5. 工具列與格子狀態 <small>F3</small></h2>
+    <div class="demo-scene stack">
+      <div class="row" style="gap:12px">
+        <div class="stack" style="align-items:center;gap:6px"><div class="c-cell c-cell--empty"></div><span class="c-label">空地</span></div>
+        <div class="stack" style="align-items:center;gap:6px"><div class="c-cell c-cell--locked"></div><span class="c-label">鎖定</span></div>
+        <div class="stack" style="align-items:center;gap:6px"><div class="c-cell c-cell--road"></div><span class="c-label">路</span></div>
+        <div class="stack" style="align-items:center;gap:6px"><div class="c-cell c-cell--ghost-ok"></div><span class="c-label">可放</span></div>
+        <div class="stack" style="align-items:center;gap:6px"><div class="c-cell c-cell--ghost-bad"></div><span class="c-label">不可放</span></div>
+      </div>
+      <div class="row" style="flex-wrap:nowrap">
+        <button class="c-btn c-btn--float" style="height:48px;font-size:14px;background:var(--accent-tint);border:1.5px solid var(--accent);color:var(--accent-press)" aria-pressed="true"><svg class="c-icon c-icon--s" viewBox="0 0 24 24"><path d="M7 20 9.5 4h5L17 20"/><path d="M12 7v2M12 12v2.5M12 17v2"/></svg>塗路</button>
+        <button class="c-btn c-btn--ghost c-btn--float" style="font-size:14px" aria-pressed="false"><svg class="c-icon c-icon--s" viewBox="0 0 24 24"><path d="m5 15 8-8 6 6-5 5H8.5z"/><path d="M8.5 18H20"/></svg>擦除</button>
+      </div>
+      <div class="row" style="justify-content:flex-end">
+        <button class="c-iconbtn c-iconbtn--float" aria-label="轉到下一個方向"><svg class="c-icon" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg></button>
+        <button class="c-iconbtn c-iconbtn--float" aria-label="看全鎮"><svg class="c-icon" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>6. 擴張進度 + toast <small>F1 / F12</small></h2>
+    <div class="stack">
+      <div class="c-card" style="padding:10px 14px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="font-weight:700">我的小鎮 · 10×10</span><span style="color:var(--ink-2)">再 3 格就擴張一圈</span></div>
+        <div class="c-progress"><span style="width:70%"></span></div>
+      </div>
+      <div class="c-toast"><span class="c-toast__code">too_far</span><span>再走約 120 m</span></div>
+      <div class="c-toast"><span class="c-toast__code">cooldown</span><span>今天來過了，明早 4 點後再來</span></div>
+      <div class="c-toast"><span class="c-toast__code">road_orphan</span><span>擦掉這段路，旁邊的房子就沒路了</span></div>
+    </div>
+    <p class="demo-note">產品裡不顯示錯誤碼欄（.c-toast__code 只在本頁示意）。</p>
+  </section>
+
+  <section>
+    <h2>7. 倉庫列 + 拆解多選 <small>F7</small></h2>
+    <div class="stack">
+      <div class="row"><button class="c-chip" aria-pressed="true">依日期</button><button class="c-chip" aria-pressed="false">依縣市</button><span style="flex:1"></span><span class="c-chip" style="background:var(--surface-2);border-color:transparent">碎片 3</span><button class="c-chip" style="background:var(--ink);color:var(--surface);border-color:var(--ink)">選取中</button></div>
+      <button class="c-stockrow" aria-pressed="true"><span class="c-check" role="checkbox" aria-checked="true"><svg viewBox="0 0 24 24"><path d="m5 12 4.5 4.5L19 7"/></svg></span><img class="c-stockrow__img" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='52'></svg>" style="background:#E6DFD0;border-radius:8px"><span class="c-stockrow__body"><span class="c-stockrow__name">閩南紅磚厝</span><span class="c-stockrow__tags"><span class="c-tag">台北</span><span class="c-tag">10.21</span><span class="c-stockrow__state">北門</span></span></span><span class="c-stockrow__right"><span class="c-stockrow__qty">×1</span><span class="c-stockrow__state c-stockrow__state--stock">待放</span></span></button>
+      <button class="c-stockrow" aria-pressed="false"><span class="c-check" role="checkbox" aria-checked="false"><svg viewBox="0 0 24 24"><path d="m5 12 4.5 4.5L19 7"/></svg></span><img class="c-stockrow__img" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='52'></svg>" style="background:#E6DFD0;border-radius:8px"><span class="c-stockrow__body"><span class="c-stockrow__name">鐵窗透天厝</span><span class="c-stockrow__tags"><span class="c-tag">新北</span><span class="c-tag">10.19</span><span class="c-stockrow__state">每日簽到</span></span></span><span class="c-stockrow__right"><span class="c-stockrow__qty">×2</span><span class="c-stockrow__state c-stockrow__state--stock">待放</span></span></button>
+      <button class="c-stockrow is-dim"><img class="c-stockrow__img" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='44' height='52'></svg>" style="background:#E6DFD0;border-radius:8px"><span class="c-stockrow__body"><span class="c-stockrow__name">閩南街屋（騎樓）</span><span class="c-stockrow__tags"><span class="c-tag">台北</span><span class="c-tag">10.05</span><span class="c-stockrow__state">剝皮寮</span></span></span><span class="c-stockrow__right"><span class="c-stockrow__qty">(6, 10)</span><span class="c-stockrow__state">已放</span></span></button>
+      <div class="row" style="flex-wrap:nowrap"><button class="c-btn c-btn--ghost" style="flex:0 0 96px">取消</button><button class="c-btn c-btn--danger" style="height:48px;font-size:15px">拆解 1 棟換 1 碎片；記憶卡會留著</button></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>8. 409 對話 <small>F8</small></h2>
+    <div class="c-dialog">
+      <h3 class="c-dialog__title">兩邊都改了小鎮</h3>
+      <div class="c-dialog__body">另一台裝置存了新版本，選一個留下；沒選的那份會留在這支手機 30 天</div>
+      <div class="c-conflict">
+        <button class="c-conflict__opt" aria-pressed="false"><canvas class="c-conflict__thumb" width="160" height="160" aria-label="這支手機的小鎮縮圖"></canvas><span class="c-conflict__label">這支手機・剛才</span><span class="c-conflict__time">12 棟 · rev 41</span></button>
+        <button class="c-conflict__opt" aria-pressed="true"><canvas class="c-conflict__thumb" width="160" height="160" aria-label="另一台裝置的小鎮縮圖"></canvas><span class="c-conflict__label">另一台・10/20 21:30</span><span class="c-conflict__time">13 棟 · rev 42 · 較新</span></button>
+      </div>
+      <button class="c-btn c-btn--primary">用較新的</button>
+      <button class="c-btn c-btn--ghost">用這支手機的</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>9. 分享面板 <small>F10</small></h2>
+    <div class="c-sheet" style="border-radius:var(--radius-lg)">
+      <h3 class="c-dialog__title">分享小鎮</h3>
+      <div class="c-share__preview"><span class="c-share__caption">我的小鎮 · 12 棟</span></div>
+      <div class="c-switchrow"><label for="s1">顯示縣市</label><input class="c-switch" id="s1" type="checkbox"></div>
+      <div class="c-switchrow"><label for="s2">顯示日期</label><input class="c-switch" id="s2" type="checkbox"></div>
+      <div class="c-switchrow"><label for="s3">顯示地標名</label><input class="c-switch" id="s3" type="checkbox"></div>
+      <button class="c-btn c-btn--primary">分享圖片</button>
+    </div>
+    <p class="demo-note">三個開關預設關；改了預覽即時重畫。</p>
+  </section>
+
+  <section>
+    <h2>10. 引導卡 + 底欄三 tab <small>F0 / 全域</small></h2>
+    <div class="stack">
+      <div class="c-guide"><span class="c-guide__step">1</span><span class="c-guide__text">先塗一條路：單指在格子上滑</span><button class="c-guide__skip">略過引導</button></div>
+      <nav class="c-tabbar" aria-label="主分頁" style="border:1px solid var(--line);border-radius:var(--radius)">
+        <a class="c-tab" href="#" aria-current="page"><svg class="c-icon" viewBox="0 0 24 24"><path d="M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg>地圖</a>
+        <a class="c-tab" href="#"><svg class="c-icon" viewBox="0 0 24 24"><path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-6h4v6"/></svg>城鎮</a>
+        <a class="c-tab" href="#"><svg class="c-icon" viewBox="0 0 24 24"><path d="M4 7.5 12 4l8 3.5v9L12 20l-8-3.5z"/><path d="M4 7.5 12 11l8-3.5M12 11v9"/></svg>倉庫</a>
+      </nav>
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

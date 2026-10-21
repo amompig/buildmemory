@@ -1,0 +1,92 @@
+/* BuildingYourMemory · design/tokens.css · v1（2026-10-21）
+   來源：design/palette.seed.json → 畫布風格板定稿。
+   與 seed 不同（★）：accent 加深到 #B5532F（白字 4.9:1）；surface 改暖白；ok 另給文字色。
+   three 區塊見 palette.json；這裡只有 DOM 用的變數。 */
+
+:root {
+  /* 紙與層次 */
+  --bg: #F6F1E8;
+  --surface: #FFFCF7;        /* ★ seed #FFFFFF */
+  --surface-2: #F0E9DD;
+  --line: #E3DBCD;
+
+  /* 墨 */
+  --ink: #2F3B46;
+  --ink-2: #5C6670;          /* 次文字，對 bg 5.2:1 */
+  --ink-3: #8B949C;          /* 只做停用與裝飾，對 bg 2.7:1，不放文字 */
+
+  /* 強調（只有一個） */
+  --accent: #B5532F;         /* ★ seed #C9705B 配白字 4.4:1 不過線 */
+  --accent-ink: #FFFFFF;
+  --accent-press: #8F3F22;   /* ★ 按下 */
+  --accent-tint: #F3DDD5;    /* ★ 選取底，配 --accent-press 文字 */
+  --accent-soft: #C9705B;    /* seed 原值，只做填色與插圖 */
+
+  /* 語意 */
+  --ok: #4F9A7A;             /* 幽靈格、進度，不放文字 */
+  --ok-ink: #2F7A5C;         /* ★ 綠字 4.6:1 */
+  --warn: #D9A441;           /* 只做填色 */
+  --danger: #C7453B;         /* 非法格框線、拆解；白字 4.8:1 */
+  --danger-tint: #FBE4E2;
+
+  /* 浮在 3D 場景上的面板 */
+  --scrim: rgba(47, 59, 70, 0.35);
+  --shadow: 0 2px 8px rgba(47, 59, 70, 0.12);
+  --shadow-sheet: 0 -2px 12px rgba(47, 59, 70, 0.12);
+
+  /* 字 */
+  --font: system-ui, -apple-system, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-display: "LXGW WenKai TC", "Noto Sans TC", serif;  /* 只用在記憶卡地標名、分頁大標 */
+  --fs-display: 30px;  --lh-display: 1.25;
+  --fs-h1: 26px;       --lh-h1: 1.2;
+  --fs-title: 17px;    --lh-title: 1.3;
+  --fs-body: 15px;     --lh-body: 1.6;
+  --fs-label: 12px;    --lh-label: 1.4;   --ls-label: 0.08em;
+  --fs-micro: 11px;
+  --fs-num: 28px;      /* 距離、倒數，配 font-variant-numeric: tabular-nums */
+
+  /* 間距與形狀 */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px;  --space-4: 16px;  --space-6: 24px;
+  --page-x: 16px;
+  --radius: 12px;      /* 控制 */
+  --radius-lg: 20px;   /* 卡片、抽屜、底板 */
+  --radius-pill: 999px;
+  --touch-min: 44px;
+  --btn-h: 52px;       /* 主按鈕 */
+  --btn-h-sm: 48px;    /* 次按鈕、工具 */
+  --tab-h: 84px;       /* 底欄含 home indicator 24px */
+  --safe-top: 54px;    /* 不畫假狀態列，留給系統 */
+
+  /* 動效（gestures.md §動效） */
+  --t-snap: 120ms;     /* 幽靈吸附 */
+  --t-drop: 240ms;     /* 落房 */
+  --t-sheet: 220ms;    /* 抽屜、記憶卡升起 */
+  --t-camera: 320ms;   /* 4 向切換、俯視補間 */
+  --t-unlock: 900ms;   /* 解鎖儀式 */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* 疊層 */
+  --z-scene: 0;  --z-hud: 10;  --z-sheet: 20;  --z-toast: 30;  --z-dialog: 40;
+}
+
+html { font-family: var(--font); color: var(--ink); background: var(--bg); -webkit-text-size-adjust: 100%; }
+body { margin: 0; }
+
+/* 基礎元件（components.html 取用） */
+.btn-primary { height: var(--btn-h); border: 0; border-radius: var(--radius); background: var(--accent); color: var(--accent-ink); font: 700 16px/1 var(--font); }
+.btn-primary:active { background: var(--accent-press); }
+.btn-primary:disabled { background: var(--surface-2); color: var(--ink-2); }
+.btn-secondary { height: var(--btn-h-sm); border: 1.5px solid var(--accent); border-radius: var(--radius); background: var(--surface); color: var(--accent); font: 700 15px/1 var(--font); }
+.btn-ghost { height: var(--btn-h-sm); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink); font: 700 15px/1 var(--font); }
+.chip { font: 500 12px/1 var(--font); padding: 6px 12px; border-radius: var(--radius-pill); border: 1px solid var(--line); color: var(--ink-2); }
+.chip[aria-pressed="true"], .chip.is-on { background: var(--accent-tint); border-color: var(--accent); color: var(--accent-press); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.banner { height: 44px; border-radius: var(--radius); background: var(--ink); color: var(--surface); box-shadow: var(--shadow); }
+.toast { border-radius: var(--radius); background: var(--ink); color: var(--surface); font-size: 13px; box-shadow: var(--shadow); }
+.cell-bad { border: 2px solid var(--danger); background: repeating-linear-gradient(45deg, rgba(199,69,59,.35) 0 4px, rgba(199,69,59,0) 4px 9px); }
+
+/* 動效總開關：reduced-motion 關掉所有補間 */
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-snap: 0ms; --t-drop: 0ms; --t-sheet: 0ms; --t-camera: 0ms; --t-unlock: 0ms; }
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+}
