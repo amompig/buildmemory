@@ -55,8 +55,7 @@
   .bym-tip { position: absolute; left: 14px; top: 38px; transform: translateX(-50%); white-space: nowrap; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font: 500 12px/1 var(--font); padding: 5px 8px; pointer-events: none; }
   .bym-tip--hot { top: auto; bottom: 40px; background: var(--ink); color: var(--surface); border-color: var(--ink); font-weight: 700; }
   .lm-card { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
-  .mem-img { width: 96px; height: 96px; display: flex; align-items: flex-end; justify-content: center; flex: 0 0 auto; }
-  .mem-img > span { width: 72px !important; height: 72px !important; }
+  .mem-img { width: 96px; height: 96px; object-fit: contain; flex: 0 0 auto; }
   .ui-memory { position: absolute; left: 0; right: 0; bottom: 0; z-index: var(--z-sheet); max-height: 100%; overflow: auto; }
   .inv-head { display: flex; gap: var(--space-2); align-items: center; margin-bottom: var(--space-3); }
   .inv { display: flex; flex-direction: column; gap: var(--space-2); }

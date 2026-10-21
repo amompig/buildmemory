@@ -78,9 +78,10 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
   const houseName = (g) => byId.get(g.item_id)?.name ?? g.item_id;
   const meta = (g, n) => [COUNTY[county(g)] ?? county(g), day(g), `×${n}`].filter(Boolean).join(' · ');
   // 房型縮圖：預渲 PNG（Sprint 1）之前，用該變體的屋頂／牆色塊佔位
+  // 房子小圖：kit.js 預烘的 assets/previews/<id>__<seed>.png（scripts 由 Code 產出、Design 審）；沒有該變體時退回原色
   const swatch = (g, cls = 'c-slot__img') => {
-    const h = byId.get(g.item_id), p = h?.palettes?.[g.seed] ?? h?.palettes?.[0] ?? {};
-    return `<span class="${cls}" style="display:flex;align-items:flex-end;justify-content:center"><span style="width:34px;height:34px;border-radius:6px;background:linear-gradient(${esc(p.roof ?? '#999')} 0 35%, ${esc(p.wall ?? '#ccc')} 35%)"></span></span>`;
+    const h = byId.get(g.item_id), seed = h?.palettes?.[g.seed] ? g.seed : 0, f = `assets/previews/${String(g.item_id).replace(':', '-')}__${seed}`;
+    return `<img class="${cls}" alt="" loading="lazy" src="${esc(f)}.png" srcset="${esc(f)}.png 1x, ${esc(f)}@2x.png 2x">`;
   };
 
   // F1 擴張卡：進度條 = 視窗內非 null 格 / 視窗格數；文字 = 還差幾格到 70%
