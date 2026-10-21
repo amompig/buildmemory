@@ -1,0 +1,65 @@
+{
+  "_meta": { "lang": "zh-TW", "version": "template-1", "note": "鍵為契約（schema_v1 §6 錯誤碼 + 畫面文案），值由 Design 填；{dist}/{until}/{retry_after}/{n}/{name} 為插值。" },
+
+  "error": {
+    "too_far": "再走約 {dist} m",
+    "weak_signal": "",
+    "cooldown": "",
+    "daily_cap": "",
+    "rate_limited": "",
+    "conflict": "",
+    "unauthorized": "",
+    "invalid": "",
+    "offline": "有訊號再按"
+  },
+
+  "privacy": {
+    "checkin_hint": "只在按下時取一次，只存地標名",
+    "about_title": "", "about_source": "", "about_license": "", "export": "", "delete_account": "", "delete_confirm": ""
+  },
+
+  "onboarding": {
+    "step1_road": "", "step2_house": "", "step3_map": "", "skip": "", "done": ""
+  },
+
+  "town": {
+    "tab": "", "mode_view": "", "mode_place": "", "banner_placing": "", "undo": "", "done": "",
+    "tool_road": "", "tool_erase": "", "rotate": "", "fit": "",
+    "cell_locked": "", "cell_occupied": "", "cell_no_road": "", "road_orphan": "",
+    "unlock_progress": "", "unlock_ceremony": "",
+    "empty": ""
+  },
+
+  "map": {
+    "tab": "", "nearby_title": "", "distance_walk": "{min} 分鐘", "preview_house": "",
+    "checkin": "", "checkin_near": "再走約 {dist} m", "checkin_offline": "有訊號再按",
+    "locating": "", "location_denied": "", "location_denied_help": "",
+    "daily_toast_house": "", "daily_toast_shard": "鐵窗厝滿了，收為碎片",
+    "empty_no_landmark": ""
+  },
+
+  "memory": {
+    "title_new": "", "title_view": "",
+    "visit_n": "第 {n} 次到訪", "mood_label": "", "mood": ["", "", "", "", ""],
+    "note_placeholder": "", "note_counter": "{n}/40",
+    "skip": "", "save": "", "cta_place": "", "dismantle": "", "rotate": ""
+  },
+
+  "inventory": {
+    "tab": "", "sort_date": "", "sort_county": "", "shards": "", "dismantle": "", "dismantle_confirm": "", "empty": ""
+  },
+
+  "conflict": {
+    "title": "", "body": "", "this_device": "這支手機・剛才", "other_device": "另一台・{time}", "keep_newer": "", "keep_this": "", "draft_saved": ""
+  },
+
+  "login": {
+    "prompt_title": "", "prompt_body": "", "google": "", "later": "", "merged": ""
+  },
+
+  "share": {
+    "title": "", "toggle_county": "", "toggle_date": "", "toggle_names": "", "share": "", "saved": ""
+  },
+
+  "common": { "ok": "", "cancel": "", "retry": "", "close": "" }
+}

@@ -1,0 +1,27 @@
+{
+  "_meta": { "version": "seed-1", "note": "Design 從這裡出發產 palette.json；css 區塊 → tokens.css 變數；three 區塊 → kit.js bake() 重烘與燈光。日夜只改 three.light，不改 three.house。" },
+
+  "css": {
+    "bg": "#F6F1E8", "surface": "#FFFFFF", "surface-2": "#F0E9DD",
+    "ink": "#2F3B46", "ink-2": "#5C6670", "ink-3": "#8B949C",
+    "accent": "#C9705B", "accent-ink": "#FFFFFF",
+    "ok": "#4F9A7A", "warn": "#D9A441", "danger": "#C7453B",
+    "line": "#E3DBCD",
+    "font": "system-ui, -apple-system, 'Noto Sans TC', sans-serif",
+    "radius": "12px", "radius-lg": "20px",
+    "space-1": "4px", "space-2": "8px", "space-3": "12px", "space-4": "16px", "space-6": "24px",
+    "touch-min": "44px",
+    "shadow": "0 2px 8px rgba(47,59,70,.12)"
+  },
+
+  "three": {
+    "scene": { "background": "#8FCFC6", "fog": "#8FCFC6", "ground": "#7FBFB5", "tile": "#A9D9C7", "road": "#6F7F8C", "road_line": "#F7F3EE" },
+    "light": {
+      "day":   { "hemi_sky": "#FFF6E8", "hemi_ground": "#7FB8A8", "hemi": 0.9, "sun": "#FFF2DC", "sun_i": 1.25, "ambient": 0.25, "exposure": 1.0 },
+      "night": { "hemi_sky": "#AFC0E0", "hemi_ground": "#2B3550", "hemi": 0.35, "sun": "#C9D4F0", "sun_i": 0.3, "ambient": 0.1, "exposure": 0.8, "background": "#2B3550" }
+    },
+    "ghost": { "ok": "#4F9A7A", "bad": "#C7453B", "locked_fog": "rgba(246,241,232,.55)" },
+    "house": "見 data/houses.json palettes；Design 可整組重配，每房型 ≥3 組、第 0 組為原色",
+    "shared": { "glass": "#9FC8D9", "wood": "#8E6B50", "ink": "#3A3A48", "white": "#F7F3EE", "lantern": "#C7453B", "tree": "#6FA88A", "tree_2": "#A9D9C7" }
+  }
+}
