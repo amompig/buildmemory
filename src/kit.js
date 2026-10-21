@@ -1,4 +1,4 @@
-// kit.js — houses.json 藍圖 + palette → bake() 烘成單一幾何（頂點色）
+// kit.js — houses.json 藍圖 → bake() 烘成單一幾何；配色在 GPU 上逐棟套用（槽位 shader）
 // 起點：samples/kit.js 的部件函式。只產幾何，不碰場景與狀態。
 // 座標：一格邊長 CELL；建築底面 y=0、原點 = 佔格中心（2×2 為四格中心，town 旋轉時繞這點）；
 // 門面朝 +z（rot 0 = 朝南，r+1 方向）。
@@ -10,10 +10,18 @@ export const CELL = 2.4;
 // 不隨 palette 變的共用色（palette.seed.json three.shared）
 const SHARED = { glass: 0x9FC8D9, wood: 0x8E6B50, ink: 0x3A3A48, white: 0xF7F3EE, metal: 0x9AA3AA };
 
-// 部件只需要顏色；bake 時把每個 mesh 的材質色寫成頂點色
+// 隨 palette 變的槽位；頂點 slot = 索引，-1 = 固定色（寫在頂點色）
+export const SLOTS = ['wall', 'roof', 'door', 'accent', 'trim'];
+const SLOT = Object.fromEntries(SLOTS.map((k) => [k, k]));
+
+// 部件的「顏色」= 槽位名或固定色；bake 時寫成頂點 slot / 頂點色
 const mats = new Map();
 function mat(color) {
-  if (!mats.has(color)) mats.set(color, new THREE.MeshBasicMaterial({ color }));
+  if (!mats.has(color)) {
+    const m = typeof color === 'string' ? new THREE.MeshBasicMaterial() : new THREE.MeshBasicMaterial({ color });
+    m.userData.slot = typeof color === 'string' ? SLOTS.indexOf(color) : -1;
+    mats.set(color, m);
+  }
   return mats.get(color);
 }
 function box(w, h, d, color, x = 0, y = 0, z = 0) {
@@ -142,32 +150,34 @@ function placeholder(size, c) {
 }
 
 const hex = (s) => (typeof s === 'string' ? parseInt(s.replace('#', ''), 16) : s);
-function colorsOf(palette) {
-  const p = palette ?? {};
-  return {
-    wall: hex(p.wall ?? 0xF4E6D2), roof: hex(p.roof ?? 0xC97D4B), door: hex(p.door ?? SHARED.wood),
-    accent: hex(p.accent ?? 0xE9A8A3), trim: hex(p.trim ?? SHARED.white),
-  };
+const DEFAULTS = { wall: 0xF4E6D2, roof: 0xC97D4B, door: SHARED.wood, accent: 0xE9A8A3, trim: SHARED.white };
+
+// palette（houses.json 的一組）→ 依 SLOTS 順序的 5 個 RGB（線性色彩空間，與頂點色一致），長度 15
+// seed 超出範圍時退回第 0 組原色
+export function paletteRGB(house, seed) {
+  const p = house.palettes?.[seed] ?? house.palettes?.[0] ?? {};
+  const out = new Float32Array(SLOTS.length * 3), col = new THREE.Color();
+  SLOTS.forEach((k, i) => col.setHex(hex(p[k] ?? DEFAULTS[k])).toArray(out, i * 3));
+  return out;
 }
 
-// house = houses.json 的一筆；palette = house.palettes[seed]
-// 回傳單一 BufferGeometry（position / normal / color），搭配 vertexColors 材質即為 1 個 draw call
-export function bake(house, palette) {
-  const c = colorsOf(palette);
-  const root = house.blueprint ? buildHouse(house.blueprint, c) : placeholder(house.size, c);
+// house = houses.json 的一筆 → 單一 BufferGeometry（position / normal / color / slot），與配色無關
+// 同房型所有變體共用這份幾何；搭配 houseMaterial + 每棟 5 色（iWall…iTrim）= 1 個 draw call
+export function bake(house) {
+  const root = house.blueprint ? buildHouse(house.blueprint, SLOT) : placeholder(house.size, SLOT);
   root.updateMatrixWorld(true);
 
   const parts = [];
-  const col = new THREE.Color();
   root.traverse((m) => {
     if (!m.isMesh) return;
     let g = m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone();
     g.applyMatrix4(m.matrixWorld);
     g.deleteAttribute('uv');
-    col.copy(m.material.color);
-    const n = g.attributes.position.count, arr = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { arr[i * 3] = col.r; arr[i * 3 + 1] = col.g; arr[i * 3 + 2] = col.b; }
-    g.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+    const { color } = m.material, slot = m.material.userData.slot;
+    const n = g.attributes.position.count, rgb = new Float32Array(n * 3), sl = new Float32Array(n).fill(slot);
+    for (let i = 0; i < n; i++) color.toArray(rgb, i * 3);
+    g.setAttribute('color', new THREE.BufferAttribute(rgb, 3));
+    g.setAttribute('slot', new THREE.BufferAttribute(sl, 1));
     parts.push(g);
     m.geometry.dispose();
   });
@@ -177,14 +187,22 @@ export function bake(house, palette) {
   return merged;
 }
 
-// 依 (房型, seed) 快取；seed 超出範圍時退回原色
 const cache = new Map();
-export function bakeSeed(house, seed) {
-  const s = house.palettes?.[seed] ? seed : 0;
-  const key = `${house.id}#${s}`;
-  if (!cache.has(key)) cache.set(key, bake(house, house.palettes?.[s]));
-  return cache.get(key);
+export function bakeCached(house) {
+  if (!cache.has(house.id)) cache.set(house.id, bake(house));
+  return cache.get(house.id);
 }
 
-// 所有房型共用一個材質：顏色全在頂點上
+// 每棟 5 色的 instanced 屬性名（依 SLOTS 順序）
+export const SLOT_ATTRS = SLOTS.map((k) => `i${k[0].toUpperCase()}${k.slice(1)}`);
+
+// 所有房型共用一個材質：固定色在頂點色，槽位色由每棟的 iWall…iTrim 取代
 export const houseMaterial = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+// 例：slot < 0.5 ? iWall : slot < 1.5 ? iRoof : … : iTrim
+const PICK = SLOT_ATTRS.slice(0, -1).map((a, i) => `slot < ${i}.5 ? ${a} : `).join('') + SLOT_ATTRS.at(-1);
+houseMaterial.onBeforeCompile = (sh) => {
+  sh.vertexShader = sh.vertexShader
+    .replace('#include <common>', ['#include <common>', 'attribute float slot;', ...SLOT_ATTRS.map((a) => `attribute vec3 ${a};`)].join('\n'))
+    .replace('#include <color_vertex>', `#include <color_vertex>\nif (slot > -0.5) vColor = ${PICK};`);
+};
+houseMaterial.customProgramCacheKey = () => 'bym-slots';
