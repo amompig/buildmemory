@@ -159,6 +159,14 @@ test('§4 房在視窗外 → locked', () => {
   const g = legalTown(); g[idx(3, 4)] = house('g3'); g[idx(3, 5)] = road;
   assert.deepEqual(v(g, [...legalGrants(), grant('g3')]), bad('locked'));
 });
+test('§4 格子多了 selected:true → schema', () => {
+  const g = legalTown(); g[idx(6, 4)] = { ...house('g1'), selected: true };
+  assert.deepEqual(v(g), bad('schema'));
+});
+test('§4 house id sys:nope 不在 houses → schema', () => {
+  const g = legalTown(); g[idx(6, 4)] = house('g1', 'sys:nope');
+  assert.deepEqual(v(g, [grant('g1', 'sys:nope'), grant('g2', 'test:big')]), bad('schema'));
+});
 test('§4 補充：長度不是 256 → schema', () => assert.deepEqual(v(legalTown().slice(1)), bad('schema')));
 test('§4 補充：未知格子型別 → schema', () => {
   const g = legalTown(); g[idx(4, 4)] = { t: 'tree' };
@@ -229,16 +237,20 @@ const LMS = [
 test('§6 countyOf 補充：最近地標 ≤ 30 km → 其 county', () => assert.equal(R.countyOf(25.05, 121.55, LMS), 'TPE'));
 test('§6 countyOf 補充：最近地標 > 30 km → null', () => assert.equal(R.countyOf(24.0, 121.6, LMS), null));
 
-test('§6 dailyGrant ironOwned 0 → house', () => assert.equal(R.dailyGrant(0, 0.5, 4).kind, 'house'));
-test('§6 dailyGrant ironOwned 2 → house', () => assert.equal(R.dailyGrant(2, 0.5, 4).kind, 'house'));
+test('§6 dailyGrant ironOwned 0 → house', () => assert.equal(R.dailyGrant(0, 4, 0.5).kind, 'house'));
+test('§6 dailyGrant ironOwned 2 → house', () => assert.equal(R.dailyGrant(2, 4, 0.5).kind, 'house'));
 test('§6 dailyGrant ironOwned 3 → shard', () =>
-  assert.deepEqual(R.dailyGrant(3, 0.5, 4), { kind: 'shard', item_id: 'sys:iron', state: 'dismantled' }));
-test('§6 dailyGrant ironOwned 7 → shard', () => assert.equal(R.dailyGrant(7, 0.5, 4).kind, 'shard'));
+  assert.deepEqual(R.dailyGrant(3, 4, 0.5), { kind: 'shard', item_id: 'sys:iron', state: 'dismantled' }));
+test('§6 dailyGrant ironOwned 7 → shard', () => assert.equal(R.dailyGrant(7, 4, 0.5).kind, 'shard'));
+test('§6 dailyGrant house 的 seed = seed(2, paletteCount, rand)：iron 4 組 → 1–3', () => {
+  assert.equal(R.dailyGrant(0, 4, 0).seed, 1);
+  assert.equal(R.dailyGrant(0, 4, 0.9999).seed, 3);
+});
 test('§6 拆解過 2 棟（dismantled 不計）+ stock 2 → house', () => {
   const gs = [grant('a', 'sys:iron', 'dismantled'), grant('b', 'sys:iron', 'dismantled'),
     grant('c', 'sys:iron', 'stock'), grant('d', 'sys:iron', 'stock')];
   assert.equal(R.ironOwned(gs), 2);
-  assert.equal(R.dailyGrant(R.ironOwned(gs), 0.5, 4).kind, 'house');
+  assert.equal(R.dailyGrant(R.ironOwned(gs), 4, 0.5).kind, 'house');
 });
 
 // ---------- §7 記憶卡與拆解 ----------
@@ -254,14 +266,14 @@ test('§7 validateMemory 補充：mood 不在 0–4 → invalid', () =>
 test('§7 validateMemory 補充：長度以 code point 計（40 個 emoji 通過）', () =>
   assert.equal(R.validateMemory({ mood: null, note: '😀'.repeat(40) }).ok, true));
 
-const stock = [grant('s1', 'sys:iron', 'stock'), grant('p1', 'sys:iron', 'placed')];
-test('§7 canDismantle 補充：stock 列 → ok', () => assert.deepEqual(R.canDismantle(stock, ['s1']), { ok: true }));
-test('§7 canDismantle 補充：placed 列 → invalid', () => assert.equal(R.canDismantle(stock, ['p1']).code, 'invalid'));
+const stock = [grant('a', 'sys:iron', 'stock'), grant('b', 'sys:iron', 'placed')];
+test('§7 canDismantle [a]（a stock）→ ok', () => assert.deepEqual(R.canDismantle(stock, ['a']), { ok: true }));
+test('§7 canDismantle [a, a] → invalid', () => assert.equal(R.canDismantle(stock, ['a', 'a']).code, 'invalid'));
+test('§7 canDismantle [a, b]（b placed）→ invalid', () => assert.equal(R.canDismantle(stock, ['a', 'b']).code, 'invalid'));
+test('§7 canDismantle 100 個 → invalid', () =>
+  assert.equal(R.canDismantle(stock, Array.from({ length: 100 }, (_, i) => `s${i}`)).code, 'invalid'));
+test('§7 canDismantle 補充：0 個 → invalid', () => assert.equal(R.canDismantle(stock, []).code, 'invalid'));
 test('§7 canDismantle 補充：不屬於本人 → invalid', () => assert.equal(R.canDismantle(stock, ['x']).code, 'invalid'));
-test('§7 canDismantle 補充：0 個 / 100 個 → invalid', () => {
-  assert.equal(R.canDismantle(stock, []).code, 'invalid');
-  assert.equal(R.canDismantle(stock, Array.from({ length: 100 }, (_, i) => `s${i}`)).code, 'invalid');
-});
 test('§7 shards 補充：只算 dismantled 且未消耗', () =>
   assert.equal(R.shards([grant('a', 'sys:iron', 'dismantled'), grant('b', 'sys:iron', 'dismantled', { consumed_at: NOW }),
     grant('c', 'sys:iron', 'stock')]), 1));

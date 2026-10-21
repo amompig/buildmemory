@@ -186,7 +186,7 @@ export function countyOf(lat, lng, landmarks) {
 export const ironOwned = (grants) =>
   grants.filter((g) => g.item_id === RULES.DAILY_HOUSE && (g.state === 'stock' || g.state === 'placed')).length;
 
-export function dailyGrant(ironOwnedCount, rand, paletteCount) {
+export function dailyGrant(ironOwnedCount, paletteCount, rand) {
   if (ironOwnedCount >= RULES.DAILY_HOUSE_MAX) return { kind: 'shard', item_id: RULES.DAILY_HOUSE, state: 'dismantled' };
   return { kind: 'house', item_id: RULES.DAILY_HOUSE, seed: seed(2, paletteCount, rand) };
 }
