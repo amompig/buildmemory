@@ -45,6 +45,11 @@
     padding: 10px 16px; font-size: 14px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; max-width: 86vw; text-align: center; }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
   @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+  .login-cta { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; text-align: center; box-shadow: var(--shadow); }
+  .login-cta p { margin: 0 0 12px; }
+  #login { position: fixed; inset: 0; z-index: 10; background: rgba(47,59,70,.45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  #login .sheet { background: var(--surface); border-radius: 20px; padding: 20px; max-width: 340px; width: 100%; text-align: center; box-shadow: var(--shadow); }
+  #login .gsi { display: flex; justify-content: center; min-height: 44px; margin: 12px 0; }
   #dev { position: fixed; left: 8px; top: 60px; z-index: 5; background: rgba(255,255,255,.95); border-radius: var(--radius); padding: 8px; font-size: 12px; box-shadow: var(--shadow); max-width: 230px; }
   #dev summary { cursor: pointer; font-weight: 600; }
   #dev input { width: 100%; box-sizing: border-box; font-size: 12px; }
@@ -114,6 +119,7 @@ function onIntent(it) {
       break;
     }
     case 'rotateSel': ed.rotate(view.sel); break;
+    case 'login': login(); return;
     case 'removeSel': { const r = ed.removeHouse(view.sel); if (!r.ok) reject(r); view.sel = null; break; }
   }
   refresh();
@@ -161,6 +167,37 @@ createGestures(document.getElementById('town'), {
     }
   },
 });
+
+// ---------- Google 登入（GIS 按鈕放在獨立疊層，ui 重繪不會把它洗掉）----------
+const loadGsi = () => window.google?.accounts?.id ? Promise.resolve() : new Promise((ok, no) => {
+  const sc = Object.assign(document.createElement('script'), { src: 'https://accounts.google.com/gsi/client', async: true, onload: ok, onerror: no });
+  document.head.appendChild(sc);
+});
+async function login() {
+  const n = await api('GET', '/api/auth/nonce');
+  if (!n.ok) return ui.toast(ui.reasonText(n));
+  if (!n.data.client_id) return ui.toast(ui.t('login.unavailable'));
+  const box = Object.assign(document.createElement('div'), { id: 'login' });
+  box.innerHTML = `<div class="sheet"><p></p><div class="gsi"></div><button data-close>${ui.t('login.later')}</button></div>`;
+  box.querySelector('p').textContent = ui.t('login.prompt_body');
+  box.addEventListener('click', (e) => { if (e.target === box || e.target.dataset.close !== undefined) box.remove(); });
+  document.body.appendChild(box);
+  try { await loadGsi(); } catch { box.remove(); return ui.toast(ui.t('error.offline')); }
+  google.accounts.id.initialize({
+    client_id: n.data.client_id, nonce: n.data.nonce, ux_mode: 'popup',
+    callback: async ({ credential }) => {
+      const before = store.get();
+      const r = await api('POST', '/api/auth/google', { credential });
+      box.remove();
+      if (!r.ok) return ui.toast(ui.t('login.failed'));
+      // 合併時以 Google 帳的鎮為主：這台的 grid 留本機草稿 30 天（06 §2.5）
+      if (r.data.merged) try { localStorage.setItem('bym:draft', JSON.stringify({ grid: before.grid, at: new Date().toISOString() })); } catch { /* ignore */ }
+      await store.connect();
+      ui.toast(ui.t(r.data.merged ? 'login.merged' : 'login.done'));
+    },
+  });
+  google.accounts.id.renderButton(box.querySelector('.gsi'), { theme: 'outline', size: 'large', text: 'signin_with', locale: 'zh-TW' });
+}
 
 function onSync(e) {
   if (e.type === 'replaced') { ed?.done(); if (view) Object.assign(view, { ghost: null, sel: null }); }

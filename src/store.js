@@ -51,9 +51,9 @@ export function createStore(storage = globalThis.localStorage, { api = null, onE
     let r = await api('GET', '/api/me');
     if (!r.ok && r.code === 'unauthorized') { await api('POST', '/api/session', {}); r = await api('GET', '/api/me'); }
     if (!r.ok) return r;
-    const { grants, town } = r.data;
+    const { grants, town, bound } = r.data;
     pending = null;
-    commit({ grants, grid: town.grid, rev: town.rev, dirty: false });
+    commit({ grants, grid: town.grid, rev: town.rev, bound, dirty: false });
     return r;
   }
 

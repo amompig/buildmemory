@@ -7,7 +7,11 @@
   "d1_databases": [
     { "binding": "DB", "database_name": "buildingyourmemory", "database_id": "b4841d70-2604-46cb-b71d-043d751839c2" }
   ],
-  "vars": { "ENV": "prod", "APP_ORIGIN": "https://buildingyourmemory.gpttotaychat.workers.dev" },
+  "vars": {
+    "ENV": "prod",
+    "APP_ORIGIN": "https://buildingyourmemory.gpttotaychat.workers.dev",
+    "GOOGLE_CLIENT_ID": "" // 公開值，不是 secret；使用者在 Google Cloud 設好授權來源後填入
+  },
   // DEVICE_SECRET 用 wrangler secret put；本機在 .dev.vars
   "observability": { "enabled": true }
 }

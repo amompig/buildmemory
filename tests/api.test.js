@@ -156,3 +156,95 @@ test('路由：未知 /api → 404；非 /api 交給靜態資產', opts, async (
   assert.equal(home.status, 200);
   assert.match(home.text, /<canvas id="town">/);
 });
+
+// ---------- Google 登入（本機：wrangler dev 讀 .dev.vars 的 TEST_JWKS，用 fixtures 私鑰簽假 id_token）----------
+import { createSign, createPrivateKey } from 'node:crypto';
+const KEY = JSON.parse(readFileSync(new URL('./fixtures/test_google_key.json', import.meta.url), 'utf8'));
+const CLIENT = 'test-client.apps.googleusercontent.com';
+const local = { skip: (!API && '沒設 API') || (process.env.PROD && '正式站沒有測試金鑰') };
+const b64u = (x) => Buffer.from(typeof x === 'string' ? x : JSON.stringify(x)).toString('base64url');
+function idToken(claims = {}, header = {}) {
+  const t = Math.floor(Date.now() / 1000);
+  const h = { alg: 'RS256', kid: KEY.private.kid, typ: 'JWT', ...header };
+  const p = { iss: 'https://accounts.google.com', aud: CLIENT, azp: CLIENT, sub: String(1e15 + Math.floor(Math.random() * 1e15)), iat: t, exp: t + 3600, ...claims };
+  const data = `${b64u(h)}.${b64u(p)}`;
+  if (h.alg !== 'RS256') return `${data}.`;
+  return `${data}.${createSign('RSA-SHA256').update(data).sign(createPrivateKey({ key: KEY.private, format: 'jwk' })).toString('base64url')}`;
+}
+const cookiesFrom = (setCookie) => (setCookie ?? '').split(/,(?=\s*bym_)/).map((c) => c.trim().split(';')[0]).filter((c) => !c.endsWith('='));
+async function login(u, claims = {}, { tokenFn = idToken, nonceOverride } = {}) {
+  const n = await call('GET', '/api/auth/nonce', { cookie: u?.cookie });
+  const nonceCookie = cookiesFrom(n.setCookie)[0];
+  const cookie = [u?.cookie, nonceCookie].filter(Boolean).join('; ');
+  const r = await call('POST', '/api/auth/google', { cookie, body: { credential: tokenFn({ nonce: nonceOverride ?? n.json.nonce, ...claims }) } });
+  const session = cookiesFrom(r.setCookie).find((c) => c.startsWith('bym_session='));
+  return { ...r, session, nonce: n.json };
+}
+
+test('auth：nonce 回 client_id 與 HttpOnly nonce cookie', local, async () => {
+  const n = await call('GET', '/api/auth/nonce');
+  assert.equal(n.json.client_id, CLIENT);
+  assert.match(n.json.nonce, /^[0-9a-f]{64}$/);
+  assert.match(n.setCookie, /bym_nonce=[0-9a-f]{64}; Path=\/api; HttpOnly; SameSite=Lax; Max-Age=300/);
+});
+
+test('auth：訪客首次登入 → 綁到同一帳號、bound=true、發 session；之後 device cookie 不再能單獨登入', local, async () => {
+  const u = await newUser();
+  const r = await login(u);
+  assert.deepEqual([r.status, r.json], [200, { user_id: u.id, merged: false }]);
+  assert.ok(r.session);
+  const m = (await call('GET', '/api/me', { cookie: r.session })).json;
+  assert.deepEqual([m.user_id, m.bound, m.grants.length], [u.id, true, 2]);
+  assert.equal((await call('GET', '/api/me', { cookie: u.cookie })).status, 401);
+});
+
+test('auth：同一個 Google 帳在第二台裝置登入 → 合併到原帳；首啟贈品不併、原鎮保留；舊訪客 cookie 失效', local, async () => {
+  const sub = String(2e15 + Math.floor(Math.random() * 1e15));
+  const a = await newUser();
+  const first = await login(a, { sub });
+  const town = R.starterGrid(); town[R.idx(6, 6)] = { t: 'road' };
+  await call('PUT', '/api/town', { cookie: first.session, body: { grid: town, base_rev: 0, op_id: op() } });
+  const b = await newUser();
+  const second = await login(b, { sub });
+  assert.deepEqual(second.json, { user_id: a.id, merged: true });
+  const m = (await call('GET', '/api/me', { cookie: second.session })).json;
+  assert.equal(m.user_id, a.id);
+  assert.equal(m.grants.length, 2); // b 的 2 棟首啟贈品沒有併進來
+  assert.deepEqual(m.town.grid[R.idx(6, 6)], { t: 'road' });
+  assert.equal((await call('GET', '/api/me', { cookie: b.cookie })).status, 401);
+});
+
+test('auth：沒有任何 cookie 直接登入 → 以 Google 建新帳（含首啟贈品）', local, async () => {
+  const r = await login(null);
+  assert.equal(r.status, 200);
+  logUser(r.json.user_id);
+  const m = (await call('GET', '/api/me', { cookie: r.session })).json;
+  assert.deepEqual([m.bound, m.grants.length, m.town.rev], [true, 2, 0]);
+});
+
+test('auth：偽造／過期／錯對象的憑證一律 401 且不發 session', local, async () => {
+  const cases = {
+    nonce: { nonceOverride: 'f'.repeat(64) },
+    aud: { claims: { aud: 'other.apps.googleusercontent.com' } },
+    azp: { claims: { azp: 'other.apps.googleusercontent.com' } },
+    exp: { claims: { exp: Math.floor(Date.now() / 1000) - 3600, iat: Math.floor(Date.now() / 1000) - 7200 } },
+    iss: { claims: { iss: 'https://evil.example' } },
+    alg_none: { tokenFn: (c) => idToken(c, { alg: 'none' }) },
+    sig: { tokenFn: (c) => { const t = idToken(c); return t.slice(0, -4) + (t.endsWith('AAAA') ? 'BBBB' : 'AAAA'); } },
+    kid: { tokenFn: (c) => idToken(c, { kid: 'unknown' }) },
+  };
+  for (const [name, o] of Object.entries(cases)) {
+    const r = await login(await newUser(), o.claims ?? {}, o);
+    assert.deepEqual([r.status, r.json?.error?.code, !!r.session], [401, 'unauthorized', false], name);
+  }
+  // nonce cookie 不在（換瀏覽器重放）
+  const n = await call('GET', '/api/auth/nonce');
+  const r = await call('POST', '/api/auth/google', { body: { credential: idToken({ nonce: n.json.nonce }) } });
+  assert.equal(r.status, 401);
+});
+
+test('auth：session 竄改 → 401', local, async () => {
+  const r = await login(await newUser());
+  const bad = r.session.slice(0, -1) + (r.session.endsWith('0') ? '1' : '0');
+  assert.equal((await call('GET', '/api/me', { cookie: bad })).status, 401);
+});

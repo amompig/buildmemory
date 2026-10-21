@@ -13,6 +13,7 @@ const FALLBACK = {
     road_orphan: '拿掉這段路，旁邊的房子就沒路了', unlock_progress: '擴張 {n}%', empty: '倉庫空了，去地圖打卡吧',
   },
   map: { tab: '地圖' },
+  login: { prompt_body: '登入 Google，換手機也不會丟小鎮', google: '用 Google 登入', later: '之後再說', merged: '已登入，這台的打卡紀錄已併入', done: '已登入', unavailable: '登入還沒開放', failed: '登入沒有成功，再試一次' },
   inventory: { tab: '倉庫', empty: '倉庫空了，去地圖打卡吧' },
   error: {
     too_far: '再走約 {dist} m', weak_signal: '定位訊號太弱，到空曠一點再試', cooldown: '今天來過這裡了，{until} 後再來',
@@ -72,7 +73,8 @@ export function createUI(root, { strings = {}, houses, onIntent }) {
         $('.ui-top').innerHTML = $('.ui-side').innerHTML = '';
         $('.ui-page').innerHTML = v.tab === 'map'
           ? '<p class="muted">地圖與打卡：Sprint 1</p>'
-          : (stock.length ? `<ul class="inv">${stock.map((g) => `<li>${card(g, false)}</li>`).join('')}</ul>` : `<p class="muted">${esc(t('inventory.empty'))}</p>`);
+          : (s.bound === false ? `<div class="login-cta"><p>${esc(t('login.prompt_body'))}</p>${btn('login', esc(t('login.google')), null, 'primary')}</div>` : '')
+            + (stock.length ? `<ul class="inv">${stock.map((g) => `<li>${card(g, false)}</li>`).join('')}</ul>` : `<p class="muted">${esc(t('inventory.empty'))}</p>`);
         $('.ui-bottom').innerHTML = `<nav class="tabs">${tabs}</nav>`;
         return;
       }
