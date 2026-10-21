@@ -8,7 +8,7 @@ const { RULES, isUnlocked, unlockedSize } = R;
 const FALLBACK = {
   town: { progress_title: '我的小鎮 · {size}×{size}', road_unlimited: '無限', drawer_title: '倉庫 · 依日期' },
   login: { done: '綁好了', failed: '綁定沒有成功，再試一次', unavailable: '登入還沒開放' },
-  map: { today: '今天 {n} / 40', checkin_ok: '打卡成功 · {visit}', range: '範圍 {n} m', relocate: '重新定位' },
+  map: { today: '今天 {n} / 40', checkin_ok: '打卡成功 · 第 {visit} 次來', range: '走進 {n} m 內就能打卡', relocate: '重新定位' },
   memory: { variant_origin: '原色', variant_n: '變體 {n}', footprint: '佔 {n} 格 · 進倉庫', note_label: '一句話', optional: '可跳過' },
   error: { invalid: '這一步沒存成功，再試一次' },
 };
@@ -200,7 +200,7 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
       const h = byId.get(grant.item_id), moods = t('memory.mood');
       const when = new Date(grant.at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replaceAll('/', '.');
       const el = $('.ui-memory');
-      el.innerHTML = `<div class="c-sheet"><div class="c-memory__top"><div class="c-memory__ok">${ICON.check}<span>${esc(t('map.checkin_ok', { visit: t('memory.visit_n', { n: visit }) }))}</span></div><div class="c-memory__date">${esc(when)}</div></div>`
+      el.innerHTML = `<div class="c-sheet"><div class="c-memory__top"><div class="c-memory__ok">${ICON.check}<span>${esc(t('map.checkin_ok', { visit }))}</span></div><div class="c-memory__date">${esc(when)}</div></div>`
         + `<h3 class="c-memory__name">${esc(landmark?.name ?? '')}</h3>`
         + `<div class="c-memory__preview">${swatch(grant, 'mem-img')}<div><div class="c-memory__house">${esc(h?.name ?? grant.item_id)}</div><div class="c-memory__sub">${esc(grant.seed ? t('memory.variant_n', { n: grant.seed }) : t('memory.variant_origin'))}</div><div class="c-memory__sub">${esc(t('memory.footprint', { n: (h?.size?.[0] ?? 1) * (h?.size?.[1] ?? 1) }))}</div></div></div>`
         + `<div><div class="c-label" style="display:flex;justify-content:space-between"><span>${esc(t('memory.mood_label'))}</span><span>${esc(t('memory.optional'))}</span></div>`
