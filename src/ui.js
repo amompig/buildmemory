@@ -8,6 +8,8 @@ const { RULES, isUnlocked, unlockedSize } = R;
 const FALLBACK = {
   town: { progress_title: '我的小鎮 · {size}×{size}', road_unlimited: '無限', drawer_title: '倉庫 · 依日期' },
   login: { done: '綁好了', failed: '綁定沒有成功，再試一次', unavailable: '登入還沒開放' },
+  map: { today: '今天 {n} / 40', accuracy: '定位 ±{acc} m', checkin_ok: '打卡成功 · {visit}' },
+  memory: { variant_origin: '原色', variant_n: '變體 {n}', footprint: '佔 {n} 格 · 進倉庫', note_label: '一句話', optional: '可跳過' },
   error: { invalid: '這一步沒存成功，再試一次' },
 };
 // 錯誤參數轉人話（時間轉台北時間）
@@ -22,9 +24,18 @@ const ICON = {
   map: svg('<path d="M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/>'),
   town: svg('<path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-6h4v6"/>'),
   inventory: svg('<path d="M4 7.5 12 4l8 3.5v9L12 20l-8-3.5z"/><path d="M4 7.5 12 11l8-3.5M12 11v9"/>'),
+  check: svg('<path d="m5 12 4.5 4.5L19 7"/>', 'c-icon c-icon--s'),
   paint: svg('<path d="M7 20 9.5 4h5L17 20"/><path d="M12 7v2M12 12v2.5M12 17v2"/>', 'c-icon c-icon--s'),
   erase: svg('<path d="m5 15 8-8 6 6-5 5H8.5z"/><path d="M8.5 18H20"/>', 'c-icon c-icon--s'),
 };
+// 心情 5 鍵：design/components.html §3 的 SVG 原樣（順序 = ui_strings memory.mood）
+const MOOD_SVG = [
+  '<circle cx="12" cy="12" r="9"/><path d="M8 13.5c1 2 2.5 3 4 3s3-1 4-3"/><path d="M9 9.5h.01M15 9.5h.01"/>',
+  '<circle cx="12" cy="12" r="9"/><path d="M9 14.5c1 .8 2 1.2 3 1.2s2-.4 3-1.2"/><path d="M9 9.5h.01M15 9.5h.01"/>',
+  '<circle cx="12" cy="12" r="9"/><path d="M9 15h6"/><path d="M8 9.5c.6-.6 1.4-.6 2 0M14 9.5c.6-.6 1.4-.6 2 0"/>',
+  '<circle cx="12" cy="12" r="9"/><path d="M9 14.5c1 .8 2 1.2 3 1.2s2-.4 3-1.2"/><path d="M9 9.5h.01M15 9.5h.01"/><path d="M16.5 12.5v2.5"/>',
+  '<circle cx="12" cy="12" r="9"/><path d="M9 15.5h6"/><path d="M8 10h3M13 10h3"/>',
+].map((d) => svg(d));
 const ROAD_SLOT_IMG = '<span class="c-slot__img" style="display:flex;align-items:center;justify-content:center"><span style="width:44px;height:22px;background:#6F7F8C;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)"></span></span>';
 const COUNTY = { TPE: '台北', NWT: '新北' };
 
@@ -39,11 +50,11 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
   // 規則拒絕原因 → 人話（不出現裸錯誤碼）
   const reasonText = (r) => ({ locked: t('town.cell_locked'), occupied: t('town.cell_occupied'), no_road: t('town.cell_no_road'), orphan: t('town.road_orphan') }[r.reason] ?? t(`error.${r.code}`, fmtParams(r)));
 
-  root.innerHTML = '<div class="ui-top"></div><div class="ui-bottom"></div><div class="ui-page"></div><div class="ui-sheet"></div><div class="ui-toast" role="status" aria-live="polite"></div>';
+  root.innerHTML = '<div class="ui-top"></div><div class="ui-bottom"></div><div class="ui-page"></div><div class="ui-sheet"></div><div class="ui-memory"></div><div class="ui-toast" role="status" aria-live="polite"></div>';
   const $ = (sel) => root.querySelector(sel);
   // toast 永遠浮在底部疊層（底欄／抽屜／記憶卡）上方 12 px：量最高那層
-  const ro = new ResizeObserver(() => root.style.setProperty('--stack-h', `${Math.max($('.ui-bottom').offsetHeight, $('.ui-sheet').offsetHeight)}px`));
-  ro.observe($('.ui-bottom')); ro.observe($('.ui-sheet'));
+  const ro = new ResizeObserver(() => root.style.setProperty('--stack-h', `${Math.max($('.ui-bottom').offsetHeight, $('.ui-sheet').offsetHeight, $('.ui-memory').offsetHeight)}px`));
+  ro.observe($('.ui-bottom')); ro.observe($('.ui-sheet')); ro.observe($('.ui-memory'));
   root.addEventListener('click', (e) => {
     const b = e.target.closest('[data-intent]');
     if (b && !b.disabled) onIntent({ type: b.dataset.intent, ...JSON.parse(b.dataset.arg || '{}') });
@@ -102,6 +113,35 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
       + (stock.length || placed.length ? `<div class="inv">${stock.map((gs) => row(gs, 'stock')).join('')}${placed.map((gs) => row(gs, 'placed')).join('')}</div>` : `<p class="c-dialog__body">${esc(t('inventory.empty'))}</p>`);
   }
 
+  // F4 地圖：上方定位 pill＋今日次數；底板＝最近 3 個地標卡＋打卡大鈕（三態）＋隱私一句話
+  function mapTop(s, g) {
+    const today = R.tpeDay(new Date().toISOString());
+    const n = s.grants.filter((x) => x.landmark_id && R.tpeDay(x.at) === today).length;
+    const loc = g.status === 'ok' ? t('map.accuracy', { acc: Math.round(g.pos.acc) }) : t('map.locating');
+    return `<div class="hud-pills"><span class="c-chip">${esc(loc)}</span><span class="c-chip">${esc(t('map.today', { n }))}</span></div>`;
+  }
+  function mapPanel(g) {
+    if (g.status === 'denied') {
+      return `<div class="c-sheet map-panel"><div class="c-dialog__title">${esc(t('map.location_denied'))}</div><div class="c-dialog__body">${esc(t('map.location_denied_help'))}</div>${btn('locate', esc(t('common.retry')), null, 'c-btn c-btn--primary')}</div>`;
+    }
+    if (g.status !== 'ok') return `<div class="c-sheet map-panel"><div class="c-dialog__body">${esc(t('map.locating'))}</div></div>`;
+    if (!g.near.length || g.near[0].dist > RULES.COUNTY_MAX_KM * 1000) return `<div class="c-sheet map-panel"><div class="c-dialog__body">${esc(t('map.empty_no_landmark'))}</div></div>`;
+    const cards = g.near.map((x, i) => {
+      const hot = i === 0 && x.inRange, house = byId.get(x.lm.house);
+      return `<div class="c-card${hot ? ' c-card--hot' : ''} lm-card">${swatch({ item_id: x.lm.house, seed: 0 }, 'c-stockrow__img')}`
+        + `<div class="c-stockrow__body"><div class="c-stockrow__name">${esc(x.lm.name)}</div><div class="c-stockrow__state">${esc(t('map.preview_house', { name: house?.name ?? x.lm.house }))}</div></div>`
+        + `<div class="c-stockrow__right"><div class="c-stockrow__qty"${hot ? ' style="color:var(--accent)"' : ''}>${x.dist >= 1000 ? `${(x.dist / 1000).toFixed(1)} km` : `${x.dist} m`}</div><div class="c-stockrow__state">${esc(t('map.distance_walk', { min: x.min }))}</div></div></div>`;
+    }).join('');
+    const first = g.near[0];
+    // 灰鈕一定帶原因：不在範圍 → 「再走約 N m」；離線 → 「有訊號再按」
+    const big = g.offline
+      ? `<button class="c-btn c-btn--outline-muted c-btn--big" disabled>${esc(t('map.checkin_offline'))}</button>`
+      : first.inRange
+        ? btn('checkin', esc(t('map.checkin', { name: first.lm.name })), { landmark_id: first.lm.id }, 'c-btn c-btn--primary c-btn--big c-btn--float', g.busy ? 'disabled' : '')
+        : `<button class="c-btn c-btn--primary c-btn--big" disabled>${esc(t('map.checkin_near', { dist: first.short }))}</button>`;
+    return `<div class="c-sheet map-panel"><span class="c-label">${esc(t('map.nearby_title'))}</span>${cards}${big}<div class="c-label" style="text-align:center">${esc(t('privacy.checkin_hint'))}</div></div>`;
+  }
+
   // F6 迷你記憶卡（看態點房子）
   function sheet(s, v) {
     if (v.tab !== 'town' || v.mode !== 'view' || v.sel == null) return '';
@@ -123,9 +163,9 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
       root.dataset.tab = v.tab; root.dataset.mode = v.mode;
       $('.ui-sheet').innerHTML = sheet(s, v);
       if (v.tab !== 'town') {
-        $('.ui-top').innerHTML = '';
+        $('.ui-top').innerHTML = v.tab === 'map' ? mapTop(s, v.geo) : '';
         $('.ui-page').innerHTML = v.tab === 'inventory' ? inventoryPage(s) : '';
-        $('.ui-bottom').innerHTML = tabbar(v.tab);
+        $('.ui-bottom').innerHTML = (v.tab === 'map' ? mapPanel(v.geo) : '') + tabbar(v.tab);
         return;
       }
       $('.ui-page').innerHTML = '';
@@ -152,6 +192,36 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
       $('.ui-bottom').innerHTML = `<div class="hud-bar"><span style="flex:1"></span><span class="hud-cam">${camBtns(road)}</span></div>${roadTools}<div class="c-drawer"><div class="c-drawer__head"><span class="c-label">${esc(t('town.drawer_title'))}</span></div><div class="c-drawer__scroll">${slots}</div></div>`;
     },
 
+    // F5 記憶卡（打卡成功）：DOM 只建一次，打字中不會被重繪洗掉；心情／字數在本地更新
+    openMemory({ grant, landmark, visit }) {
+      const h = byId.get(grant.item_id), moods = t('memory.mood');
+      const when = new Date(grant.at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replaceAll('/', '.');
+      const el = $('.ui-memory');
+      el.innerHTML = `<div class="c-sheet"><div class="c-memory__top"><div class="c-memory__ok">${ICON.check}<span>${esc(t('map.checkin_ok', { visit: t('memory.visit_n', { n: visit }) }))}</span></div><div class="c-memory__date">${esc(when)}</div></div>`
+        + `<h3 class="c-memory__name">${esc(landmark?.name ?? '')}</h3>`
+        + `<div class="c-memory__preview">${swatch(grant, 'mem-img')}<div><div class="c-memory__house">${esc(h?.name ?? grant.item_id)}</div><div class="c-memory__sub">${esc(grant.seed ? t('memory.variant_n', { n: grant.seed }) : t('memory.variant_origin'))}</div><div class="c-memory__sub">${esc(t('memory.footprint', { n: (h?.size?.[0] ?? 1) * (h?.size?.[1] ?? 1) }))}</div></div></div>`
+        + `<div><div class="c-label" style="display:flex;justify-content:space-between"><span>${esc(t('memory.mood_label'))}</span><span>${esc(t('memory.optional'))}</span></div>`
+        + `<div class="c-moods" style="margin-top:8px">${MOOD_SVG.map((ic, i) => `<button class="c-mood" data-mood="${i}" aria-label="${esc(Array.isArray(moods) ? moods[i] : i)}" aria-pressed="false">${ic}</button>`).join('')}</div></div>`
+        + `<div><label class="c-label" for="mem-note">${esc(t('memory.note_label'))}</label><div class="c-input" style="margin-top:6px"><input id="mem-note" type="text" maxlength="40" placeholder="${esc(t('memory.note_placeholder'))}"><span class="c-input__count">${esc(t('memory.note_counter', { n: 0 }))}</span></div></div>`
+        + `<div class="c-memory__pair"><button class="c-btn c-btn--ghost" data-mem="skip">${esc(t('memory.skip'))}</button><button class="c-btn c-btn--secondary" data-mem="save">${esc(t('memory.save'))}</button></div>`
+        + `<button class="c-btn c-btn--primary" data-mem="place">${esc(t('memory.cta_place'))}</button></div>`;
+      let mood = null;
+      const input = el.querySelector('#mem-note'), count = el.querySelector('.c-input__count');
+      input.addEventListener('input', () => { count.textContent = t('memory.note_counter', { n: [...input.value].length }); });
+      el.onclick = (e) => {
+        const m = e.target.closest('[data-mood]');
+        if (m) {
+          const i = +m.dataset.mood;
+          mood = mood === i ? null : i; // 再按一次取消
+          el.querySelectorAll('[data-mood]').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.mood === mood)));
+          return;
+        }
+        const a = e.target.closest('[data-mem]');
+        if (a) onIntent({ type: 'memory', action: a.dataset.mem, grantId: grant.id, mood, note: input.value });
+      };
+    },
+    closeMemory() { const el = $('.ui-memory'); el.innerHTML = ''; el.onclick = null; },
+
     // F12：一次一則、新則取代舊則；3 s（reduced-motion 4 s）
     toast(msg, ms = matchMedia('(prefers-reduced-motion: reduce)').matches ? 4000 : 3000) {
       const el = $('.ui-toast');
@@ -162,60 +232,22 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
   };
 }
 
-// ---------- ?dev=1 除錯面板：模擬座標、假打卡（只動本機 grants）、重設 ----------
-// 地標資料 Sprint 1 才有；這裡兩個假地標只供本機規則重播。假打卡紀錄只在記憶體、不存座標。
-const DEV_LMS = [
-  { id: 'lm:DEV-1', name: 'DEV 台北車站', lat: 25.0478, lng: 121.5170, r: 100, house: 'sys:shophouse' },
-  { id: 'lm:DEV-2', name: 'DEV 大稻埕', lat: 25.0563, lng: 121.5099, r: 100, house: 'sys:minnan' },
-];
+// ---------- ?dev=1 除錯面板（只在本機）：模擬座標 → 地圖頁與打卡走真的 API，由伺服器判定 ----------
 const M_PER_DEG_LAT = 111195;
-
-export function mountDev({ store, ui, houses, onReset }) {
-  let log = []; // { lm, day, at }
+export function mountDev({ landmarks, onSim }) {
   const el = document.createElement('details');
   el.id = 'dev'; el.open = true;
-  el.innerHTML = `<summary>dev</summary>
-    <label>地標 <select name="lm">${DEV_LMS.map((l, i) => `<option value="${i}">${esc(l.name)}</option>`).join('')}</select></label>
-    <label>lat <input name="lat"></label><label>lng <input name="lng"></label><label>acc (m) <input name="acc" value="20"></label>
-    <button data-dev="here">站到地標上</button><button data-dev="checkin">打卡</button>
-    <div>案例重播：<button data-dev="in">圈內</button><button data-dev="edge">邊界 +5 m</button><button data-dev="acc">acc 250</button><button data-dev="again">同日重按</button><button data-dev="cap">第 41 次</button></div>
-    <button data-dev="reset">重設存檔</button><div class="out"></div>`;
+  el.innerHTML = `<summary>dev · 模擬座標</summary>
+    <label>地標 <select name="lm">${landmarks.map((l, i) => `<option value="${i}">${esc(l.name)}</option>`).join('')}</select></label>
+    <label>往北偏移 (m) <input name="north" value="0"></label><label>acc (m) <input name="acc" value="20"></label>
+    <button data-dev="apply">套用</button><button data-dev="off">關閉模擬</button>`;
   document.body.appendChild(el);
   const f = (n) => el.querySelector(`[name=${n}]`);
-  const lm = () => DEV_LMS[+f('lm').value];
-  const at = (northM) => { f('lat').value = (lm().lat + northM / M_PER_DEG_LAT).toFixed(6); f('lng').value = lm().lng.toFixed(6); };
-  const show = (msg) => { el.querySelector('.out').textContent = msg; ui.toast(msg); };
-
-  // 與伺服器 /checkin 同順序：距離 → 同地標同日 → 日上限 → 間隔
-  function checkin(entries, now = new Date().toISOString()) {
-    const L = lm(), lat = +f('lat').value, lng = +f('lng').value, acc = +f('acc').value;
-    const d = R.checkinDistance(R.distanceM(lat, lng, L.lat, L.lng), L.r, acc);
-    if (!d.ok) return show(`${d.code}：${ui.reasonText(d)}`);
-    const day = R.tpeDay(now);
-    const c = R.canCheckin({ existsSameDay: entries.some((x) => x.lm === L.id && x.day === day), countToday: entries.filter((x) => x.day === day).length, lastAt: entries.at(-1)?.at ?? null, now });
-    if (!c.ok) return show(`${c.code}：${ui.reasonText(c)}`);
-    const h = houses.find((x) => x.id === L.house), visit = R.visitN(entries.filter((x) => x.lm === L.id).length);
-    const grant = { id: crypto.randomUUID(), kind: 'house', item_id: h.id, state: 'stock', seed: R.seed(visit, h.palettes.length, Math.random()),
-      landmark_id: L.id, visit_n: visit, mood: null, note: null, at: now, consumed_at: null };
-    entries.push({ lm: L.id, day, at: now });
-    store.set({ grants: [...store.get().grants, grant] });
-    show(`ok：拿到 ${h.name}（第 ${visit} 次，seed ${grant.seed}）`);
-  }
-  const ago = (s) => new Date(Date.now() - s * 1000).toISOString();
   el.addEventListener('click', (e) => {
     const k = e.target.dataset?.dev;
-    if (!k) return;
-    if (k === 'here') at(0);
-    else if (k === 'checkin') checkin(log);
-    else if (k === 'in') { at(50); f('acc').value = 20; checkin([]); }
-    else if (k === 'edge') { f('acc').value = 20; at(lm().r + 20 + 5); checkin([]); }
-    else if (k === 'acc') { at(0); f('acc').value = 250; checkin([]); }
-    else if (k === 'again') { at(0); f('acc').value = 20; const day = R.tpeDay(new Date().toISOString()); checkin([{ lm: lm().id, day, at: ago(3600) }]); }
-    else if (k === 'cap') {
-      at(0); f('acc').value = 20;
-      const day = R.tpeDay(new Date().toISOString());
-      checkin(Array.from({ length: RULES.DAILY_CAP }, (_, i) => ({ lm: `lm:DEV-x${i}`, day, at: ago(3600 + i) })));
-    } else if (k === 'reset') { log = []; store.reset(); onReset(); show('已重設'); }
+    if (k === 'apply') {
+      const lm = landmarks[+f('lm').value];
+      onSim({ lat: lm.lat + +f('north').value / M_PER_DEG_LAT, lng: lm.lng, acc: +f('acc').value });
+    } else if (k === 'off') onSim(null);
   });
-  at(0);
 }

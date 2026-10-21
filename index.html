@@ -38,7 +38,16 @@
   .c-tab { border: 0; background: transparent; cursor: pointer; }
   .c-drawer { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
   .ui-page { position: absolute; inset: 0 0 var(--tab-h); background: var(--bg); padding: var(--space-6) var(--page-x); overflow: auto; display: none; }
-  #ui[data-tab="map"] .ui-page, #ui[data-tab="inventory"] .ui-page { display: block; }
+  #ui[data-tab="inventory"] .ui-page { display: block; }
+  #mapview { position: fixed; inset: 0; display: none; z-index: 1; background: var(--bg); }
+  body[data-tab="map"] #mapview { display: block; }
+  .hud-pills { display: flex; gap: var(--space-2); justify-content: center; }
+  .hud-pills .c-chip { box-shadow: var(--shadow); }
+  .map-panel { border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+  .lm-card { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
+  .mem-img { width: 96px; height: 96px; display: flex; align-items: flex-end; justify-content: center; flex: 0 0 auto; }
+  .mem-img > span { width: 72px !important; height: 72px !important; }
+  .ui-memory { position: absolute; left: 0; right: 0; bottom: 0; z-index: var(--z-sheet); max-height: 100%; overflow: auto; }
   .inv-head { display: flex; gap: var(--space-2); align-items: center; margin-bottom: var(--space-3); }
   .inv { display: flex; flex-direction: column; gap: var(--space-2); }
   .login-cta { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-4); }
@@ -57,6 +66,7 @@
 </head>
 <body>
 <canvas id="town"></canvas>
+<div id="mapview"></div>
 <div id="ui"></div>
 <script type="module">
 import { createStore } from './src/store.js';
@@ -65,6 +75,8 @@ import { createEditor } from './src/edit.js';
 import { createTown } from './src/town.js';
 import { createGestures } from './src/gestures.js';
 import { createUI, mountDev } from './src/ui.js';
+import { locate, nearby, createMap } from './src/geo.js';
+import { tpeDay } from './shared/rules.js';
 
 const json = (u) => fetch(u).then((r) => r.json());
 const [housesJson, strings, palette, landmarksJson] = await Promise.all([
@@ -82,8 +94,12 @@ addEventListener('online', () => store.flush());
 const ed = createEditor(store, houses);
 const town = createTown(document.getElementById('town'), { houses, palette: palette.three, reducedMotion });
 // erase：俯視畫路時「擦除」鈕；sel：看態點選的房子（F6）
-const view = { tab: 'town', mode: 'view', tool: null, erase: false, ghost: null, sel: null, canUndo: false, rot: 0 };
-const ui = createUI(document.getElementById('ui'), { strings, houses, landmarks: landmarksJson.items, onIntent });
+const view = { tab: 'town', mode: 'view', tool: null, erase: false, ghost: null, sel: null, canUndo: false, rot: 0,
+  geo: { status: 'idle', pos: null, near: [], offline: !navigator.onLine, busy: false } };
+const landmarks = landmarksJson.items;
+const mapView = createMap(document.getElementById('mapview'), { landmarks, palette: palette.three });
+let sim = null; // 本機 ?dev=1 的模擬座標
+const ui = createUI(document.getElementById('ui'), { strings, houses, landmarks, onIntent });
 
 const houseAt = (i) => houses.find((h) => h.id === store.get().grid[i]?.id);
 const houseOf = (grantId) => houses.find((h) => h.id === store.get().grants.find((g) => g.id === grantId)?.item_id);
@@ -93,6 +109,7 @@ function refresh() {
   view.canUndo = ed.canUndo();
   const sel = view.sel != null && store.get().grid[view.sel];
   town.setGhost(view.ghost ?? (sel ? { anchor: view.sel, ok: true, size: houseAt(view.sel)?.size, rot: sel.rot } : null));
+  document.body.dataset.tab = view.tab;
   ui.render(store.get(), view);
 }
 store.subscribe((s) => { town.update(s); refresh(); });
@@ -117,7 +134,14 @@ function finishPlace() {
 
 function onIntent(it) {
   switch (it.type) {
-    case 'tab': if (view.mode === 'place') finishPlace(); view.tab = it.tab; view.sel = null; break; // 切 tab = 先完成
+    case 'tab': // 切 tab = 先完成
+      if (view.mode === 'place') finishPlace();
+      view.tab = it.tab; view.sel = null;
+      if (it.tab === 'map') { refresh(); enterMap(); return; }
+      break;
+    case 'locate': enterMap(); return;
+    case 'checkin': checkin(it.landmark_id); return;
+    case 'memory': memoryDone(it); return;
     case 'mode': enterPlace(); break;
     case 'tool':
       Object.assign(view, { tool: it.tool, erase: false, ghost: null, sel: null, rot: 0 });
@@ -252,6 +276,68 @@ async function login() {
   google.accounts.id.renderButton(box.querySelector('.gsi'), { theme: 'outline', size: 'large', text: 'signin_with', locale: 'zh-TW' });
 }
 
+// ---------- F4 地圖 / 打卡 / 每日簽到 ----------
+// 切到地圖時取一次定位；當日首次成功 → 自動 POST /daily（只記「今天領過」的日期，不記座標）
+async function enterMap() {
+  view.geo = { ...view.geo, status: view.geo.pos ? 'ok' : 'locating', offline: !navigator.onLine };
+  refresh();
+  const pos = await locate(sim);
+  if (!pos.ok) { view.geo = { ...view.geo, status: pos.code === 'location_denied' ? 'denied' : 'locating' }; if (pos.code !== 'location_denied') ui.toast(ui.t('error.weak_signal')); refresh(); return; }
+  setPos(pos);
+  await mapView.show(pos);
+  daily(pos);
+}
+function setPos(pos) {
+  view.geo = { ...view.geo, status: 'ok', pos, near: nearby(pos, landmarks), offline: !navigator.onLine };
+  refresh();
+}
+// 帶 session 重試一次（401 → 重取 session）
+async function call(method, path, body) {
+  let r = await api(method, path, body);
+  if (!r.ok && r.code === 'unauthorized') { await api('POST', '/api/session', {}); r = await api(method, path, body); }
+  return r;
+}
+const addGrant = (g) => store.set({ grants: [...store.get().grants.filter((x) => x.id !== g.id), g] });
+async function daily(pos) {
+  const today = tpeDay(new Date().toISOString());
+  let last = null;
+  try { last = localStorage.getItem('bym:daily'); } catch { /* ignore */ }
+  if (last === today) return;
+  const r = await call('POST', '/api/daily', { lat: pos.lat, lng: pos.lng, acc: pos.acc, op_id: crypto.randomUUID() });
+  if (r.ok) { addGrant(r.data.grant); ui.toast(ui.t(r.data.kind === 'shard' ? 'map.daily_toast_shard' : 'map.daily_toast_house')); }
+  if (r.ok || r.code === 'cooldown' || r.reason === 'county') try { localStorage.setItem('bym:daily', today); } catch { /* ignore */ }
+}
+// 按下打卡 → 再取一次定位（不用剛才的）→ 伺服器驗 → 記憶卡
+async function checkin(landmarkId) {
+  view.geo = { ...view.geo, busy: true }; refresh();
+  const pos = await locate(sim);
+  if (!pos.ok) { view.geo = { ...view.geo, busy: false }; ui.toast(ui.t(pos.code === 'location_denied' ? 'map.location_denied' : 'error.weak_signal')); refresh(); return; }
+  setPos(pos);
+  const r = await call('POST', '/api/checkin', { landmark_id: landmarkId, lat: pos.lat, lng: pos.lng, acc: pos.acc, op_id: crypto.randomUUID() });
+  view.geo = { ...view.geo, busy: false };
+  if (!r.ok) { ui.toast(ui.reasonText(r)); refresh(); return; }
+  addGrant(r.data.grant);
+  ui.openMemory({ grant: r.data.grant, landmark: landmarks.find((l) => l.id === landmarkId), visit: r.data.checkin.visit_n });
+  refresh();
+}
+// F5 出口：略過／存都留在倉庫；放進小鎮 = 存＋直入擺放並預選這棟
+async function memoryDone({ action, grantId, mood, note }) {
+  if (action !== 'skip' && (mood != null || note.trim())) {
+    const r = await call('PUT', `/api/grant/${grantId}/memory`, { mood, note });
+    if (!r.ok) { ui.toast(ui.reasonText(r)); return; }
+    addGrant(r.data.grant);
+  }
+  ui.closeMemory();
+  if (action === 'place') { enterPlace({ kind: 'house', grantId }); refresh(); return; }
+  refresh();
+  // F9：第一次打卡成功、關卡後才提示綁定（可關；只提示一次）
+  let asked = null;
+  try { asked = localStorage.getItem('bym:loginAsked'); } catch { /* ignore */ }
+  if (store.get().bound === false && !asked) { try { localStorage.setItem('bym:loginAsked', '1'); } catch { /* ignore */ } login(); }
+}
+addEventListener('online', () => { view.geo.offline = false; refresh(); });
+addEventListener('offline', () => { view.geo.offline = true; refresh(); });
+
 function onSync(e) {
   if (e.type === 'replaced') { ed?.done(); if (view) Object.assign(view, { ghost: null, sel: null }); }
   else if (e.type === 'offline') ui?.toast(ui.t('error.offline'));
@@ -261,8 +347,8 @@ function onSync(e) {
 store.connect();
 // 除錯面板只在本機開（上線版不出現）
 const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
-if (LOCAL && new URLSearchParams(location.search).has('dev')) mountDev({ store, ui, houses, onReset: () => { ed.done(); Object.assign(view, { tool: null, ghost: null, sel: null }); refresh(); } });
-window.__bym = { store, town, ed, view };
+if (LOCAL && new URLSearchParams(location.search).has('dev')) mountDev({ landmarks, onSim: (p) => { sim = p; if (view.tab === 'map') enterMap(); } });
+window.__bym = { store, town, ed, view, ...(LOCAL ? { setSim: (p) => { sim = p; } } : {}) }; // 模擬座標只在本機
 </script>
 </body>
 </html>
