@@ -44,6 +44,16 @@
   .hud-pills { display: flex; gap: var(--space-2); justify-content: center; }
   .hud-pills .c-chip { box-shadow: var(--shadow); }
   .map-panel { border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+  .map-panel__head { display: flex; justify-content: space-between; }
+  .hud-pills { justify-content: space-between; }
+  .map-where { gap: 6px; }
+  .map-where .c-icon { width: 18px; height: 18px; }
+  #mapview .maplibregl-ctrl-attrib { font-size: 10px; background: rgba(255,252,247,.7); }
+  #mapview .maplibregl-ctrl-top-right { top: calc(env(safe-area-inset-top, 0px) + 64px); }
+  .bym-pin { position: relative; width: 28px; height: 36px; }
+  .bym-pin svg { display: block; }
+  .bym-tip { position: absolute; left: 14px; top: 38px; transform: translateX(-50%); white-space: nowrap; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font: 500 12px/1 var(--font); padding: 5px 8px; pointer-events: none; }
+  .bym-tip--hot { top: auto; bottom: 40px; background: var(--ink); color: var(--surface); border-color: var(--ink); font-weight: 700; }
   .lm-card { display: flex; align-items: center; gap: 12px; padding: 10px 14px; }
   .mem-img { width: 96px; height: 96px; display: flex; align-items: flex-end; justify-content: center; flex: 0 0 auto; }
   .mem-img > span { width: 72px !important; height: 72px !important; }
@@ -97,7 +107,7 @@ const town = createTown(document.getElementById('town'), { houses, palette: pale
 const view = { tab: 'town', mode: 'view', tool: null, erase: false, ghost: null, sel: null, canUndo: false, rot: 0,
   geo: { status: 'idle', pos: null, near: [], offline: !navigator.onLine, busy: false } };
 const landmarks = landmarksJson.items;
-const mapView = createMap(document.getElementById('mapview'), { landmarks, palette: palette.three });
+const mapView = createMap(document.getElementById('mapview'), { landmarks, colors: palette.map });
 let sim = null; // 本機 ?dev=1 的模擬座標
 const ui = createUI(document.getElementById('ui'), { strings, houses, landmarks, onIntent });
 
@@ -110,6 +120,7 @@ function refresh() {
   const sel = view.sel != null && store.get().grid[view.sel];
   town.setGhost(view.ghost ?? (sel ? { anchor: view.sel, ok: true, size: houseAt(view.sel)?.size, rot: sel.rot } : null));
   document.body.dataset.tab = view.tab;
+  town.setActive(view.tab !== 'map');
   ui.render(store.get(), view);
 }
 store.subscribe((s) => { town.update(s); refresh(); });
@@ -284,7 +295,7 @@ async function enterMap() {
   const pos = await locate(sim);
   if (!pos.ok) { view.geo = { ...view.geo, status: pos.code === 'location_denied' ? 'denied' : 'locating' }; if (pos.code !== 'location_denied') ui.toast(ui.t('error.weak_signal')); refresh(); return; }
   setPos(pos);
-  await mapView.show(pos);
+  await mapView.show(pos, view.geo.near);
   daily(pos);
 }
 function setPos(pos) {

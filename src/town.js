@@ -131,9 +131,10 @@ export function createTown(canvas, { houses, palette, reducedMotion = false }) {
     if (canvas.width === Math.round(w * pr) && canvas.height === Math.round(h * pr)) return;
     renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
   }
-  let raf = 0;
+  let raf = 0, asleep = false;
   function frame(now) {
     raf = 0;
+    if (asleep) return;
     resize();
     if (tween) {
       const k = Math.min(1, (now - tween.t0) / TWEEN_MS), e = ease(k);
@@ -144,7 +145,9 @@ export function createTown(canvas, { houses, palette, reducedMotion = false }) {
     renderer.render(scene, camera);
     if (tween) kick();
   }
-  function kick() { if (!raf) raf = requestAnimationFrame(frame); }
+  function kick() { if (!raf && !asleep) raf = requestAnimationFrame(frame); }
+  // 單一 WebGL context：切到地圖頁時釋放小鎮的 context（地圖自己用一個），回來再還原；three 會在 restored 時重新上傳資源
+  canvas.addEventListener('webglcontextrestored', () => kick());
 
   const ray = new THREE.Raycaster(), ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   function groundAt(clientX, clientY) {
@@ -163,6 +166,11 @@ export function createTown(canvas, { houses, palette, reducedMotion = false }) {
 
   return {
     renderer, camera, scene,
+    setActive(on) {
+      if (on === !asleep) return;
+      asleep = !on;
+      if (asleep) { cancelAnimationFrame(raf); raf = 0; renderer.forceContextLoss(); } else renderer.forceContextRestore();
+    },
 
     // state = store.get()：{ grid, grants }
     update({ grid, grants }) {

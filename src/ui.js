@@ -8,7 +8,7 @@ const { RULES, isUnlocked, unlockedSize } = R;
 const FALLBACK = {
   town: { progress_title: '我的小鎮 · {size}×{size}', road_unlimited: '無限', drawer_title: '倉庫 · 依日期' },
   login: { done: '綁好了', failed: '綁定沒有成功，再試一次', unavailable: '登入還沒開放' },
-  map: { today: '今天 {n} / 40', accuracy: '定位 ±{acc} m', checkin_ok: '打卡成功 · {visit}' },
+  map: { today: '今天 {n} / 40', checkin_ok: '打卡成功 · {visit}', range: '範圍 {n} m', relocate: '重新定位' },
   memory: { variant_origin: '原色', variant_n: '變體 {n}', footprint: '佔 {n} 格 · 進倉庫', note_label: '一句話', optional: '可跳過' },
   error: { invalid: '這一步沒存成功，再試一次' },
 };
@@ -24,6 +24,7 @@ const ICON = {
   map: svg('<path d="M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/>'),
   town: svg('<path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-6h4v6"/>'),
   inventory: svg('<path d="M4 7.5 12 4l8 3.5v9L12 20l-8-3.5z"/><path d="M4 7.5 12 11l8-3.5M12 11v9"/>'),
+  locate: svg('<circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>'),
   check: svg('<path d="m5 12 4.5 4.5L19 7"/>', 'c-icon c-icon--s'),
   paint: svg('<path d="M7 20 9.5 4h5L17 20"/><path d="M12 7v2M12 12v2.5M12 17v2"/>', 'c-icon c-icon--s'),
   erase: svg('<path d="m5 15 8-8 6 6-5 5H8.5z"/><path d="M8.5 18H20"/>', 'c-icon c-icon--s'),
@@ -117,8 +118,9 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
   function mapTop(s, g) {
     const today = R.tpeDay(new Date().toISOString());
     const n = s.grants.filter((x) => x.landmark_id && R.tpeDay(x.at) === today).length;
-    const loc = g.status === 'ok' ? t('map.accuracy', { acc: Math.round(g.pos.acc) }) : t('map.locating');
-    return `<div class="hud-pills"><span class="c-chip">${esc(loc)}</span><span class="c-chip">${esc(t('map.today', { n }))}</span></div>`;
+    // 位置 pill：最近地標所在縣市（不做反向地理編碼——座標不送第三方）
+    const where = g.status === 'ok' && g.near[0] ? (COUNTY[g.near[0].lm.county] ?? g.near[0].lm.county) : t('map.locating');
+    return `<div class="hud-pills"><span class="c-chip map-where">${ICON.locate}${esc(where)}</span><span class="c-chip">${esc(t('map.today', { n }))}</span></div>`;
   }
   function mapPanel(g) {
     if (g.status === 'denied') {
@@ -139,7 +141,8 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
       : first.inRange
         ? btn('checkin', esc(t('map.checkin', { name: first.lm.name })), { landmark_id: first.lm.id }, 'c-btn c-btn--primary c-btn--big c-btn--float', g.busy ? 'disabled' : '')
         : `<button class="c-btn c-btn--primary c-btn--big" disabled>${esc(t('map.checkin_near', { dist: first.short }))}</button>`;
-    return `<div class="c-sheet map-panel"><span class="c-label">${esc(t('map.nearby_title'))}</span>${cards}${big}<div class="c-label" style="text-align:center">${esc(t('privacy.checkin_hint'))}</div></div>`;
+    return `<div class="hud-bar"><span class="hud-cam">${btn('locate', ICON.locate, null, 'c-iconbtn c-iconbtn--float', `aria-label="${esc(t('map.relocate'))}"`)}</span></div>`
+      + `<div class="c-sheet map-panel"><div class="map-panel__head"><span class="c-label">${esc(t('map.nearby_title'))}</span><span class="c-label">${esc(t('map.range', { n: 50 }))}</span></div>${cards}${big}<div class="c-label" style="text-align:center">${esc(t('privacy.checkin_hint'))}</div></div>`;
   }
 
   // F6 迷你記憶卡（看態點房子）
