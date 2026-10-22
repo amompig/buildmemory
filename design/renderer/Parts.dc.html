@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<title>基礎部件 6 種</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+body{margin:0;font-family:system-ui,-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;color:#2F3B46;background:#F6F1E8}
+a{color:#B5532F}a:hover{color:#8F3F22}
+</style>
+</helmet>
+<div style="width: 1600px; height: 1640px; box-sizing: border-box; padding: 56px 64px; background: #F6F1E8; display: flex; flex-direction: column; gap: 24px; font-family: system-ui, -apple-system, 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif; color: #2F3B46">
+
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid #E3DBCD; padding-bottom: 20px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <div style="font-size: 12px; font-weight: 500; letter-spacing: 0.12em; color: #5C6670">DECOR · 基礎部件 × 6 · grants.kind = decor · id dc:&lt;slug&gt; · 2026-10-22</div>
+      <h1 style="margin: 0; font-family: 'LXGW WenKai TC', 'Noto Sans TC', serif; font-size: 36px; font-weight: 700; line-height: 1.2">路上三種、空地三種</h1>
+      <div style="font-size: 14px; color: #5C6670; max-width: 1000px">對應 spec §3-3。道路維持不限量，不進簽到池。路上部件疊在路格上、不改變道路連通；空地部件佔一格、不需要臨路，也不算路。部件不能合成、不能升級。卡片放大 2.4 倍，實際一格與房子同一把尺。</div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+    <sc-for list="{{items}}" as="it" hint-placeholder-count="12">
+      <div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; background: #FFFCF7; border: 1px solid #E3DBCD; border-radius: 20px">
+        <div aria-hidden="true" style="position: relative; width: 100%; height: 320px; background: #DCE8E2; border-radius: 12px; overflow: hidden">
+          <div style="position: absolute; left: 0; top: 0; width: 448px; height: 320px; transform: translate({{it.fit.tx}}px, {{it.fit.ty}}px) scale({{it.fit.s}}); transform-origin: 0 0">
+            <div style="position: absolute; left: {{it.plot.l}}px; top: {{it.plot.t}}px; width: {{it.plot.w}}px; height: {{it.plot.h}}px; background: #A6C9B8; clip-path: {{it.plot.clip}}"></div>
+            <div style="position: absolute; left: {{it.ground.l}}px; top: {{it.ground.t}}px; width: {{it.ground.w}}px; height: {{it.ground.h}}px; background: #C3DDCC; clip-path: {{it.ground.clip}}"></div>
+            <sc-for list="{{it.blocks}}" as="b" hint-placeholder-count="3">
+              <div style="position: absolute; left: {{b.left}}px; top: {{b.top}}px; width: {{b.w}}px; height: {{b.h}}px">
+                <sc-for list="{{b.parts}}" as="p" hint-placeholder-count="6">
+                  <div style="position: absolute; left: {{p.l}}px; top: {{p.t}}px; width: {{p.w}}px; height: {{p.h}}px; background: {{p.bg}}; clip-path: {{p.clip}}; border-radius: {{p.r}}"></div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+          <div aria-hidden="true" style="position: absolute; right: 10px; bottom: 10px; width: 96px; height: 72px; background: #FFFCF7; border-radius: 10px; overflow: hidden; border: 1px solid #E3DBCD">
+            <div style="position: absolute; left: 4px; bottom: 3px; font-size: 9px; font-weight: 500; letter-spacing: 0.08em; color: #8B949C">剪影</div>
+            <div style="position: absolute; left: 0; top: 0; width: 448px; height: 320px; transform: translate({{it.sil.tx}}px, {{it.sil.ty}}px) scale({{it.sil.s}}); transform-origin: 0 0">
+              <sc-for list="{{it.blocks}}" as="b" hint-placeholder-count="3">
+                <div style="position: absolute; left: {{b.left}}px; top: {{b.top}}px; width: {{b.w}}px; height: {{b.h}}px">
+                  <sc-for list="{{b.parts}}" as="p" hint-placeholder-count="6">
+                    <div style="position: absolute; left: {{p.l}}px; top: {{p.t}}px; width: {{p.w}}px; height: {{p.h}}px; background: #2F3B46; clip-path: {{p.clip}}; border-radius: {{p.r}}"></div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="position: absolute; left: 10px; top: 10px; font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 999px; background: #FFFCF7; color: #5C6670">{{it.sizeText}} · 1×1 · {{it.blockCount}} 件</div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 8px">
+          <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+            <div style="font-size: 11px; font-weight: 500; letter-spacing: 0.08em; color: #5C6670">{{it.id}}</div>
+            <div style="font-family: 'LXGW WenKai TC', 'Noto Sans TC', serif; font-size: 22px; font-weight: 700; line-height: 1.2">{{it.name}}</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap">
+          <sc-for list="{{it.chips}}" as="c" hint-placeholder-count="4">
+            <span style="font-size: 11px; font-weight: 500; padding: 4px 9px; border-radius: 999px; background: #F0E9DD; color: #2F3B46">{{c}}</span>
+          </sc-for>
+        </div>
+        <div style="font-size: 12px; color: #5C6670; line-height: 1.55">{{it.obs}}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding-top: 16px; border-top: 1px solid #E3DBCD; font-size: 13px; color: #5C6670; line-height: 1.6">
+    <div style="display: flex; flex-direction: column; gap: 6px; padding: 16px; background: #FFFCF7; border: 1px solid #E3DBCD; border-radius: 16px">
+      <b style="color: #2F3B46; font-size: 15px">路上部件 · layer road</b>
+      <div>路燈、行道樹、郵筒。只能放在已畫好的路格；每格最多 1 個；不佔格、不影響「房子要臨路」與道路連通。</div>
+      <div>格子：<code>{ "t": "road", "deco": { "id": "dc:lamp", "ref": "&lt;grantId&gt;" } }</code></div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; padding: 16px; background: #FFFCF7; border: 1px solid #E3DBCD; border-radius: 16px">
+      <b style="color: #2F3B46; font-size: 15px">空地部件 · layer lot</b>
+      <div>老榕樹、機車停車格、小花圃。佔 1 格空地；不需要臨路；不算路，旁邊的房子仍要另外接路。可旋轉（rot 只影響渲染）。</div>
+      <div>格子：<code>{ "t": "deco", "id": "dc:banyan", "ref": "&lt;grantId&gt;", "rot": 0 }</code></div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; padding: 16px; background: #FFFCF7; border: 1px solid #E3DBCD; border-radius: 16px">
+      <b style="color: #2F3B46; font-size: 15px">擦路與收回</b>
+      <div>擦掉一格有路上部件的路：部件自動回倉庫（grant state → stock），不擋擦路。拆掉空地部件同房子：回倉庫。</div>
+      <div>倉庫：部件放在房子後面一列「部件」，數量用 chip 顯示。</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1640}}'>
+class Component extends DCLogic {
+  shade(hex, f) {
+    var n = parseInt(hex.slice(1), 16);
+    var r = Math.round(((n >> 16) & 255) * f), g = Math.round(((n >> 8) & 255) * f), b = Math.round((n & 255) * f);
+    return '#' + [r, g, b].map(function (v) { return ('0' + Math.max(0, Math.min(255, v)).toString(16)).slice(-2); }).join('');
+  }
+  poly(pts) { return 'polygon(' + pts.map(function (p) { return p[0].toFixed(1) + 'px ' + p[1].toFixed(1) + 'px'; }).join(', ') + ')'; }
+  data() {
+    var self = this;
+    // 基礎部件：一格 = 1×1。路上部件畫在路格東南角（門面方向），不擋路中線；空地部件佔整格
+    var ROAD = '#6F7F8C', LINE = '#F7F3EE', POLE = '#5C6670';
+    function B(id, c, r, w, d, h, roof, o) { return Object.assign({ id: id, c: c, r: r, w: w, d: d, h: h, roof: roof, win: 0 }, o || {}); }
+    function solid(id, c, r, w, d, h, col, z) { return B(id, c, r, w, d, h, 'flat', { wall: col, roofColor: col, z: z }); }
+    function tree(pre, c, r, s, z0, col) { col = col || '#6FA88A'; var th = s * 0.8;
+      return [ solid(pre + 'tk', c + s / 2 - 0.03, r + s / 2 - 0.03, 0.06, 0.06, th, '#8E6B50', z0),
+        solid(pre + 'c1', c, r, s, s, s * 0.45, col, z0 + th),
+        B(pre + 'c2', s * 0.18, s * 0.18, s * 0.64, s * 0.64, s * 0.3, 'flat', { on: pre + 'c1', wall: self.shade(col, 1.1), roofColor: self.shade(col, 1.2) }) ]; }
+    function road() { return [ solid('road', 0, 0, 1, 1, 0.012, ROAD, 0), solid('ln0', 0.48, 0.08, 0.04, 0.3, 0.004, LINE, 0.012), solid('ln1', 0.48, 0.62, 0.04, 0.3, 0.004, LINE, 0.012) ]; }
+    var P = { wall: '#D9D4C7', roof: '#B9B5A8', door: '#4F5B6B', accent: '#E2B45A' };
+    return [
+      { id: 'dc:lamp', name: '路燈', label: '路上', size: [1, 1], real: 0, fit: 2.4, vScale: 1.3, p: P, chips: ['疊在路上', '不佔格', '每格 1 個'],
+        obs: '灰色燈桿 + 往路中伸出的燈臂與暖白燈頭；放在路格東南角。夜景時燈頭用 window_lit。',
+        blocks: road().concat([ solid('base', 0.78, 0.78, 0.08, 0.08, 0.04, POLE, 0.012),
+          solid('pole', 0.8, 0.8, 0.04, 0.04, 0.72, POLE, 0.012),
+          solid('head', 0.56, 0.79, 0.12, 0.06, 0.04, '#F3E7C8', 0.68),
+          solid('arm', 0.6, 0.8, 0.24, 0.04, 0.03, POLE, 0.72) ]) },
+      { id: 'dc:streettree', name: '行道樹', label: '路上', size: [1, 1], real: 0, fit: 2.4, vScale: 1.3, p: P, chips: ['疊在路上', '不佔格', '每格 1 個'],
+        obs: '方形樹穴 + 兩層方塊樹冠（three.shared.tree），種在路格東南角的人行道位置。',
+        blocks: road().concat([ solid('pit', 0.6, 0.6, 0.32, 0.32, 0.02, '#8E6B50', 0.012) ]).concat(tree('t', 0.58, 0.58, 0.36, 0.012)) },
+      { id: 'dc:mailbox', name: '郵筒', label: '路上', size: [1, 1], real: 0, fit: 2.4, vScale: 1.3, p: P, chips: ['疊在路上', '不佔格', '綠 + 紅雙筒'],
+        obs: '台灣街角的綠色（國內）與紅色（限時）雙郵筒，站在同一塊水泥座上。',
+        blocks: road().concat([ solid('pad', 0.6, 0.74, 0.3, 0.16, 0.02, '#B9B5A8', 0.012),
+          solid('mg', 0.62, 0.77, 0.12, 0.1, 0.2, '#2F7A5C', 0.032),
+          solid('mr', 0.76, 0.77, 0.12, 0.1, 0.2, '#C7453B', 0.032) ]) },
+      { id: 'dc:banyan', name: '老榕樹', label: '空地', size: [1, 1], real: 0, fit: 2.4, vScale: 1.3, p: P, chips: ['佔 1 格', '不需臨路', '樹下圓凳'],
+        obs: '粗樹幹 + 三層大樹冠蓋滿整格，樹下一圈水泥坐凳；廟口、公園的那種。',
+        blocks: [ solid('gd', 0.05, 0.05, 0.9, 0.9, 0.01, '#D9CFB8', 0),
+          solid('tk', 0.42, 0.42, 0.16, 0.16, 0.42, '#7A5E46', 0),
+          solid('bench', 0.3, 0.3, 0.4, 0.4, 0.07, '#B9B5A8', 0),
+          solid('c1', 0.06, 0.06, 0.88, 0.88, 0.22, '#5E8F6E', 0.42),
+          B('c2', 0.14, 0.14, 0.6, 0.6, 0.16, 'flat', { on: 'c1', wall: '#6FA88A', roofColor: '#7FB397' }),
+          B('c3', 0.15, 0.15, 0.3, 0.3, 0.1, 'flat', { on: 'c2', wall: '#7FB397', roofColor: '#A9D9C7' }) ] },
+      { id: 'dc:scooters', name: '機車停車格', label: '空地', size: [1, 1], real: 0, fit: 2.4, vScale: 1.3, p: P, chips: ['佔 1 格', '不需臨路', '機車 ×3'],
+        obs: '灰色地坪、白色格線，三台不同顏色的機車（車身 + 坐墊 + 把手）停在格子裡。',
+        blocks: [ solid('pad', 0.05, 0.05, 0.9, 0.9, 0.012, '#B9B5A8', 0) ]
+          .concat([0.1, 0.33, 0.56, 0.79].map(function (x, i) { return solid('l' + i, x, 0.12, 0.03, 0.76, 0.004, LINE, 0.012); }))
+          .concat([['#C7453B', 0.17], ['#5B8BC9', 0.4], ['#E6E1D6', 0.63]].reduce(function (acc, s, i) {
+            acc.push(solid('s' + i, s[1], 0.3, 0.09, 0.4, 0.1, s[0], 0.016));
+            acc.push(solid('st' + i, s[1] + 0.01, 0.44, 0.07, 0.16, 0.04, '#3A3A48', 0.116));
+            acc.push(solid('h' + i, s[1] - 0.02, 0.3, 0.13, 0.03, 0.06, POLE, 0.15));
+            return acc; }, [])) },
+      { id: 'dc:garden', name: '小花圃', label: '空地', size: [1, 1], real: 0, fit: 2.4, vScale: 1.3, p: P, chips: ['佔 1 格', '不需臨路', '矮籬 + 花'],
+        obs: '四邊矮綠籬圍一塊土，裡面四叢花（黃、磚紅、粉、紅）；可以當小鎮的口袋公園。',
+        blocks: [ solid('soil', 0.1, 0.1, 0.8, 0.8, 0.02, '#8E6B50', 0),
+          solid('hN', 0.1, 0.1, 0.8, 0.08, 0.1, '#6FA88A', 0),
+          solid('hW', 0.1, 0.18, 0.08, 0.64, 0.1, '#6FA88A', 0),
+          solid('f0', 0.3, 0.32, 0.1, 0.1, 0.06, '#E2B45A', 0.02),
+          solid('f1', 0.56, 0.28, 0.1, 0.1, 0.06, '#C9705B', 0.02),
+          solid('f2', 0.36, 0.56, 0.1, 0.1, 0.06, '#E9D5CF', 0.02),
+          solid('f3', 0.6, 0.58, 0.1, 0.1, 0.06, '#C7453B', 0.02),
+          solid('hE', 0.82, 0.18, 0.08, 0.64, 0.1, '#6FA88A', 0),
+          solid('hS', 0.1, 0.82, 0.8, 0.08, 0.1, '#6FA88A', 0) ] }
+    ];
+  }
+  renderVals() {
+    var self = this;
+    var SW = 448, SH = 320;
+    var items = this.data().map(function (L) {
+      var zoom = L.zoom || 1, vScale = L.vScale || 1;
+      var HW = 24 * zoom, HH = 12 * zoom, FPX = 22 * zoom * vScale;
+      var W = L.size[0], D = L.size[1];
+      var ox = SW / 2 + (D - W) * HW / 2, oy = SH - (W + D) * HH - 22;
+      // expand segments
+      var raw = [];
+      L.blocks.forEach(function (b) {
+        if (b.segments) {
+          var prev = b.on;
+          for (var s = 0; s < b.segments; s++) {
+            var nb = Object.assign({}, b, { id: b.id + (s === 0 ? '' : s), on: prev, c: s === 0 ? b.c : (b.w * (1 - 1) / 2), r: s === 0 ? b.r : 0 });
+            delete nb.segments;
+            if (s > 0) { nb.c = 0; nb.r = 0; }
+            raw.push(nb); prev = nb.id;
+          }
+          // let later blocks that reference b.id stack on the last segment
+          L.blocks.forEach(function (o) { if (o.on === b.id) o.on = prev; });
+        } else raw.push(b);
+      });
+      var byId = {};
+      raw.forEach(function (b) { byId[b.id] = b; });
+      function place(b) {
+        var c = b.c, r = b.r, z0 = (b.z || 0) * FPX;
+        if (b.on) { var pb = byId[b.on]; var pp = place(pb); c += pp.c; r += pp.r; z0 = pp.z0 + pp.h + (b.z || 0) * FPX; }
+        return { c: c, r: r, z0: z0, h: (b.h !== undefined ? b.h : b.fl * b.fh) * FPX };
+      }
+      function pt(c, r, z) { return [ox + (c - r) * HW, oy + (c + r) * HH - z]; }
+      var ground = { l: ox - D * HW, t: oy, w: (W + D) * HW, h: (W + D) * HH, clip: self.poly([[D * HW, 0], [(W + D) * HW, W * HH], [W * HW, (W + D) * HH], [0, D * HH]]) };
+      var pad = 0.25, PW = W + 2 * pad, PD = D + 2 * pad;
+      var plot = { l: ox - PD * HW, t: oy - pad * 2 * HH, w: (PW + PD) * HW, h: (PW + PD) * HH, clip: self.poly([[PD * HW, 0], [(PW + PD) * HW, PW * HH], [PW * HW, (PW + PD) * HH], [0, PD * HH]]) };
+      var blocks = raw.map(function (b) {
+        var P = place(b);
+        var c = P.c, r = P.r, w = b.w, d = b.d, z0 = P.z0, h = P.h;
+        var rowsN = b.winRows || Math.min(b.fl || 1, 3);
+        var fpx = h / Math.max(1, rowsN);
+        var bandStep = b.bands ? h / b.bands : fpx;
+        var roofH = b.roofH || 1;
+        var wall = b.wall || L.p.wall, roof = b.roofColor || L.p.roof, accent = b.accent || L.p.accent, door = L.p.door;
+        var side = self.shade(wall, 0.86), roofDark = self.shade(roof, 0.8), winC = b.winColor || '#F3E7C8';
+        var sB = b.sBot || 1, sT = b.sTop || 1, ev = b.eave || 1;
+        var Tg = pt(c, r, 0), Rg = pt(c + w, r, 0), Bg = pt(c + w, r + d, 0), Lg = pt(c, r + d, 0);
+        var C = [(Tg[0] + Bg[0]) / 2, (Tg[1] + Bg[1]) / 2];
+        function sc(p, s) { return [C[0] + (p[0] - C[0]) * s, C[1] + (p[1] - C[1]) * s]; }
+        var maxS = Math.max(sB, sT, ev);
+        var left = C[0] - (w + d) * HW / 2 * maxS - 8, top = Tg[1] - z0 - h - 90;
+        var cw = (w + d) * HW * maxS + 16, ch = (w + d) * HH * maxS + z0 + h + 100;
+        function rel(p, z) { return [p[0] - left, p[1] - z - top]; }
+        var parts = [], roofParts = [], target = parts; // roofParts = the overhanging roof, painted as its own layer above everything lower than the eave
+        function add(pts, bg) { target.push({ l: 0, t: 0, w: cw, h: ch, bg: bg, clip: self.poly(pts), r: '0' }); }
+        function face(zA, sA, zB, sBv) { // walls between height zA (scale sA) and zB (scale sB)
+          add([rel(sc(Lg, sBv), zB), rel(sc(Bg, sBv), zB), rel(sc(Bg, sA), zA), rel(sc(Lg, sA), zA)], wall);
+          add([rel(sc(Bg, sBv), zB), rel(sc(Rg, sBv), zB), rel(sc(Rg, sA), zA), rel(sc(Bg, sA), zA)], side);
+          // line hierarchy: the front vertical corner is the primary plane-change line (1.2px, darkest)
+          if (zB - zA > 6 && w >= 0.1 && d >= 0.1) { var e0 = rel(sc(Bg, sA), zA), e1 = rel(sc(Bg, sBv), zB); add([[e0[0] - 0.6, e0[1]], [e0[0] + 0.6, e0[1]], [e1[0] + 0.6, e1[1]], [e1[0] - 0.6, e1[1]]], self.shade(side, 0.62)); }
+        }
+        var zt = z0 + h;
+        function topPoly(s, z) {
+          var pts = [Tg, Rg, Bg, Lg].map(function (p) { return rel(sc(p, s), z); });
+          if (b.shape === 'oct') {
+            var o = [];
+            for (var i = 0; i < 4; i++) { var a = pts[i], q = pts[(i + 1) % 4]; o.push([a[0] + (q[0] - a[0]) * 0.3, a[1] + (q[1] - a[1]) * 0.3]); o.push([a[0] + (q[0] - a[0]) * 0.7, a[1] + (q[1] - a[1]) * 0.7]); }
+            return o;
+          }
+          return pts;
+        }
+        if (h > 0.5) {
+          if (b.eave2) {
+            var ze = z0 + h * b.eave2;
+            var se = sB + (sT - sB) * b.eave2;
+            face(z0, sB, ze, se);
+            add(topPoly(ev * 0.95, ze + 3), roof); add(topPoly(ev * 0.95, ze), roofDark);
+            face(ze, se, zt, sT);
+          } else face(z0, sB, zt, sT);
+        }
+        // top / roof
+        if (h > 0.5) {
+          // ambient occlusion under an overhanging eave: a soft dark band on both walls just below the roof
+          if (ev > 1.0 && b.roof !== 'flat') { var ao = Math.min(6, 2 + (ev - 1) * 14); add([rel(sc(Lg, sT), zt), rel(sc(Bg, sT), zt), rel(sc(Bg, sT), zt - ao), rel(sc(Lg, sT), zt - ao)], self.shade(wall, 0.78)); add([rel(sc(Bg, sT), zt), rel(sc(Rg, sT), zt), rel(sc(Rg, sT), zt - ao), rel(sc(Bg, sT), zt - ao)], self.shade(side, 0.78)); }
+          if (b.roof !== 'flat' && b.roof !== 'dome' && b.roof !== 'spire') { var evv = b.eave || 1; target = roofParts; add(topPoly(evv, zt - 2.5), self.shade(roof, 0.7)); add(topPoly(evv, zt), roof); target = parts; }
+          else add(topPoly(sT, zt), b.roof === 'flat' ? (b.id === 'base' || b.id.indexOf('seg') === 0 || b.id === 'cap' ? self.shade(wall, 1.08) : roof) : roof);
+        } else add(topPoly(1, zt), wall);
+        // bands (balcony / stripes)
+        if (b.bands && h > 0.5) {
+          for (var k = 1; k < b.bands; k++) {
+            var hz = z0 + k * bandStep, f = (hz - z0) / h, s1 = sB + (sT - sB) * f;
+            add([rel(sc(Lg, s1), hz), rel(sc(Bg, s1), hz), rel(sc(Bg, s1), hz - 1.5), rel(sc(Lg, s1), hz - 1.5)], accent);
+            add([rel(sc(Bg, s1), hz), rel(sc(Rg, s1), hz), rel(sc(Rg, s1), hz - 1.5), rel(sc(Bg, s1), hz - 1.5)], self.shade(accent, 0.88));
+          }
+        }
+        // columns on south face
+        if (b.cols && h > 0.5) {
+          var nc = Math.max(2, Math.round(d * 4 * (w >= 2 ? 1.5 : 1)));
+          for (var i = 0; i < nc; i++) {
+            var t = (i + 0.5) / nc;
+            var a0 = sc(Lg, sB), b0 = sc(Bg, sB);
+            var x = a0[0] + t * (b0[0] - a0[0]), y = a0[1] + t * (b0[1] - a0[1]);
+            parts.push({ l: x - left - 1, t: y - zt - top, w: 2, h: h, bg: b.id === 'main' && L.id === 'lm:TPE-f11' ? '#C7453B' : accent, clip: 'none', r: '0' });
+          }
+        }
+        // windows — drawn IN the face plane (parallelograms that follow the projection), aligned to floors, with a recess jamb
+        // wstyle: rect | arch | round | lattice | shoji | strip | none ; sizes in cells (stylized scale: 0.14 × 0.16)
+        var wstyle = b.wstyle || L.wstyle || 'rect';
+        var winCols = b.win === undefined ? 2 : b.win;
+        var glass = b.winColor || (wstyle === 'shoji' ? '#F3E7C8' : (wstyle === 'lattice' ? '#4A3B30' : '#5F6E7B'));
+        function faceP(f, t, z) { // point on face f ('S' or 'E') at param t (0..1) and height z (px above ground)
+          var ff = (z - z0) / Math.max(1, h), s = sB + (sT - sB) * Math.min(1, Math.max(0, ff));
+          var A = f === 'S' ? sc(Lg, s) : sc(Bg, s), Q = f === 'S' ? sc(Bg, s) : sc(Rg, s);
+          return rel([A[0] + t * (Q[0] - A[0]), A[1] + t * (Q[1] - A[1])], z);
+        }
+        function quad(f, t0, t1, zA, zB) { return [faceP(f, t0, zA), faceP(f, t1, zA), faceP(f, t1, zB), faceP(f, t0, zB)]; }
+        function archPts(f, t0, t1, zA, zB, len) { // rect with a semicircular head, in the face plane
+          var tc = (t0 + t1) / 2, rt = (t1 - t0) / 2, rz = rt * len; // rz: radius in px (face length px per unit t)
+          var pts = [faceP(f, t0, zA), faceP(f, t1, zA)];
+          for (var a = 0; a <= 6; a++) { var ang = a / 6 * Math.PI; pts.push(faceP(f, tc + rt * Math.cos(ang), zB - rz + rz * Math.sin(ang))); }
+          return pts;
+        }
+        function roundPts(f, tc, zc, rt, len) { var pts = []; for (var a = 0; a < 10; a++) { var ang = a / 10 * Math.PI * 2; pts.push(faceP(f, tc + rt * Math.cos(ang), zc + rt * len * Math.sin(ang))); } return pts; }
+        function drawWindow(f, tc, zc, faceLen) { // faceLen: cells along the face
+          var ww = wstyle === 'strip' ? 0.62 : (wstyle === 'lattice' ? 0.12 : (wstyle === 'round' ? 0.16 : 0.14));
+          var whc = wstyle === 'strip' ? 0.09 : (wstyle === 'lattice' ? 0.12 : (wstyle === 'round' ? 0.16 : (wstyle === 'arch' ? 0.2 : 0.16)));
+          var rt = ww / 2 / faceLen, zh = whc * FPX, lenPx = faceLen * Math.sqrt(HW * HW + HH * HH) ;
+          var t0 = tc - rt, t1 = tc + rt, zA = zc - zh / 2, zB = zc + zh / 2;
+          var frame = f === 'S' ? self.shade(wall, 0.6) : self.shade(side, 0.6);
+          var jamb = f === 'S' ? side : wall; // the visible reveal of a recessed opening is lit like the face it faces
+          var paneC = f === 'S' ? glass : self.shade(glass, 0.88);
+          var jt = Math.min(0.3, 0.03 / faceLen / (2 * rt)) * (t1 - t0); // jamb width 0.03 cell
+          if (wstyle === 'round') { add(roundPts(f, tc, zc, rt, lenPx), frame); add(roundPts(f, tc + (f === 'S' ? jt * 0.5 : -jt * 0.5), zc, rt * 0.72, lenPx), paneC); return; }
+          if (wstyle === 'arch') { add(archPts(f, t0, t1, zA, zB, lenPx), frame); add(f === 'S' ? quad(f, t0 + 0.08 * (t1 - t0), t0 + jt + 0.08 * (t1 - t0), zA + 1, zB - 1) : quad(f, t1 - jt - 0.08 * (t1 - t0), t1 - 0.08 * (t1 - t0), zA + 1, zB - 1), jamb); add(archPts(f, t0 + 0.14 * (t1 - t0) + (f === 'S' ? jt : 0), t1 - 0.14 * (t1 - t0) - (f === 'S' ? 0 : jt), zA + 1, zB - 1.2, lenPx * 0.72), paneC); return; }
+          add(quad(f, t0, t1, zA, zB), frame);
+          if (f === 'S') { add(quad(f, t0 + 0.1 * (t1 - t0), t0 + 0.1 * (t1 - t0) + jt, zA + 1, zB - 1), jamb); add(quad(f, t0 + 0.1 * (t1 - t0) + jt, t1 - 0.1 * (t1 - t0), zA + 1, zB - 1), paneC); }
+          else { add(quad(f, t1 - 0.1 * (t1 - t0) - jt, t1 - 0.1 * (t1 - t0), zA + 1, zB - 1), jamb); add(quad(f, t0 + 0.1 * (t1 - t0), t1 - 0.1 * (t1 - t0) - jt, zA + 1, zB - 1), paneC); }
+          if (wstyle === 'lattice' || wstyle === 'shoji') { var mc = (t0 + t1) / 2; add(quad(f, mc - 0.04 * (t1 - t0), mc + 0.04 * (t1 - t0), zA + 1, zB - 1), frame); add(quad(f, t0, t1, zc - 0.5, zc + 0.5), frame); }
+        }
+        if (winCols > 0 && h > 0.5 && wstyle !== 'none') {
+          var rows = b.winRows || b.bands || Math.min(b.fl || 1, 3);
+          var fH = h / rows; // one window row per floor, centred in the floor → windows and bands agree
+          var faces = b.winFaces === 'S' ? ['S'] : ['S', 'E'];
+          faces.forEach(function (f) {
+            var faceLen = f === 'S' ? w : d;
+            var n = Math.max(1, Math.min(winCols, Math.floor(faceLen / 0.26))); // rhythm: never closer than 0.26 cell
+            if (wstyle === 'strip') n = Math.max(1, Math.floor(faceLen / 0.9));
+            for (var fl = 0; fl < rows; fl++) {
+              var zc = z0 + (fl + 0.55) * fH;
+              if (fl === 0 && (b.door || b.arch) && f === 'S' && n <= 2) continue; // ground floor on the door face: door only
+              for (var i2 = 0; i2 < n; i2++) { var tc = (i2 + 0.5) / n; if (fl === 0 && (b.door || b.arch) && f === 'S' && Math.abs(tc - 0.5) < 0.5 / n + 0.01) continue; drawWindow(f, tc, zc, faceLen); }
+            }
+          });
+        }
+        // door — in the face plane, ground floor centre of the south face
+        if (b.door && !b.arch && h > 0.5) {
+          var dw = 0.16 / w, dh = Math.min(h * 0.8, 0.26 * FPX), dst = (b.dstyle || L.dstyle || 'rect');
+          var dpts = dst === 'arch' ? archPts('S', 0.5 - dw / 2, 0.5 + dw / 2, z0, z0 + dh, w * Math.sqrt(HW * HW + HH * HH)) : quad('S', 0.5 - dw / 2, 0.5 + dw / 2, z0, z0 + dh);
+          add(dpts, self.shade(wall, 0.6)); add(quad('S', 0.5 - dw / 2 + 0.03 / w, 0.5 - dw / 2 + 0.06 / w, z0, z0 + dh - 1), side);
+          add(dst === 'arch' ? archPts('S', 0.5 - dw / 2 + 0.06 / w, 0.5 + dw / 2 - 0.02 / w, z0, z0 + dh - 1, w * Math.sqrt(HW * HW + HH * HH) * 0.7) : quad('S', 0.5 - dw / 2 + 0.06 / w, 0.5 + dw / 2 - 0.02 / w, z0, z0 + dh - 1), door);
+        }
+        // arch opening carved into the south face (negative space)
+        if (b.arch && h > 0.5) {
+          var tc = b.arch[0], aw = b.arch[1], ah = b.arch[2], thru = b.arch[3];
+          var La2 = sc(Lg, sB), Ba2 = sc(Bg, sB);
+          var fp = function (t, z) { return rel([La2[0] + t * (Ba2[0] - La2[0]), La2[1] + t * (Ba2[1] - La2[1])], z0 + z); };
+          var eLen = Math.sqrt(Math.pow(Ba2[0] - La2[0], 2) + Math.pow(Ba2[1] - La2[1], 2));
+          var archPoly = function (cx, half, hh) {
+            var rpx = half * eLen, pts = [fp(cx - half, 0), fp(cx + half, 0)];
+            for (var a = 0; a <= 6; a++) { var ang = a / 6 * Math.PI; pts.push(fp(cx + half * Math.cos(ang), hh - rpx + rpx * Math.sin(ang))); }
+            return pts;
+          };
+          add(archPoly(tc, aw / 2, h * ah), self.shade(wall, 0.42));
+          add(archPoly(tc, aw / 2 * 0.62, h * ah * 0.8), thru ? '#C3DDCC' : self.shade(wall, 0.3));
+        }
+        // medallions (south face, upper)
+        if (b.medal) { // 古錢圓徽：每面一枚，畫在牆面平面內
+          var mz = z0 + h * 0.86, mlen = Math.sqrt(HW * HW + HH * HH);
+          [['S', w], ['E', d]].forEach(function (fd) { var rt = 0.17 / fd[1]; add(roundPts(fd[0], 0.5, mz, rt, fd[1] * mlen), '#4F5B6B'); add(roundPts(fd[0], 0.5, mz, rt * 0.7, fd[1] * mlen), self.shade(wall, 1.05)); add(roundPts(fd[0], 0.5, mz, rt * 0.22, fd[1] * mlen), '#4F5B6B'); });
+        }
+        // lanterns at front corners
+        if (b.lantern) {
+          var lz = z0 + h * 0.7, La = sc(Lg, sB), Ba = sc(Bg, sB);
+          [0.12, 0.88].forEach(function (t) { parts.push({ l: La[0] + t * (Ba[0] - La[0]) - left - 3, t: La[1] + t * (Ba[1] - La[1]) - lz - top - 4, w: 6, h: 8, bg: '#C7453B', clip: 'none', r: '3px' }); });
+        }
+        function inset(s, dz) { return topPoly(s, zt + dz * roofH); }
+        target = roofParts;
+        // roof forms (on top at zt) — real sloped planes so the silhouette carries the roof, not stacked slabs
+        var rk = b.roof;
+        var rh = 0.5 * Math.min(w, d) * FPX * roofH * 1.1; // 45° slope over half the short side, × roofH
+        var alongC = b.ridge ? b.ridge === 'c' : w >= d; // ridge runs along the longer side unless ridge:'c'|'d' says otherwise
+        var roofLite = self.shade(roof, 1.06), roofSide = roofDark, roofBack = self.shade(roof, 0.9);
+        function corners(s, z) { return { T: rel(sc(Tg, s), z), R: rel(sc(Rg, s), z), B: rel(sc(Bg, s), z), L: rel(sc(Lg, s), z) }; }
+        function mid(a, q) { return [(a[0] + q[0]) / 2, (a[1] + q[1]) / 2]; }
+        function hipRoof(s, z, height) { // 4 slopes meeting at a ridge; a square plan gives a point
+          var k = corners(s, z), zr = z + height;
+          var ins = Math.min(w, d) / 2 / Math.max(w, d) * 0.98; // how far the ridge ends sit in from the ends (fraction of long side)
+          var rW, rE;
+          if (alongC) { var nw = corners(s, zr); var a = mid(nw.T, nw.L), q = mid(nw.R, nw.B); rW = [a[0] + (q[0] - a[0]) * ins, a[1] + (q[1] - a[1]) * ins]; rE = [q[0] + (a[0] - q[0]) * ins, q[1] + (a[1] - q[1]) * ins]; }
+          else { var nw2 = corners(s, zr); var a2 = mid(nw2.T, nw2.R), q2 = mid(nw2.L, nw2.B); rW = [a2[0] + (q2[0] - a2[0]) * ins, a2[1] + (q2[1] - a2[1]) * ins]; rE = [q2[0] + (a2[0] - q2[0]) * ins, q2[1] + (a2[1] - q2[1]) * ins]; }
+          if (alongC) { add([k.T, k.R, rE, rW], roofBack); add([k.T, k.L, rW], roofBack); add([k.L, k.B, rE, rW], roof); add([k.B, k.R, rE], roofSide); }
+          else { add([k.T, k.R, rE, rW], roofBack); add([k.T, k.L, rE, rW], roofLite); add([k.L, k.B, rE], roof); add([k.R, k.B, rE, rW], roofSide); }
+          return zr;
+        }
+        function gableRoof(s, z, height, endColor) { // two slopes + triangular gable ends
+          var k = corners(s, z), kt = corners(s, z + height);
+          if (alongC) { var rW = mid(kt.T, kt.L), rE = mid(kt.R, kt.B); add([k.T, k.R, rE, rW], roofBack); add([k.L, k.B, rE, rW], roof); add([k.R, k.B, rE], endColor); }
+          else { var rN = mid(kt.T, kt.R), rS = mid(kt.L, kt.B); add([k.T, k.L, rS, rN], roofLite); add([k.R, k.B, rS, rN], roofSide); add([k.L, k.B, rS], endColor); }
+          return z + height;
+        }
+        function frustum(s0, zA, s1, zB, cS, cE) { // sloped skirt between two rectangles (lower eave of a 重簷, octagonal hall roof)
+          var a = corners(s0, zA), q = corners(s1, zB);
+          add([a.T, a.R, q.R, q.T], roofBack); add([a.T, a.L, q.L, q.T], roofBack);
+          add([a.L, a.B, q.B, q.L], cS || roof); add([a.B, a.R, q.R, q.B], cE || roofSide);
+        }
+        function octFrustum(s0, zA, s1, zB) { var p0 = topPoly(s0, zA), p1 = topPoly(s1, zB); for (var i = 0; i < 8; i++) { var j = (i + 1) % 8; add([p0[i], p0[j], p1[j], p1[i]], i >= 3 && i <= 5 ? roof : (i === 6 || i === 2 ? roofSide : roofBack)); } }
+        function finial(z, col) { target.push({ l: C[0] - left - 3, t: C[1] - z - top - 8, w: 6, h: 8, bg: col || accent, clip: 'none', r: '50%' }); }
+        if (rk === 'hip' || rk === 'pagoda') {
+          if (b.shape === 'oct') { octFrustum(ev, zt, ev * 0.12, zt + rh); finial(zt + rh); }
+          else hipRoof(ev, zt, rh);
+        }
+        if (rk === 'gable') gableRoof(ev, zt, rh, wall);
+        if (rk === 'mansard') { frustum(ev, zt, ev * 0.72, zt + rh * 0.7); add(topPoly(ev * 0.72, zt + rh * 0.7), roofLite); }
+        if (rk === 'hip2') {
+          var z1 = zt + rh * 0.45;
+          if (b.shape === 'oct') { octFrustum(ev, zt, ev * 0.62, z1); var p = topPoly(ev * 0.62, z1), p2 = topPoly(ev * 0.62, z1 + rh * 0.3); for (var i6 = 0; i6 < 8; i6++) { var j6 = (i6 + 1) % 8; add([p[i6], p[j6], p2[j6], p2[i6]], i6 >= 3 && i6 <= 5 ? wall : side); } octFrustum(ev * 0.78, z1 + rh * 0.3, ev * 0.1, z1 + rh * 1.2); finial(z1 + rh * 1.2); }
+          else { frustum(ev, zt, ev * 0.6, z1); var k1 = corners(ev * 0.6, z1), k2 = corners(ev * 0.6, z1 + rh * 0.3); add([k1.L, k1.B, k2.B, k2.L], wall); add([k1.B, k1.R, k2.R, k2.B], side); var zr2 = hipRoof(ev * 0.78, z1 + rh * 0.3, rh * 0.8); finial(zr2); }
+        }
+        if (rk === 'swallowtail' || rk === 'swallowtail2') {
+          var zg = zt;
+          if (rk === 'swallowtail2') { frustum(ev, zt, ev * 0.62, zt + rh * 0.4); var g1 = corners(ev * 0.62, zt + rh * 0.4), g2 = corners(ev * 0.62, zt + rh * 0.65); add([g1.L, g1.B, g2.B, g2.L], wall); add([g1.B, g1.R, g2.R, g2.B], side); zg = zt + rh * 0.65; ev = ev * 0.8; }
+          var ztop = gableRoof(ev, zg, rh * 0.9, wall);
+          // 燕尾：屋脊兩端翹起的小尖
+          var kt3 = corners(ev, ztop);
+          var tipA = alongC ? mid(kt3.T, kt3.L) : mid(kt3.T, kt3.R), tipB = alongC ? mid(kt3.R, kt3.B) : mid(kt3.L, kt3.B);
+          add([[tipA[0] - 1, tipA[1] + 2], [tipA[0] + 3, tipA[1] + 1], [tipA[0] - 2, tipA[1] - 5]], accent);
+          add([[tipB[0] + 1, tipB[1] + 2], [tipB[0] - 3, tipB[1] + 1], [tipB[0] + 2, tipB[1] - 5]], accent);
+          add([[tipA[0], tipA[1] + 1.2], [tipB[0], tipB[1] + 1.2], [tipB[0], tipB[1] - 0.6], [tipA[0], tipA[1] - 0.6]], self.shade(roof, 0.7));
+        }
+        if (rk === 'dome') {
+          add(inset(sT * 0.8, 2), roofDark); add(inset(sT * 0.8, 6), self.shade(wall, 0.95)); // drum
+          var dia = (w + d) / 2 * HW * 1.15 * sT * (b.domeScale || 1);
+          target.push({ l: C[0] - left - dia / 2, t: C[1] - zt - top - dia * 0.6 - 1, w: dia, h: dia * 0.8, bg: roof, clip: 'none', r: '50% 50% 45% 45%' });
+          target.push({ l: C[0] - left - dia / 2, t: C[1] - zt - top - dia * 0.6 - 1, w: dia * 0.5, h: dia * 0.8, bg: self.shade(roof, 1.08), clip: 'none', r: '100% 0 0 100% / 50% 0 0 50%' });
+          target.push({ l: C[0] - left - 2, t: C[1] - zt - top - dia * 0.6 - 7, w: 4, h: 7, bg: accent, clip: 'none', r: '2px' });
+        }
+        if (rk === 'spire') { target.push({ l: C[0] - left - 1.5, t: C[1] - z0 - top - h - 4, w: 3, h: h + 4, bg: '#5C6A72', clip: 'none', r: '2px' }); }
+        function keyOf(bb) { var pp = place(bb); if (bb.on) return keyOf(byId[bb.on]) + 0.3 + (pp.z0 * 0.001); var hh = bb.h !== undefined ? bb.h : bb.fl * bb.fh; if (hh <= 0.03 && !bb.z) return -100 + (pp.c + bb.w) + (pp.r + bb.d); return (pp.c + bb.w) + (pp.r + bb.d); } // ground slabs (court, field, pond) always paint first
+        var key = keyOf(b);
+        var roofTop = roofParts.length ? (rk === 'dome' ? h / FPX + Math.min(w, d) * 0.6 : (zt + rh * (rk === 'hip2' ? 1.75 : 1)) / FPX - z0 / FPX) : 0;
+        return { key: key, left: left, top: top, w: cw, h: ch, parts: parts, roofParts: roofParts, roofH: roofTop };
+      });
+      // painter's order: A is behind B when A is entirely west, entirely north or entirely below B (separating axis); ground slabs first; key breaks ties
+      var onIdx = {}; raw.forEach(function (bb, i) { onIdx[bb.id] = i; });
+      var entries = [];
+      blocks.forEach(function (bl, i) { var bb = raw[i], pp = place(bb); var hh = bb.h !== undefined ? bb.h : bb.fl * bb.fh;
+        bl.box = { id: i, on: bb.on ? onIdx[bb.on] : -1, c0: pp.c, c1: pp.c + bb.w, r0: pp.r, r1: pp.r + bb.d, z0: pp.z0 / FPX, z1: pp.z0 / FPX + hh, slab: hh <= 0.03 && !bb.z };
+        entries.push(bl);
+        if (bl.roofParts.length) { var ev2 = bb.eave || 1, cx = (bl.box.c0 + bl.box.c1) / 2, cy = (bl.box.r0 + bl.box.r1) / 2, hw2 = bb.w / 2 * ev2, hd2 = bb.d / 2 * ev2;
+          entries.push({ key: bl.key + 0.0005, left: bl.left, top: bl.top, w: bl.w, h: bl.h, parts: bl.roofParts, roofParts: [], box: { id: 'roof' + i, roofOf: i, on: -1, c0: cx - hw2, c1: cx + hw2, r0: cy - hd2, r1: cy + hd2, z0: bl.box.z1, z1: bl.box.z1 + bl.roofH, slab: false } }); }
+      });
+      blocks = entries;
+      // screen bounding box per entry: two entries that never overlap on screen need no ordering edge (this removes most false cycles)
+      function sbOf(bl) { var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; bl.parts.forEach(function (p) {
+        if (p.clip === 'none') { x0 = Math.min(x0, bl.left + p.l); y0 = Math.min(y0, bl.top + p.t); x1 = Math.max(x1, bl.left + p.l + p.w); y1 = Math.max(y1, bl.top + p.t + p.h); }
+        else { var nums = p.clip.match(/-?[\d.]+/g).map(Number); for (var q = 0; q < nums.length; q += 2) { x0 = Math.min(x0, bl.left + nums[q]); x1 = Math.max(x1, bl.left + nums[q]); y0 = Math.min(y0, bl.top + nums[q + 1]); y1 = Math.max(y1, bl.top + nums[q + 1]); } } });
+        return { x0: x0, y0: y0, x1: x1, y1: y1 }; }
+      blocks.forEach(function (bl) { bl.sb = sbOf(bl); });
+      function overlaps(a, b) { return a.x0 < b.x1 - 0.5 && b.x0 < a.x1 - 0.5 && a.y0 < b.y1 - 0.5 && b.y0 < a.y1 - 0.5; }
+      var byId2 = {}; blocks.forEach(function (o) { byId2[String(o.box.id)] = o; });
+      var EPS = 0.02;
+      function behind(A, B) { if (A.slab && !B.slab) return true; if (B.slab && !A.slab) return false; return A.c1 <= B.c0 + EPS || A.r1 <= B.r0 + EPS || A.z1 <= B.z0 + EPS; }
+      // intersecting boxes (a corner buttress embedded in a hall) have no separating axis: the one that reaches further
+      // toward the viewer on the axis where they overlap least is in front (further south when they share columns, further east when they share rows)
+      function isBehind(A, B) {
+        if (B.roofOf === A.id) return true;  if (A.roofOf === B.id) return false;   // a body is under its own roof
+        var pA = A.roofOf !== undefined ? byId2[String(A.roofOf)].box.on : A.on, pB = B.roofOf !== undefined ? byId2[String(B.roofOf)].box.on : B.on; // parent of a block, or of a roof's body
+        if (pA >= 0 && (pA === B.id || pA === B.roofOf)) return false; if (pB >= 0 && (pB === A.id || pB === A.roofOf)) return true; // a stacked block (and its roof) sits on top of its parent (and its parent's roof)
+        var ab = behind(A, B), ba = behind(B, A);
+        if (ab !== ba) return ab;
+        if (A.slab || B.slab) return A.slab && !B.slab;
+        var oc = Math.min(A.c1, B.c1) - Math.max(A.c0, B.c0), orr = Math.min(A.r1, B.r1) - Math.max(A.r0, B.r0);
+        if (oc >= orr) return A.r1 < B.r1 - EPS; // share columns → compare south extent
+        return A.c1 < B.c1 - EPS;                 // share rows → compare east extent
+      }
+      var ordered = [], state = {};
+      var byKey = blocks.slice().sort(function (a, b) { return a.key - b.key; });
+      // cycles are unavoidable with L-shaped plans; the two relations that must never be broken are
+      // body → its roof and parent → stacked child, so an entry reached while its body / parent is still open is deferred and emitted right after it
+      var deferred = {};
+      function sidOf(bl) { return String(bl.box.id); }
+      function open_(id) { var st = state[String(id)]; return st === 1 || st === 3; }
+      function emit(bl) { if (state[sidOf(bl)] === 2) return; state[sidOf(bl)] = 2; ordered.push(bl); var ds = (deferred[bl.box.id] || []).slice(); delete deferred[bl.box.id]; ds.sort(function (x, y) { return (x.box.roofOf !== undefined ? 0 : 1) - (y.box.roofOf !== undefined ? 0 : 1); }); ds.forEach(emit); }
+      function defer(bl, id) { if (state[sidOf(bl)]) return; (deferred[id] = deferred[id] || []).push(bl); state[sidOf(bl)] = 3; }
+      function visit(bl) {
+        var sid = sidOf(bl); if (state[sid]) return;
+        function need(id) { // make sure `id` is painted before bl; if it cannot be yet (open or deferred), defer bl behind it
+          var e = byId2[String(id)]; if (!state[String(id)]) visit(e);
+          if (state[String(id)] !== 2) { defer(bl, id); return false; } return true;
+        }
+        if (bl.box.roofOf !== undefined) { if (!need(bl.box.roofOf)) return; }
+        else if (bl.box.on >= 0) { // a stacked child waits for its parent AND the parent's roof (it sits on top of both)
+          // the parent is painted in its own natural position; the child is simply emitted right after the parent (or the parent's roof)
+          var pr = byId2['roof' + bl.box.on];
+          if (state[String(bl.box.on)] !== 2 || (pr && state[sidOf(pr)] !== 2)) { defer(bl, pr ? pr.box.id : bl.box.on); return; }
+        }
+        if (state[sid]) return; // may have been painted (or deferred) while its parent was being visited
+        state[sid] = 1;
+        byKey.forEach(function (o) { if (o !== bl && overlaps(o.sb, bl.sb) && isBehind(o.box, bl.box)) visit(o); });
+        emit(bl);
+      }
+      byKey.forEach(visit);
+      blocks = ordered;
+      // fit: scale the whole scene so its bounding box fills the 448×320 frame (relative scale is kept by size + zoom, fit only normalises margins)
+      var bx0 = plot.l, by0 = plot.t, bx1 = plot.l + plot.w, by1 = plot.t + plot.h;
+      blocks.forEach(function (bl) { bl.parts.forEach(function (p) {
+        if (p.clip === 'none') { bx0 = Math.min(bx0, bl.left + p.l); by0 = Math.min(by0, bl.top + p.t); bx1 = Math.max(bx1, bl.left + p.l + p.w); by1 = Math.max(by1, bl.top + p.t + p.h); }
+        else { var nums = p.clip.match(/-?[\d.]+/g).map(Number); for (var q = 0; q < nums.length; q += 2) { bx0 = Math.min(bx0, bl.left + nums[q]); bx1 = Math.max(bx1, bl.left + nums[q]); by0 = Math.min(by0, bl.top + nums[q + 1]); by1 = Math.max(by1, bl.top + nums[q + 1]); } }
+      }); });
+      var bw = Math.max(1, bx1 - bx0), bh = Math.max(1, by1 - by0);
+      // one shared display scale (1.25) so relative size between landmarks is kept; only a scene too tall for the frame (101) is reduced to fit
+      var fs = Math.min((SW - 48) / bw, (SH - 40) / bh, 1.25 * (L.fit || 1));
+      var fit = { s: +fs.toFixed(3), tx: +((SW - bw * fs) / 2 - bx0 * fs).toFixed(1), ty: +((SH - bh * fs) / 2 - by0 * fs).toFixed(1) };
+      var ss = Math.min(84 / bw, 56 / bh);
+      var sil = { s: +ss.toFixed(3), tx: +((96 - bw * ss) / 2 - bx0 * ss).toFixed(1), ty: +((66 - bh * ss) / 2 - by0 * ss).toFixed(1) };
+      return {
+        id: L.id, name: L.name, obs: L.obs, chips: L.chips, sizeText: L.label || (W + '×' + D), tier: L.tier || 1, blockCount: raw.length, realFloors: L.real,
+        wall: L.p.wall, roof: L.p.roof, door: L.p.door, accent: L.p.accent,
+        ground: ground, plot: plot, blocks: blocks, fit: fit, sil: sil
+      };
+    });
+    return { items: items };
+  }
+}
+</script>
+</body>
+</html>

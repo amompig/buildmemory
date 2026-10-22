@@ -3,7 +3,7 @@
 import * as R from '../shared/rules.js';
 import catalog from '../data/catalog.json';
 
-const HOUSES = catalog.houses;
+const HOUSES = catalog.houses, DECOR = catalog.decor, POOLS = catalog.pools;
 const DATA_VERSION = catalog.data_version;
 export const SESSION_PER_MIN = 30;
 const DEVICE = 'bym_device', SESSION = 'bym_session', NONCE = 'bym_nonce';
@@ -208,10 +208,10 @@ export async function putTown({ env, body, userId }) {
 
   const conflict = (t) => new ApiError(409, 'conflict', { rev: t.rev, grid: JSON.parse(t.grid_json) });
   if (!R.applyTown(base_rev, town.rev, null).ok) throw conflict(town);
-  const v = R.validateGrid(grid, await grantsOf(env, userId), HOUSES);
+  const v = R.validateGrid(grid, await grantsOf(env, userId), HOUSES, DECOR);
   if (!v.ok) throw invalid(v.reason);
 
-  const refs = JSON.stringify(grid.filter((x) => x?.t === 'house').map((x) => x.ref));
+  const refs = JSON.stringify(R.gridRefs(grid));
   const t = now(), db = env.DB;
   // 第 1 句 rev 對得上才會寫入 last_op；後兩句以 last_op = 本次 op_id 為條件 → 整批要嘛一起生效、要嘛都不動
   const mine = 'EXISTS (SELECT 1 FROM towns WHERE id = ? AND last_op = ?)';
@@ -248,7 +248,7 @@ async function writeGrant(env, userId, g, lmId, day, distM, t) {
   try {
     await db.batch([
       db.prepare('INSERT INTO grants (id, user_id, kind, item_id, state, seed, landmark_id, visit_n, at, op_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-        .bind(id, userId, 'house', g.item_id, g.state, g.seed, g.landmark_id, g.visit_n, t, g.op_id),
+        .bind(id, userId, g.kind ?? 'house', g.item_id, g.state, g.seed, g.landmark_id, g.visit_n, t, g.op_id),
       db.prepare('INSERT INTO checkins (user_id, landmark_id, day, grant_id, dist_m, at) VALUES (?, ?, ?, ?, ?, ?)')
         .bind(userId, lmId, day, id, distM, t),
     ]);
@@ -294,12 +294,12 @@ export async function checkin({ env, body, userId }) {
   return { body: { grant, checkin: { landmark_id: lm.id, day, visit_n: visit } } };
 }
 
-// POST /api/daily {lat, lng, acc, op_id}：每日 1 次；縣市 = 最近地標 ≤ 30 km；給該城市 1×1 池隨機一棟
+// POST /api/daily {lat, lng, acc, op_id}：每日 1 次；縣市 = 最近地標 ≤ 30 km；房子 / 部件依比例，房子從該城市 1×1 池加權抽
 export async function daily({ env, body, userId }) {
   if (!geoOk(body)) throw invalid('schema');
   const prev = await byOp(env, userId, body.op_id);
   const county = R.countyOf(body.lat, body.lng, LANDMARKS);
-  if (prev) return { body: { grant: prev, county, kind: 'house' } };
+  if (prev) return { body: { grant: prev, county, kind: prev.kind } };
 
   if (body.acc > R.RULES.ACC_MAX) throw fromRule({ code: 'weak_signal' });
   if (!county) throw invalid('county');
@@ -307,9 +307,9 @@ export async function daily({ env, body, userId }) {
   if (await env.DB.prepare("SELECT 1 FROM checkins WHERE user_id = ? AND landmark_id = 'daily' AND day = ?").bind(userId, day).first()) {
     throw new ApiError(429, 'cooldown', { until: R.cooldownUntil(day) });
   }
-  const g = R.dailyGrant(R.dailyPool(HOUSES, county), Math.random(), Math.random());
+  const g = R.dailyGrant(R.dailyPool(HOUSES, county, POOLS), DECOR, POOLS.daily_split, Math.random(), Math.random(), Math.random());
   const grant = await writeGrant(env, userId, {
-    item_id: g.item_id, state: 'stock', seed: g.seed, landmark_id: null, visit_n: 1, op_id: body.op_id,
+    kind: g.kind, item_id: g.item_id, state: 'stock', seed: g.seed, landmark_id: null, visit_n: 1, op_id: body.op_id,
   }, 'daily', day, null, t);
   return { body: { grant, county, kind: g.kind } };
 }
@@ -321,4 +321,28 @@ export async function memory({ env, body, userId, params }) {
   const r = await env.DB.prepare('UPDATE grants SET mood = ?, note = ? WHERE id = ? AND user_id = ?').bind(v.mood, v.note, params.id, userId).run();
   if (r.meta.changes !== 1) throw new ApiError(404, 'invalid', { reason: 'ref' });
   return { body: { grant: await grantById(env, params.id) } };
+}
+
+// POST /api/merge {a, b, op_id}：兩棟同系列同階的待放房子 → 下一階一棟（docs/spec_upgrade_2026-10-22.md §2）
+// 舊的兩棟標成 dismantled + consumed_at（記憶卡留著）；整批以「兩棟都還是 stock」為條件，併發時只有一次生效
+export async function merge({ env, body, userId }) {
+  const { a, b, op_id } = body ?? {};
+  if (typeof a !== 'string' || typeof b !== 'string' || typeof op_id !== 'string' || !/^[0-9a-f-]{8,64}$/i.test(op_id)) throw invalid('schema');
+  const prev = await byOp(env, userId, op_id);
+  if (prev) return { body: { grant: prev, consumed: [a, b] } };
+  const m = R.canMerge(await grantsOf(env, userId), HOUSES, a, b);
+  if (!m.ok) throw invalid(m.reason);
+  const [ga, gb] = await Promise.all([grantById(env, a), grantById(env, b)]);
+  const r = R.mergeResult(m, ga.seed, gb.seed, Math.random(), Math.random());
+  const id = crypto.randomUUID(), t = now(), db = env.DB;
+  const both = "(SELECT count(*) FROM grants WHERE user_id = ? AND state = 'stock' AND id IN (?, ?)) = 2";
+  await db.batch([
+    db.prepare(`INSERT INTO grants (id, user_id, kind, item_id, state, seed, landmark_id, visit_n, at, op_id) SELECT ?, ?, 'house', ?, 'stock', ?, NULL, 1, ?, ? WHERE ${both}`)
+      .bind(id, userId, r.item_id, r.seed, t, op_id, userId, a, b),
+    db.prepare("UPDATE grants SET state = 'dismantled', consumed_at = ? WHERE user_id = ? AND state = 'stock' AND id IN (?, ?) AND EXISTS (SELECT 1 FROM grants WHERE id = ?)")
+      .bind(t, userId, a, b, id),
+  ]);
+  const grant = await grantById(env, id);
+  if (!grant) throw invalid('state'); // 併發：其中一棟已被放上鎮或已合成
+  return { body: { grant, consumed: [a, b] } };
 }

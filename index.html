@@ -48,8 +48,6 @@
   .hud-pills { justify-content: space-between; }
   .map-where { gap: 6px; }
   .map-where .c-icon { width: 18px; height: 18px; }
-  #mapview .maplibregl-ctrl-attrib { font-size: 10px; background: rgba(255,252,247,.7); }
-  #mapview .maplibregl-ctrl-top-right { top: calc(env(safe-area-inset-top, 0px) + 64px); }
   .bym-pin { position: relative; width: 28px; height: 36px; }
   .bym-pin svg { display: block; }
   .bym-tip { position: absolute; left: 14px; top: 38px; transform: translateX(-50%); white-space: nowrap; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font: 500 12px/1 var(--font); padding: 5px 8px; pointer-events: none; }
@@ -65,8 +63,10 @@
   .ui-toast { position: absolute; left: var(--page-x); right: var(--page-x); bottom: calc(var(--stack-h, var(--tab-h)) + 12px); z-index: var(--z-toast);
     opacity: 0; transform: translateY(8px); transition: opacity 160ms, transform 160ms; pointer-events: none; }
   .ui-toast.show { opacity: 1; transform: none; }
-  #login { position: fixed; inset: 0; z-index: var(--z-dialog); background: var(--scrim); display: flex; align-items: flex-end; }
-  #login .c-sheet { width: 100%; }
+  #login, #about { position: fixed; inset: 0; z-index: var(--z-dialog); background: var(--scrim); display: flex; align-items: flex-end; }
+  #login .c-sheet, #about .c-sheet { width: 100%; max-height: 85vh; overflow: auto; }
+  #about a { color: var(--accent); }
+  .inv-about { display: block; margin: var(--space-6) auto 0; }
   #login .gsi { display: flex; justify-content: center; min-height: 44px; }
   #dev { position: fixed; left: 8px; top: 90px; z-index: var(--z-dialog); background: rgba(255,255,255,.95); border-radius: var(--radius); padding: 8px; font-size: 12px; box-shadow: var(--shadow); max-width: 230px; }
   #dev input { width: 100%; box-sizing: border-box; font-size: 12px; }
@@ -163,6 +163,7 @@ function onIntent(it) {
     case 'rotateSel': { const r = ed.rotate(view.sel); if (!r.ok) reject(r); break; }
     case 'closeSheet': view.sel = null; break;
     case 'login': login(); return;
+    case 'about': about(); return;
     default: return;
   }
   refresh();
@@ -255,6 +256,23 @@ const loadGsi = () => window.google?.accounts?.id ? Promise.resolve() : new Prom
   const sc = Object.assign(document.createElement('script'), { src: 'https://accounts.google.com/gsi/client', async: true, onload: ok, onerror: no });
   document.head.appendChild(sc);
 });
+// 關於與版權：地圖、地標、模型的出處與授權（地圖署名只放這裡）
+function about() {
+  const box = Object.assign(document.createElement('div'), { id: 'about' });
+  const a = (href, text) => `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+  box.innerHTML = `<div class="c-sheet"><h3 class="c-dialog__title"></h3>
+    <div class="c-dialog__body"><b>地圖</b><br>圖磚：${a('https://openfreemap.org', 'OpenFreeMap')}（${a('https://www.openmaptiles.org/', '© OpenMapTiles')}）<br>
+    地圖資料：${a('https://www.openstreetmap.org/copyright', '© OpenStreetMap 貢獻者')}，以 Open Database License（ODbL）授權</div>
+    <div class="c-dialog__body"><b>地標</b><br><span data-k="about_source"></span><br><span data-k="about_license"></span><br>
+    地標座標：${a('https://www.openstreetmap.org/copyright', '© OpenStreetMap 貢獻者')}（ODbL）</div>
+    <button class="c-btn c-btn--ghost" data-close></button></div>`;
+  box.querySelector('h3').textContent = ui.t('privacy.about_title');
+  for (const el of box.querySelectorAll('[data-k]')) el.textContent = ui.t(`privacy.${el.dataset.k}`);
+  box.querySelector('[data-close]').textContent = ui.t('common.close');
+  box.addEventListener('click', (e) => { if (e.target === box || e.target.dataset.close !== undefined) box.remove(); });
+  document.body.appendChild(box);
+}
+
 async function login() {
   const n = await api('GET', '/api/auth/nonce');
   if (!n.ok) return ui.toast(ui.reasonText(n));

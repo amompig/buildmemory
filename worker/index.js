@@ -20,6 +20,7 @@ const ROUTES = {
   'PUT /api/town': { fn: H.putTown, auth: true, rate: ['town', 30] },
   'POST /api/checkin': { fn: H.checkin, auth: true, rate: ['checkin', 30] },
   'POST /api/daily': { fn: H.daily, auth: true, rate: ['daily', 10] },
+  'POST /api/merge': { fn: H.merge, auth: true, rate: ['merge', 30] },
 };
 // 帶參數的路由
 const PARAM_ROUTES = [

@@ -1,6 +1,6 @@
 // store.js — 單一狀態（grants, grid, rev）+ localStorage 立即寫 + 2 s debounce 同步（PUT /api/town）
 // 依賴方向：views → store → shared/rules。伺服器是庫存權威：連上後以 GET /me 為準。
-import { starterGrid, STARTER_HOUSES } from '../shared/rules.js';
+import { starterGrid, STARTER_HOUSES, gridRefs } from '../shared/rules.js';
 
 export const KEY = 'bym:v1';
 
@@ -24,7 +24,7 @@ function read(storage) {
 
 // grant state 依 grid 重算（與伺服器 PUT /town 的批次規則相同）：在 grid 裡 → placed，不在 → stock
 const restate = (grants, grid) => {
-  const refs = new Set(grid.filter((x) => x?.t === 'house').map((x) => x.ref));
+  const refs = new Set(gridRefs(grid));
   return grants.map((g) => (g.state === 'dismantled' ? g : { ...g, state: refs.has(g.id) ? 'placed' : 'stock' }));
 };
 

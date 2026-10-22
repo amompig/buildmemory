@@ -13,7 +13,7 @@ const heavy = { skip: (!API && '沒設 API') || (process.env.PROD && '正式站�
 // 記錄測試建的帳號，打正式站後可清掉（USERS_LOG=檔名）
 import { appendFileSync } from 'node:fs';
 const logUser = (id) => { if (process.env.USERS_LOG && id) appendFileSync(process.env.USERS_LOG, `${id}\n`); };
-const HOUSES = JSON.parse(readFileSync(new URL('../data/catalog.json', import.meta.url), 'utf8')).houses;
+const CATALOG = JSON.parse(readFileSync(new URL('../data/catalog.json', import.meta.url), 'utf8')), HOUSES = CATALOG.houses;
 const opts = { skip: !API && '沒設 API（需要 wrangler dev）' };
 
 // 每個測試用戶各自一個假 IP，避免撞到建帳的 IP 限速（正式環境 Cloudflare 會覆寫這個標頭，客端偽造無效）
@@ -291,14 +291,18 @@ test('checkin：圈內 → 發房（原色、第 1 次）；同 op_id 重送 →
   assert.equal((await me(u)).grants.length, 3);
 });
 
-test('daily：台北 → 城市 1×1 池隨機一棟、seed 1..n−1；同日再領 → cooldown；30 km 外 → invalid county', opts, async () => {
+test('daily：台北 → 城市 1×1 池（seed 1..n−1）或部件；同日再領 → cooldown；30 km 外 → invalid county', opts, async () => {
   const u = await newUser();
   const r = await call('POST', '/api/daily', { cookie: u.cookie, body: { ...north(LM5, 500), acc: 30, op_id: op() } });
   assert.equal(r.status, 200);
-  assert.deepEqual([r.json.kind, r.json.county, r.json.grant.state], ['house', 'TPE', 'stock']);
-  const h = HOUSES.find((x) => x.id === r.json.grant.item_id);
-  assert.ok(h && h.id.startsWith('sys:') && h.size.join() === '1,1', r.json.grant.item_id);
-  assert.ok(r.json.grant.seed >= 1 && r.json.grant.seed < h.palettes.length);
+  assert.deepEqual([r.json.county, r.json.grant.state, r.json.grant.kind], ['TPE', 'stock', r.json.kind]);
+  if (r.json.kind === 'decor') assert.ok(CATALOG.decor.some((d) => d.id === r.json.grant.item_id), r.json.grant.item_id);
+  else {
+    assert.equal(r.json.kind, 'house');
+    const h = HOUSES.find((x) => x.id === r.json.grant.item_id);
+    assert.ok(h && Object.hasOwn(CATALOG.pools.groups.metro, h.id), r.json.grant.item_id);
+    assert.ok(r.json.grant.seed >= 1 && r.json.grant.seed < h.palettes.length);
+  }
   const again = await call('POST', '/api/daily', { cookie: u.cookie, body: { ...north(LM5, 500), acc: 30, op_id: op() } });
   assert.deepEqual([again.status, again.json.error.code], [429, 'cooldown']);
   const v = await newUser();
@@ -319,4 +323,16 @@ test('memory：心情＋一句話寫入；41 字 → invalid；別人的 grant �
   assert.deepEqual([r.status, r.json.grant.mood, r.json.grant.note], [200, 3, '第一次來紅樓']);
   assert.equal((await call('PUT', `/api/grant/${g.id}/memory`, { cookie: u.cookie, body: { mood: 1, note: '好'.repeat(41) } })).json.error.reason, 'note');
   assert.equal((await call('PUT', `/api/grant/${g.id}/memory`, { cookie: v.cookie, body: { mood: 1, note: 'x' } })).status, 404);
+});
+
+test('merge：贈品鐵窗厝 + 日式宿舍（不同系列）→ 400 mismatch；同一棟兩次 → same；缺 op_id → schema', opts, async () => {
+  const u = await newUser();
+  const m = (await call('GET', '/api/me', { cookie: u.cookie })).json;
+  const iron = m.grants.find((g) => g.item_id === 'sys:iron'), dorm = m.grants.find((g) => g.item_id === 'sys:jpdorm');
+  const r = await call('POST', '/api/merge', { cookie: u.cookie, body: { a: iron.id, b: dorm.id, op_id: op() } });
+  assert.deepEqual([r.status, r.json.error.reason], [400, 'mismatch']);
+  const s = await call('POST', '/api/merge', { cookie: u.cookie, body: { a: iron.id, b: iron.id, op_id: op() } });
+  assert.deepEqual([s.status, s.json.error.reason], [400, 'same']);
+  const x = await call('POST', '/api/merge', { cookie: u.cookie, body: { a: iron.id, b: dorm.id } });
+  assert.deepEqual([x.status, x.json.error.reason], [400, 'schema']);
 });

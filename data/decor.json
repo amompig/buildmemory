@@ -1,0 +1,992 @@
+{
+ "_meta": {
+  "version": "2026-10-22.1",
+  "source": "docs/spec_upgrade_2026-10-22.md §3-3；畫布 Parts 板（design/renderer/Parts.dc.html）",
+  "grant_kind": "decor（schema v1 §3 已列）",
+  "layers": {
+   "road": "疊在已畫好的路格；每格最多 1 個；不佔格、不影響臨路判定與道路連通；grid：{\"t\":\"road\",\"deco\":{\"id\",\"ref\"}}；擦路時部件自動回倉庫（state → stock），不擋擦路",
+   "lot": "佔 1 格空地；不需臨路；不算路；可 rot（只影響渲染）；grid：{\"t\":\"deco\",\"id\",\"ref\",\"rot\"}；拆除回倉庫"
+  },
+  "rules": "部件不能合成、不能升級；沒有持有上限、不給碎片；道路維持不限量，不進簽到池",
+  "render": "路上部件的 blueprint 含一塊示意用路面（id road / ln0 / ln1），kit.js 疊在既有路格上時跳過這三個 block",
+  "weights_note": "抽到部件時的權重，合計 100（Design 提案，待使用者定）"
+ },
+ "decor": [
+  {
+   "id": "dc:lamp",
+   "name": "路燈",
+   "layer": "road",
+   "size": [
+    1,
+    1
+   ],
+   "weight": 20,
+   "chips": [
+    "疊在路上",
+    "不佔格",
+    "每格 1 個"
+   ],
+   "observed": "灰色燈桿 + 往路中伸出的燈臂與暖白燈頭；放在路格東南角。夜景時燈頭用 window_lit。",
+   "blueprint": {
+    "vScale": 1.3,
+    "previewZoom": 2.4,
+    "blocks": [
+     {
+      "id": "road",
+      "at": [
+       0,
+       0
+      ],
+      "w": 1,
+      "d": 1,
+      "h": 0.012,
+      "roof": "flat",
+      "windowCols": 0,
+      "color": {
+       "wall": "#6F7F8C",
+       "roof": "#6F7F8C"
+      }
+     },
+     {
+      "id": "ln0",
+      "at": [
+       0.48,
+       0.08
+      ],
+      "w": 0.04,
+      "d": 0.3,
+      "h": 0.004,
+      "roof": "flat",
+      "z": 0.012,
+      "windowCols": 0,
+      "color": {
+       "wall": "#F7F3EE",
+       "roof": "#F7F3EE"
+      }
+     },
+     {
+      "id": "ln1",
+      "at": [
+       0.48,
+       0.62
+      ],
+      "w": 0.04,
+      "d": 0.3,
+      "h": 0.004,
+      "roof": "flat",
+      "z": 0.012,
+      "windowCols": 0,
+      "color": {
+       "wall": "#F7F3EE",
+       "roof": "#F7F3EE"
+      }
+     },
+     {
+      "id": "base",
+      "at": [
+       0.78,
+       0.78
+      ],
+      "w": 0.08,
+      "d": 0.08,
+      "h": 0.04,
+      "roof": "flat",
+      "z": 0.012,
+      "windowCols": 0,
+      "color": {
+       "wall": "#5C6670",
+       "roof": "#5C6670"
+      }
+     },
+     {
+      "id": "pole",
+      "at": [
+       0.8,
+       0.8
+      ],
+      "w": 0.04,
+      "d": 0.04,
+      "h": 0.72,
+      "roof": "flat",
+      "z": 0.012,
+      "windowCols": 0,
+      "color": {
+       "wall": "#5C6670",
+       "roof": "#5C6670"
+      }
+     },
+     {
+      "id": "head",
+      "at": [
+       0.56,
+       0.79
+      ],
+      "w": 0.12,
+      "d": 0.06,
+      "h": 0.04,
+      "roof": "flat",
+      "z": 0.68,
+      "windowCols": 0,
+      "color": {
+       "wall": "#F3E7C8",
+       "roof": "#F3E7C8"
+      }
+     },
+     {
+      "id": "arm",
+      "at": [
+       0.6,
+       0.8
+      ],
+      "w": 0.24,
+      "d": 0.04,
+      "h": 0.03,
+      "roof": "flat",
+      "z": 0.72,
+      "windowCols": 0,
+      "color": {
+       "wall": "#5C6670",
+       "roof": "#5C6670"
+      }
+     }
+    ],
+    "joins": []
+   }
+  },
+  {
+   "id": "dc:streettree",
+   "name": "行道樹",
+   "layer": "road",
+   "size": [
+    1,
+    1
+   ],
+   "weight": 25,
+   "chips": [
+    "疊在路上",
+    "不佔格",
+    "每格 1 個"
+   ],
+   "observed": "方形樹穴 + 兩層方塊樹冠（three.shared.tree），種在路格東南角的人行道位置。",
+   "blueprint": {
+    "vScale": 1.3,
+    "previewZoom": 2.4,
+    "blocks": [
+     {
+      "id": "road",
+      "at": [
+       0,
+       0
+      ],
+      "w": 1,
+      "d": 1,
+      "h": 0.012,
+      "roof": "flat",
+      "windowCols": 0,
+      "color": {
+       "wall": "#6F7F8C",
+       "roof": "#6F7F8C"
+      }
+     },
+     {
+      "id": "ln0",
+      "at": [
+       0.48,
+       0.08
+      ],
+      "w": 0.04,
+      "d": 0.3,
+      "h": 0.004,
+      "roof": "flat",
+      "z": 0.012,
+      "windowCols": 0,
+      "color": {
+       "wall": "#F7F3EE",
+       "roof": "#F7F3EE"
+      }
+     },
+     {
+      "id": "ln1",
+      "at": [
+       0.48,
+       0.62
+      ],
+      "w": 0.04,
+      "d": 0.3,
+      "h": 0.004,
+      "roof": "flat",
+      "z": 0.012,
+      "windowCols": 0,
+      "color": {
+       "wall": "#F7F3EE",
+       "roof": "#F7F3EE"
+      }
+     },
+     {
+      "id": "pit",
+      "at": [
+       0.6,
+       0.6
+      ],
+      "w": 0.32,
+      "d": 0.32,
+      "h": 0.02,
+      "roof": "flat",
+      "z": 0.012,
+      "windowCols": 0,
+      "color": {
+       "wall": "#8E6B50",
+       "roof": "#8E6B50"
+      }
+     },
+     {
+      "id": "ttk",
+      "at": [
+       0.73,
+       0.73
+      ],
+      "w": 0.06,
+      "d": 0.06,
+      "h": 0.288,
+      "roof": "flat",
+      "z": 0.012,
+      "windowCols": 0,
+      "color": {
+       "wall": "#8E6B50",
+       "roof": "#8E6B50"
+      }
+     },
+     {
+      "id": "tc1",
+      "at": [
+       0.58,
+       0.58
+      ],
+      "w": 0.36,
+      "d": 0.36,
+      "h": 0.162,
+      "roof": "flat",
+      "z": 0.3,
+      "windowCols": 0,
+      "color": {
+       "wall": "#6FA88A",
+       "roof": "#6FA88A"
+      }
+     },
+     {
+      "id": "tc2",
+      "at": [
+       0.065,
+       0.065
+      ],
+      "w": 0.23,
+      "d": 0.23,
+      "h": 0.108,
+      "roof": "flat",
+      "on": "tc1",
+      "windowCols": 0,
+      "color": {
+       "wall": "#7ab998",
+       "roof": "#85caa6"
+      }
+     }
+    ],
+    "joins": [
+     {
+      "a": "tc2",
+      "b": "tc1",
+      "type": "stack"
+     }
+    ]
+   }
+  },
+  {
+   "id": "dc:mailbox",
+   "name": "郵筒",
+   "layer": "road",
+   "size": [
+    1,
+    1
+   ],
+   "weight": 10,
+   "chips": [
+    "疊在路上",
+    "不佔格",
+    "綠 + 紅雙筒"
+   ],
+   "observed": "台灣街角的綠色（國內）與紅色（限時）雙郵筒，站在同一塊水泥座上。",
+   "blueprint": {
+    "vScale": 1.3,
+    "previewZoom": 2.4,
+    "blocks": [
+     {
+      "id": "road",
+      "at": [
+       0,
+       0
+      ],
+      "w": 1,
+      "d": 1,
+      "h": 0.012,
+      "roof": "flat",
+      "windowCols": 0,
+      "color": {
+       "wall": "#6F7F8C",
+       "roof": "#6F7F8C"
+      }
+     },
+     {
+      "id": "ln0",
+      "at": [
+       0.48,
+       0.08
+      ],
+      "w": 0.04,
+      "d": 0.3,
+      "h": 0.004,
+      "roof": "flat",
+      "z": 0.012,
+      "windowCols": 0,
+      "color": {
+       "wall": "#F7F3EE",
+       "roof": "#F7F3EE"
+      }
+     },
+     {
+      "id": "ln1",
+      "at": [
+       0.48,
+       0.62
+      ],
+      "w": 0.04,
+      "d": 0.3,
+      "h": 0.004,
+      "roof": "flat",
+      "z": 0.012,
+      "windowCols": 0,
+      "color": {
+       "wall": "#F7F3EE",
+       "roof": "#F7F3EE"
+      }
+     },
+     {
+      "id": "pad",
+      "at": [
+       0.6,
+       0.74
+      ],
+      "w": 0.3,
+      "d": 0.16,
+      "h": 0.02,
+      "roof": "flat",
+      "z": 0.012,
+      "windowCols": 0,
+      "color": {
+       "wall": "#B9B5A8",
+       "roof": "#B9B5A8"
+      }
+     },
+     {
+      "id": "mg",
+      "at": [
+       0.62,
+       0.77
+      ],
+      "w": 0.12,
+      "d": 0.1,
+      "h": 0.2,
+      "roof": "flat",
+      "z": 0.032,
+      "windowCols": 0,
+      "color": {
+       "wall": "#2F7A5C",
+       "roof": "#2F7A5C"
+      }
+     },
+     {
+      "id": "mr",
+      "at": [
+       0.76,
+       0.77
+      ],
+      "w": 0.12,
+      "d": 0.1,
+      "h": 0.2,
+      "roof": "flat",
+      "z": 0.032,
+      "windowCols": 0,
+      "color": {
+       "wall": "#C7453B",
+       "roof": "#C7453B"
+      }
+     }
+    ],
+    "joins": []
+   }
+  },
+  {
+   "id": "dc:banyan",
+   "name": "老榕樹",
+   "layer": "lot",
+   "size": [
+    1,
+    1
+   ],
+   "weight": 10,
+   "chips": [
+    "佔 1 格",
+    "不需臨路",
+    "樹下圓凳"
+   ],
+   "observed": "粗樹幹 + 三層大樹冠蓋滿整格，樹下一圈水泥坐凳；廟口、公園的那種。",
+   "blueprint": {
+    "vScale": 1.3,
+    "previewZoom": 2.4,
+    "blocks": [
+     {
+      "id": "gd",
+      "at": [
+       0.05,
+       0.05
+      ],
+      "w": 0.9,
+      "d": 0.9,
+      "h": 0.01,
+      "roof": "flat",
+      "windowCols": 0,
+      "color": {
+       "wall": "#D9CFB8",
+       "roof": "#D9CFB8"
+      }
+     },
+     {
+      "id": "tk",
+      "at": [
+       0.42,
+       0.42
+      ],
+      "w": 0.16,
+      "d": 0.16,
+      "h": 0.42,
+      "roof": "flat",
+      "windowCols": 0,
+      "color": {
+       "wall": "#7A5E46",
+       "roof": "#7A5E46"
+      }
+     },
+     {
+      "id": "bench",
+      "at": [
+       0.3,
+       0.3
+      ],
+      "w": 0.4,
+      "d": 0.4,
+      "h": 0.07,
+      "roof": "flat",
+      "windowCols": 0,
+      "color": {
+       "wall": "#B9B5A8",
+       "roof": "#B9B5A8"
+      }
+     },
+     {
+      "id": "c1",
+      "at": [
+       0.06,
+       0.06
+      ],
+      "w": 0.88,
+      "d": 0.88,
+      "h": 0.22,
+      "roof": "flat",
+      "z": 0.42,
+      "windowCols": 0,
+      "color": {
+       "wall": "#5E8F6E",
+       "roof": "#5E8F6E"
+      }
+     },
+     {
+      "id": "c2",
+      "at": [
+       0.14,
+       0.14
+      ],
+      "w": 0.6,
+      "d": 0.6,
+      "h": 0.16,
+      "roof": "flat",
+      "on": "c1",
+      "windowCols": 0,
+      "color": {
+       "wall": "#6FA88A",
+       "roof": "#7FB397"
+      }
+     },
+     {
+      "id": "c3",
+      "at": [
+       0.15,
+       0.15
+      ],
+      "w": 0.3,
+      "d": 0.3,
+      "h": 0.1,
+      "roof": "flat",
+      "on": "c2",
+      "windowCols": 0,
+      "color": {
+       "wall": "#7FB397",
+       "roof": "#A9D9C7"
+      }
+     }
+    ],
+    "joins": [
+     {
+      "a": "c2",
+      "b": "c1",
+      "type": "stack"
+     },
+     {
+      "a": "c3",
+      "b": "c2",
+      "type": "stack"
+     }
+    ]
+   }
+  },
+  {
+   "id": "dc:scooters",
+   "name": "機車停車格",
+   "layer": "lot",
+   "size": [
+    1,
+    1
+   ],
+   "weight": 20,
+   "chips": [
+    "佔 1 格",
+    "不需臨路",
+    "機車 ×3"
+   ],
+   "observed": "灰色地坪、白色格線，三台不同顏色的機車（車身 + 坐墊 + 把手）停在格子裡。",
+   "blueprint": {
+    "vScale": 1.3,
+    "previewZoom": 2.4,
+    "blocks": [
+     {
+      "id": "pad",
+      "at": [
+       0.05,
+       0.05
+      ],
+      "w": 0.9,
+      "d": 0.9,
+      "h": 0.012,
+      "roof": "flat",
+      "windowCols": 0,
+      "color": {
+       "wall": "#B9B5A8",
+       "roof": "#B9B5A8"
+      }
+     },
+     {
+      "id": "l0",
+      "at": [
+       0.1,
+       0.12
+      ],
+      "w": 0.03,
+      "d": 0.76,
+      "h": 0.004,
+      "roof": "flat",
+      "z": 0.012,
+      "windowCols": 0,
+      "color": {
+       "wall": "#F7F3EE",
+       "roof": "#F7F3EE"
+      }
+     },
+     {
+      "id": "l1",
+      "at": [
+       0.33,
+       0.12
+      ],
+      "w": 0.03,
+      "d": 0.76,
+      "h": 0.004,
+      "roof": "flat",
+      "z": 0.012,
+      "windowCols": 0,
+      "color": {
+       "wall": "#F7F3EE",
+       "roof": "#F7F3EE"
+      }
+     },
+     {
+      "id": "l2",
+      "at": [
+       0.56,
+       0.12
+      ],
+      "w": 0.03,
+      "d": 0.76,
+      "h": 0.004,
+      "roof": "flat",
+      "z": 0.012,
+      "windowCols": 0,
+      "color": {
+       "wall": "#F7F3EE",
+       "roof": "#F7F3EE"
+      }
+     },
+     {
+      "id": "l3",
+      "at": [
+       0.79,
+       0.12
+      ],
+      "w": 0.03,
+      "d": 0.76,
+      "h": 0.004,
+      "roof": "flat",
+      "z": 0.012,
+      "windowCols": 0,
+      "color": {
+       "wall": "#F7F3EE",
+       "roof": "#F7F3EE"
+      }
+     },
+     {
+      "id": "s0",
+      "at": [
+       0.17,
+       0.3
+      ],
+      "w": 0.09,
+      "d": 0.4,
+      "h": 0.1,
+      "roof": "flat",
+      "z": 0.016,
+      "windowCols": 0,
+      "color": {
+       "wall": "#C7453B",
+       "roof": "#C7453B"
+      }
+     },
+     {
+      "id": "st0",
+      "at": [
+       0.18,
+       0.44
+      ],
+      "w": 0.07,
+      "d": 0.16,
+      "h": 0.04,
+      "roof": "flat",
+      "z": 0.116,
+      "windowCols": 0,
+      "color": {
+       "wall": "#3A3A48",
+       "roof": "#3A3A48"
+      }
+     },
+     {
+      "id": "h0",
+      "at": [
+       0.15,
+       0.3
+      ],
+      "w": 0.13,
+      "d": 0.03,
+      "h": 0.06,
+      "roof": "flat",
+      "z": 0.15,
+      "windowCols": 0,
+      "color": {
+       "wall": "#5C6670",
+       "roof": "#5C6670"
+      }
+     },
+     {
+      "id": "s1",
+      "at": [
+       0.4,
+       0.3
+      ],
+      "w": 0.09,
+      "d": 0.4,
+      "h": 0.1,
+      "roof": "flat",
+      "z": 0.016,
+      "windowCols": 0,
+      "color": {
+       "wall": "#5B8BC9",
+       "roof": "#5B8BC9"
+      }
+     },
+     {
+      "id": "st1",
+      "at": [
+       0.41,
+       0.44
+      ],
+      "w": 0.07,
+      "d": 0.16,
+      "h": 0.04,
+      "roof": "flat",
+      "z": 0.116,
+      "windowCols": 0,
+      "color": {
+       "wall": "#3A3A48",
+       "roof": "#3A3A48"
+      }
+     },
+     {
+      "id": "h1",
+      "at": [
+       0.38,
+       0.3
+      ],
+      "w": 0.13,
+      "d": 0.03,
+      "h": 0.06,
+      "roof": "flat",
+      "z": 0.15,
+      "windowCols": 0,
+      "color": {
+       "wall": "#5C6670",
+       "roof": "#5C6670"
+      }
+     },
+     {
+      "id": "s2",
+      "at": [
+       0.63,
+       0.3
+      ],
+      "w": 0.09,
+      "d": 0.4,
+      "h": 0.1,
+      "roof": "flat",
+      "z": 0.016,
+      "windowCols": 0,
+      "color": {
+       "wall": "#E6E1D6",
+       "roof": "#E6E1D6"
+      }
+     },
+     {
+      "id": "st2",
+      "at": [
+       0.64,
+       0.44
+      ],
+      "w": 0.07,
+      "d": 0.16,
+      "h": 0.04,
+      "roof": "flat",
+      "z": 0.116,
+      "windowCols": 0,
+      "color": {
+       "wall": "#3A3A48",
+       "roof": "#3A3A48"
+      }
+     },
+     {
+      "id": "h2",
+      "at": [
+       0.61,
+       0.3
+      ],
+      "w": 0.13,
+      "d": 0.03,
+      "h": 0.06,
+      "roof": "flat",
+      "z": 0.15,
+      "windowCols": 0,
+      "color": {
+       "wall": "#5C6670",
+       "roof": "#5C6670"
+      }
+     }
+    ],
+    "joins": []
+   }
+  },
+  {
+   "id": "dc:garden",
+   "name": "小花圃",
+   "layer": "lot",
+   "size": [
+    1,
+    1
+   ],
+   "weight": 15,
+   "chips": [
+    "佔 1 格",
+    "不需臨路",
+    "矮籬 + 花"
+   ],
+   "observed": "四邊矮綠籬圍一塊土，裡面四叢花（黃、磚紅、粉、紅）；可以當小鎮的口袋公園。",
+   "blueprint": {
+    "vScale": 1.3,
+    "previewZoom": 2.4,
+    "blocks": [
+     {
+      "id": "soil",
+      "at": [
+       0.1,
+       0.1
+      ],
+      "w": 0.8,
+      "d": 0.8,
+      "h": 0.02,
+      "roof": "flat",
+      "windowCols": 0,
+      "color": {
+       "wall": "#8E6B50",
+       "roof": "#8E6B50"
+      }
+     },
+     {
+      "id": "hN",
+      "at": [
+       0.1,
+       0.1
+      ],
+      "w": 0.8,
+      "d": 0.08,
+      "h": 0.1,
+      "roof": "flat",
+      "windowCols": 0,
+      "color": {
+       "wall": "#6FA88A",
+       "roof": "#6FA88A"
+      }
+     },
+     {
+      "id": "hW",
+      "at": [
+       0.1,
+       0.18
+      ],
+      "w": 0.08,
+      "d": 0.64,
+      "h": 0.1,
+      "roof": "flat",
+      "windowCols": 0,
+      "color": {
+       "wall": "#6FA88A",
+       "roof": "#6FA88A"
+      }
+     },
+     {
+      "id": "f0",
+      "at": [
+       0.3,
+       0.32
+      ],
+      "w": 0.1,
+      "d": 0.1,
+      "h": 0.06,
+      "roof": "flat",
+      "z": 0.02,
+      "windowCols": 0,
+      "color": {
+       "wall": "#E2B45A",
+       "roof": "#E2B45A"
+      }
+     },
+     {
+      "id": "f1",
+      "at": [
+       0.56,
+       0.28
+      ],
+      "w": 0.1,
+      "d": 0.1,
+      "h": 0.06,
+      "roof": "flat",
+      "z": 0.02,
+      "windowCols": 0,
+      "color": {
+       "wall": "#C9705B",
+       "roof": "#C9705B"
+      }
+     },
+     {
+      "id": "f2",
+      "at": [
+       0.36,
+       0.56
+      ],
+      "w": 0.1,
+      "d": 0.1,
+      "h": 0.06,
+      "roof": "flat",
+      "z": 0.02,
+      "windowCols": 0,
+      "color": {
+       "wall": "#E9D5CF",
+       "roof": "#E9D5CF"
+      }
+     },
+     {
+      "id": "f3",
+      "at": [
+       0.6,
+       0.58
+      ],
+      "w": 0.1,
+      "d": 0.1,
+      "h": 0.06,
+      "roof": "flat",
+      "z": 0.02,
+      "windowCols": 0,
+      "color": {
+       "wall": "#C7453B",
+       "roof": "#C7453B"
+      }
+     },
+     {
+      "id": "hE",
+      "at": [
+       0.82,
+       0.18
+      ],
+      "w": 0.08,
+      "d": 0.64,
+      "h": 0.1,
+      "roof": "flat",
+      "windowCols": 0,
+      "color": {
+       "wall": "#6FA88A",
+       "roof": "#6FA88A"
+      }
+     },
+     {
+      "id": "hS",
+      "at": [
+       0.1,
+       0.82
+      ],
+      "w": 0.8,
+      "d": 0.08,
+      "h": 0.1,
+      "roof": "flat",
+      "windowCols": 0,
+      "color": {
+       "wall": "#6FA88A",
+       "roof": "#6FA88A"
+      }
+     }
+    ],
+    "joins": []
+   }
+  }
+ ]
+}

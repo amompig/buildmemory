@@ -237,23 +237,118 @@ const LMS = [
 test('§6 countyOf 補充：最近地標 ≤ 30 km → 其 county', () => assert.equal(R.countyOf(25.05, 121.55, LMS), 'TPE'));
 test('§6 countyOf 補充：最近地標 > 30 km → null', () => assert.equal(R.countyOf(24.0, 121.6, LMS), null));
 
-// 每日簽到改為城市 1×1 池隨機（docs/spec_upgrade_2026-10-22.md）；碎片規則取消
-const POOL = [{ id: 'sys:a', palettes: 3 }, { id: 'sys:b', palettes: 4 }];
-test('§6 dailyGrant 依 rand 從池中挑一棟、一律 house', () => {
-  assert.deepEqual(R.dailyGrant(POOL, 0, 0.5), { kind: 'house', item_id: 'sys:a', seed: 2 });
-  assert.equal(R.dailyGrant(POOL, 0.9999, 0.5).item_id, 'sys:b');
+// 每日簽到 / 非精選地標：城市池加權（docs/design_reply_upgrade_2026-10-22.md §2、§4）；碎片規則取消
+const CATALOG = JSON.parse(readFileSync(new URL('../data/catalog.json', import.meta.url), 'utf8'));
+const POOL = [{ id: 'sys:a', palettes: 3, w: 1 }, { id: 'sys:b', palettes: 4, w: 3 }];
+const DECOR = [{ id: 'dc:x', weight: 1, layer: 'road' }, { id: 'dc:y', weight: 1, layer: 'lot' }];
+const SPLIT = { house: 70, decor: 30 };
+test('§6 pickWeighted：依權重切區間', () => {
+  assert.equal(R.pickWeighted(POOL, 0).id, 'sys:a');
+  assert.equal(R.pickWeighted(POOL, 0.2499).id, 'sys:a');
+  assert.equal(R.pickWeighted(POOL, 0.25).id, 'sys:b');
+  assert.equal(R.pickWeighted(POOL, 0.9999).id, 'sys:b');
 });
-test('§6 dailyGrant seed = seed(2, 該房型 palettes, rand2)：不給原色', () => {
-  assert.equal(R.dailyGrant(POOL, 0.9, 0).seed, 1);
-  assert.equal(R.dailyGrant(POOL, 0.9, 0.9999).seed, 3);
+test('§6 dailyGrant：rand < 30% → 部件（seed 0），否則房子', () => {
+  assert.deepEqual(R.dailyGrant(POOL, DECOR, SPLIT, 0.29, 0.6, 0.5), { kind: 'decor', item_id: 'dc:y', seed: 0 });
+  assert.deepEqual(R.dailyGrant(POOL, DECOR, SPLIT, 0.3, 0.1, 0.5), { kind: 'house', item_id: 'sys:a', seed: 2 });
 });
-test('§6 dailyPool：只收 1×1 的一般房型（sys:*），不含地標與大房型', () => {
-  const houses = [{ id: 'sys:a', size: [1, 1], palettes: [{}, {}, {}] }, { id: 'sys:big', size: [3, 1], palettes: [{}] },
-    { id: 'lm:x', size: [1, 1], palettes: [{}] }];
-  assert.deepEqual(R.dailyPool(houses, 'TPE'), [{ id: 'sys:a', palettes: 3 }]);
+test('§6 dailyGrant 房子 seed = seed(2, 該房型 palettes, rand3)：不給原色', () => {
+  assert.equal(R.dailyGrant(POOL, DECOR, SPLIT, 0.9, 0.9, 0).seed, 1);
+  assert.equal(R.dailyGrant(POOL, DECOR, SPLIT, 0.9, 0.9, 0.9999).seed, 3);
 });
-test('§6 dailyPool 用真目錄：5 種 1×1', () =>
-  assert.deepEqual(R.dailyPool(HOUSES_JSON, 'TPE').map((h) => h.id).sort(), ['sys:apartment', 'sys:iron', 'sys:jpdorm', 'sys:temple', 'sys:tilehighrise']));
+test('§6 dailyGrant 沒有部件清單 → 一律房子', () => assert.equal(R.dailyGrant(POOL, [], SPLIT, 0, 0, 0).kind, 'house'));
+test('§6 dailyPool：台北 = 都會權重、對不到縣市 = default（鄉鎮）', () => {
+  const w = (county) => Object.fromEntries(R.dailyPool(CATALOG.houses, county, CATALOG.pools).map((x) => [x.id, x.w]));
+  assert.deepEqual(w('TPE'), CATALOG.pools.groups.metro);
+  assert.deepEqual(w('XXX'), CATALOG.pools.groups[CATALOG.pools.default_group]);
+  assert.ok(R.dailyPool(CATALOG.houses, 'TPE', CATALOG.pools).every((x) => x.palettes >= 1));
+});
+
+// ---------- §6b 合成升級 ----------
+const G = (id, item_id, state = 'stock', seed = 0) => ({ id, kind: 'house', item_id, state, seed, consumed_at: null });
+test('§6b canMerge 同型兩棟待放 → ok（line, tier 1）', () =>
+  assert.deepEqual(R.canMerge([G('a', 'sys:iron'), G('b', 'sys:iron')], CATALOG.houses, 'a', 'b'), { ok: true, line: 'sys:iron', tier: 1 }));
+test('§6b canMerge 1×2 + 1×3 同系列同階 → ok（MERGE_BY line_tier）', () =>
+  assert.equal(R.canMerge([G('a', 'sys:iron-2'), G('b', 'sys:iron-3')], CATALOG.houses, 'a', 'b').tier, 2));
+test('§6b canMerge 不同系列 → mismatch', () =>
+  assert.equal(R.canMerge([G('a', 'sys:iron'), G('b', 'sys:temple')], CATALOG.houses, 'a', 'b').reason, 'mismatch'));
+test('§6b canMerge 不同階 → mismatch', () =>
+  assert.equal(R.canMerge([G('a', 'sys:iron'), G('b', 'sys:iron-2')], CATALOG.houses, 'a', 'b').reason, 'mismatch'));
+test('§6b canMerge 已放上鎮 → state', () =>
+  assert.equal(R.canMerge([G('a', 'sys:iron', 'placed'), G('b', 'sys:iron')], CATALOG.houses, 'a', 'b').reason, 'state'));
+test('§6b canMerge 同一棟兩次 → same', () =>
+  assert.equal(R.canMerge([G('a', 'sys:iron')], CATALOG.houses, 'a', 'a').reason, 'same'));
+test('§6b canMerge 地標 / 第 3 階 / 非 1×1 一般房（shophouse 無升級線以外）→ not_mergeable', () => {
+  assert.equal(R.canMerge([G('a', 'lm:TPE-f01'), G('b', 'lm:TPE-f01')], CATALOG.houses, 'a', 'b').reason, 'not_mergeable');
+  assert.equal(R.canMerge([G('a', 'sys:iron-4'), G('b', 'sys:iron-4')], CATALOG.houses, 'a', 'b').reason, 'not_mergeable');
+});
+test('§6b canMerge 不是自己的 grant → ref', () =>
+  assert.equal(R.canMerge([G('a', 'sys:iron')], CATALOG.houses, 'a', 'zzz').reason, 'ref'));
+test('§6b mergeResult：第 1 階 → -2 / -3 各半；第 2 階 → -4', () => {
+  assert.equal(R.mergeResult({ line: 'sys:iron', tier: 1 }, 0, 0, 0.49, 0).item_id, 'sys:iron-2');
+  assert.equal(R.mergeResult({ line: 'sys:iron', tier: 1 }, 0, 0, 0.5, 0).item_id, 'sys:iron-3');
+  assert.equal(R.mergeResult({ line: 'sys:iron', tier: 2 }, 0, 0, 0.1, 0).item_id, 'sys:iron-4');
+});
+test('§6b mergeResult 變體：相同沿用；不同取其一', () => {
+  assert.equal(R.mergeResult({ line: 'sys:iron', tier: 1 }, 2, 2, 0, 0.9).seed, 2);
+  assert.equal(R.mergeResult({ line: 'sys:iron', tier: 1 }, 1, 2, 0, 0.1).seed, 1);
+  assert.equal(R.mergeResult({ line: 'sys:iron', tier: 1 }, 1, 2, 0, 0.9).seed, 2);
+});
+test('§6b 目錄：每個城市池房型都有 -2 / -3 / -4 三個升級版', () => {
+  const ids = new Set(CATALOG.houses.map((h) => h.id));
+  for (const id of Object.keys(CATALOG.pools.groups.metro)) for (const n of [2, 3, 4]) assert.ok(ids.has(`${id}-${n}`), `${id}-${n}`);
+});
+
+// ---------- §3b 基礎部件 ----------
+const D = (id, item_id, state = 'placed') => ({ id, kind: 'decor', item_id, state, seed: 0, consumed_at: null });
+const CDECOR = CATALOG.decor;
+test('§3b canPlaceDeco：路上部件只能放在沒部件的路格', () => {
+  const g = R.starterGrid(), lamp = { layer: 'road' }, at = idx(7, 6);
+  assert.deepEqual(R.canPlaceDeco(g, lamp, at, 8), { ok: true });
+  assert.equal(R.canPlaceDeco(g, lamp, idx(6, 6), 8).reason, 'no_road');
+  g[at] = { t: 'road', deco: { id: 'dc:lamp', ref: 'x' } };
+  assert.equal(R.canPlaceDeco(g, lamp, at, 8).reason, 'occupied');
+});
+test('§3b canPlaceDeco：空地部件只能放空格、不需臨路；鎖定格 → locked', () => {
+  const g = R.starterGrid(), banyan = { layer: 'lot' };
+  assert.deepEqual(R.canPlaceDeco(g, banyan, idx(4, 4), 8), { ok: true });
+  assert.equal(R.canPlaceDeco(g, banyan, idx(7, 6), 8).reason, 'occupied');
+  assert.equal(R.canPlaceDeco(g, banyan, idx(0, 0), 8).reason, 'locked');
+});
+test('§3b gridRefs：房子、空地部件、路上部件都算', () => {
+  const g = legalTown(); g[idx(7, 5)] = { t: 'road', deco: { id: 'dc:lamp', ref: 'd1' } }; g[idx(4, 4)] = { t: 'deco', id: 'dc:banyan', ref: 'd2', rot: 0 };
+  assert.deepEqual(R.gridRefs(g).sort(), ['d1', 'd2', 'g1', 'g2']);
+});
+const vd = (g, gs) => R.validateGrid(g, gs, HOUSES, CDECOR);
+const withDeco = () => { const g = legalTown(); g[idx(7, 5)] = { t: 'road', deco: { id: 'dc:lamp', ref: 'd1' } }; g[idx(4, 4)] = { t: 'deco', id: 'dc:banyan', ref: 'd2', rot: 1 }; return g; };
+const decoGrants = () => [...legalGrants(), D('d1', 'dc:lamp'), D('d2', 'dc:banyan')];
+test('§3b validateGrid：合法的路上 + 空地部件 → ok', () => assert.deepEqual(vd(withDeco(), decoGrants()), { ok: true }));
+test('§3b validateGrid：路燈放在空地 / 榕樹放在路上 → schema', () => {
+  const g = withDeco(); g[idx(4, 4)] = { t: 'deco', id: 'dc:lamp', ref: 'd1', rot: 0 }; g[idx(7, 5)] = road;
+  assert.deepEqual(vd(g, decoGrants()), bad('schema'));
+  const h = legalTown(); h[idx(7, 5)] = { t: 'road', deco: { id: 'dc:banyan', ref: 'd2' } };
+  assert.deepEqual(vd(h, decoGrants()), bad('schema'));
+});
+test('§3b validateGrid：部件 ref 指到房子 grant / 別人的 → ref；同一部件放兩處 → dup_ref', () => {
+  const g = legalTown(); g[idx(4, 4)] = { t: 'deco', id: 'dc:banyan', ref: 'g1', rot: 0 };
+  assert.deepEqual(vd(g, decoGrants()), bad('ref'));
+  const h = withDeco(); h[idx(4, 5)] = { t: 'deco', id: 'dc:banyan', ref: 'd2', rot: 0 };
+  assert.deepEqual(vd(h, decoGrants()), bad('dup_ref'));
+});
+test('§3b validateGrid：deco 多出欄位 / 路格 deco 形狀錯 → schema', () => {
+  const g = withDeco(); g[idx(4, 4)] = { t: 'deco', id: 'dc:banyan', ref: 'd2', rot: 0, x: 1 };
+  assert.deepEqual(vd(g, decoGrants()), bad('schema'));
+  const h = withDeco(); h[idx(7, 5)] = { t: 'road', deco: { id: 'dc:lamp' } };
+  assert.deepEqual(vd(h, decoGrants()), bad('schema'));
+});
+test('§3b 擦掉有路燈的路格不受阻（orphan 規則不變）', () => {
+  const g = withDeco();
+  assert.deepEqual(R.canEraseRoad(g, idx(7, 5)), { ok: true });
+});
+test('§3b 路上部件不影響臨路：房子貼著有路燈的路仍合法', () => {
+  const g = R.starterGrid(); g[idx(7, 4)] = { t: 'road', deco: { id: 'dc:lamp', ref: 'd1' } }; g[idx(6, 4)] = house('g1');
+  assert.deepEqual(vd(g, [grant('g1'), D('d1', 'dc:lamp')]), { ok: true });
+});
 
 // ---------- §7 記憶卡與拆解 ----------
 test('§7 validateMemory 40 個「好」→ ok', () => assert.equal(R.validateMemory({ mood: 1, note: '好'.repeat(40) }).ok, true));

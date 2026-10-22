@@ -92,16 +92,14 @@ export function createMap(el, { landmarks, colors = {} }) {
       if (!map) {
         map = new maplibregl.Map({
           container: el, style: styleOf(C), center: [pos?.lng ?? 121.513, pos?.lat ?? 25.042], zoom: 16,
+          // 署名不放地圖上，改放「關於與版權」頁（使用者 10-22 決定，與 OSMF 指南不同，已告知）
           attributionControl: false, dragRotate: false, pitchWithRotate: false, touchPitch: false,
         });
         map.touchZoomRotate.disableRotation();
-        map.addControl(new maplibregl.AttributionControl({ compact: true }), 'top-right'); // 署名來自圖磚 TileJSON；底部被底板蓋住，放右上 pill 下方
         for (const lm of landmarks) {
           const e = document.createElement('div'); e.className = 'bym-pin';
           markers.set(lm.id, new maplibregl.Marker({ element: e, anchor: 'bottom' }).setLngLat([lm.lng, lm.lat]).addTo(map));
         }
-        // 署名照 OSMF Attribution Guidelines：拖動地圖時（MapLibre 內建）或 5 秒後收成 ⓘ，點 ⓘ 可再展開
-        setTimeout(() => el.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show'), 5000);
         ready = new Promise((ok) => map.on('load', () => {
           const none = { type: 'FeatureCollection', features: [] };
           map.addSource('ring', { type: 'geojson', data: none });

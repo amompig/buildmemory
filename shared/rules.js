@@ -76,6 +76,24 @@ export function canPlace(grid, house, anchor, rot, size) {
 
 export const canPaintRoad = (grid, i, size) => grid[i] === null && isUnlocked(i, size);
 
+// ---------- §3b 基礎部件（data/decor.json；docs/design_reply_upgrade_2026-10-22.md §3）----------
+// road 層：疊在路格上 { t:'road', deco:{ id, ref } }，每格最多 1 個，不佔格、不影響臨路與連通
+// lot 層：佔 1 格空地 { t:'deco', id, ref, rot }，不需臨路、不算路
+export function canPlaceDeco(grid, deco, i, size) {
+  if (!isUnlocked(i, size)) return invalid('locked');
+  if (deco.layer === 'road') return grid[i]?.t === 'road' && !grid[i].deco ? ok() : invalid(grid[i]?.t === 'road' ? 'occupied' : 'no_road');
+  return grid[i] === null ? ok() : invalid('occupied');
+}
+// 盤面上所有被引用的 grant id（房子、空地部件、路上部件）
+export function gridRefs(grid) {
+  const out = [];
+  for (const v of grid) {
+    if (v?.t === 'house' || v?.t === 'deco') out.push(v.ref);
+    else if (v?.t === 'road' && v.deco) out.push(v.deco.ref);
+  }
+  return out;
+}
+
 export function canEraseRoad(grid, i) {
   const after = grid.slice(); after[i] = null;
   const anchors = new Set();
@@ -95,18 +113,23 @@ export function removeHouse(grid, anchor) {
 
 // ---------- §4 整鎮驗證 ----------
 // houses = houses.json 的 houses 陣列（取 size 算 footprint）
+const decoShapeOk = (d) => d && typeof d === 'object' && !Array.isArray(d) && Object.keys(d).sort().join(',') === 'id,ref'
+  && typeof d.id === 'string' && typeof d.ref === 'string';
 function cellShapeOk(v) {
   if (v === null) return true;
   if (typeof v !== 'object' || Array.isArray(v)) return false;
   const keys = Object.keys(v).sort().join(',');
-  if (v.t === 'road') return keys === 't';
+  if (v.t === 'road') return keys === 't' || (keys === 'deco,t' && decoShapeOk(v.deco));
+  if (v.t === 'deco') return keys === 'id,ref,rot,t' && typeof v.id === 'string' && typeof v.ref === 'string' && [0, 1, 2, 3].includes(v.rot);
   if (v.t === 'house') return keys === 'id,ref,rot,t' && typeof v.id === 'string' && typeof v.ref === 'string' && [0, 1, 2, 3].includes(v.rot);
   if (v.t === 'part') return keys === 'of,t' && Number.isInteger(v.of) && v.of >= 0 && v.of < CELLS;
   return false;
 }
 
-export function validateGrid(grid, grants, houses) {
+// decor = data/catalog.json 的 decor（取 layer）；舊呼叫端不給時盤面不得有部件
+export function validateGrid(grid, grants, houses, decor = []) {
   if (!Array.isArray(grid) || grid.length !== CELLS || !grid.every(cellShapeOk)) return invalid('schema');
+  const layerOf = new Map(decor.map((d) => [d.id, d.layer]));
   const sizeOf = new Map(houses.map((h) => [h.id, h.size]));
   const anchors = [];
   for (let i = 0; i < CELLS; i++) if (grid[i]?.t === 'house') {
@@ -124,6 +147,15 @@ export function validateGrid(grid, grants, houses) {
     if (!g || g.kind !== 'house' || g.item_id !== id || !['stock', 'placed'].includes(g.state)) return invalid('ref');
     if (seen.has(ref)) return invalid('dup_ref');
     seen.add(ref);
+  }
+  for (let i = 0; i < CELLS; i++) {
+    const v = grid[i], d = v?.t === 'deco' ? v : v?.t === 'road' ? v.deco : null;
+    if (!d) continue;
+    if (layerOf.get(d.id) !== (v.t === 'deco' ? 'lot' : 'road')) return invalid('schema');
+    const g = byId.get(d.ref);
+    if (!g || g.kind !== 'decor' || g.item_id !== d.id || !['stock', 'placed'].includes(g.state)) return invalid('ref');
+    if (seen.has(d.ref)) return invalid('dup_ref');
+    seen.add(d.ref);
   }
 
   const fps = new Map();
@@ -185,15 +217,50 @@ export function countyOf(lat, lng, landmarks) {
   return best && bestD <= RULES.COUNTY_MAX_KM * 1000 ? best.county : null;
 }
 
-// 每日簽到：從該城市的 1×1 池隨機一棟（docs/spec_upgrade_2026-10-22.md；碎片規則已取消）
-// pool = [{ id, palettes: n }]；rand、rand2 ∈ [0, 1)；變體同「第 2 次以上到訪」（不給原色）
-export function dailyGrant(pool, rand, rand2) {
-  const h = pool[Math.min(pool.length - 1, Math.floor(rand * pool.length))];
-  return { kind: 'house', item_id: h.id, seed: seed(2, h.palettes, rand2) };
+// 每日簽到 / 非精選地標：城市池加權隨機（data/city_pools.json；docs/design_reply_upgrade_2026-10-22.md §2、§4）
+// 加權抽一個：list = [{ w, ... }]，rand ∈ [0, 1)
+export function pickWeighted(list, rand) {
+  const total = list.reduce((s, x) => s + x.w, 0);
+  let t = rand * total;
+  for (const x of list) { if (t < x.w) return x; t -= x.w; }
+  return list[list.length - 1];
 }
-// 城市 1×1 池：Design 尚未給各縣市清單，暫時所有縣市共用全部 1×1 一般房型（sys:*）
-export const dailyPool = (houses, _county) =>
-  houses.filter((h) => h.id.startsWith('sys:') && h.size[0] === 1 && h.size[1] === 1).map((h) => ({ id: h.id, palettes: h.palettes.length }));
+// 該縣市的 1×1 池（catalog.pools；對不到縣市 → default_group）→ [{ id, palettes, w }]
+export function dailyPool(houses, county, pools) {
+  const weights = pools.groups[pools.counties[county] ?? pools.default_group];
+  return Object.entries(weights).map(([id, w]) => ({ id, w, palettes: houses.find((h) => h.id === id).palettes.length }));
+}
+// 先抽種類（房子 / 部件，比例 pools.daily_split），再從池裡加權抽；房子的變體同「第 2 次以上到訪」（不給原色）
+export function dailyGrant(pool, decor, split, rand, rand2, rand3) {
+  if (decor.length && rand < split.decor / (split.house + split.decor)) {
+    const d = pickWeighted(decor.map((x) => ({ id: x.id, w: x.weight })), rand2);
+    return { kind: 'decor', item_id: d.id, seed: 0 };
+  }
+  const h = pickWeighted(pool, rand2);
+  return { kind: 'house', item_id: h.id, seed: seed(2, h.palettes, rand3) };
+}
+
+// ---------- §6b 合成升級（docs/spec_upgrade_2026-10-22.md §2）----------
+// 兩棟同系列、同階（MERGE_BY = 'line_tier'；改成 'item' = 必須同 item_id）的待放房子 → 消耗兩棟、給下一階一棟
+// 第 1 階 → 第 2 階：-2（1×2）或 -3（1×3）各半；第 2 階 → 第 3 階：-4（2×2）；地標與第 3 階不能合
+export const MERGE_BY = 'line_tier';
+export function canMerge(grants, houses, aId, bId) {
+  if (aId === bId) return invalid('same');
+  const a = grants.find((g) => g.id === aId), b = grants.find((g) => g.id === bId);
+  if (!a || !b || a.kind !== 'house' || b.kind !== 'house') return invalid('ref');
+  if (a.state !== 'stock' || b.state !== 'stock') return invalid('state');
+  const ha = houses.find((h) => h.id === a.item_id), hb = houses.find((h) => h.id === b.item_id);
+  if (!ha?.line || !hb?.line || ha.tier >= 3) return invalid('not_mergeable');
+  const same = MERGE_BY === 'item' ? ha.id === hb.id : ha.line === hb.line && ha.tier === hb.tier;
+  if (!same) return invalid('mismatch');
+  return ok({ line: ha.line, tier: ha.tier });
+}
+// rand、rand2 ∈ [0, 1)；變體：兩棟相同 → 沿用，不同 → 兩者之一隨機
+export function mergeResult({ line, tier }, seedA, seedB, rand, rand2) {
+  const slug = line.slice(line.indexOf(':') + 1), pre = line.slice(0, line.indexOf(':') + 1);
+  const n = tier === 1 ? (rand < 0.5 ? 2 : 3) : 4;
+  return { item_id: `${pre}${slug}-${n}`, seed: seedA === seedB ? seedA : (rand2 < 0.5 ? seedA : seedB) };
+}
 
 // ---------- §7 記憶卡與拆解 ----------
 export function validateMemory({ mood, note }) {

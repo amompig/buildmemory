@@ -112,7 +112,8 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
     };
     const stock = groups(s.grants, 'stock'), placed = groups(s.grants, 'placed');
     return `${login}<div class="inv-head"><span class="c-chip" aria-pressed="true">${esc(t('inventory.sort_date'))}</span></div>`
-      + (stock.length || placed.length ? `<div class="inv">${stock.map((gs) => row(gs, 'stock')).join('')}${placed.map((gs) => row(gs, 'placed')).join('')}</div>` : `<p class="c-dialog__body">${esc(t('inventory.empty'))}</p>`);
+      + (stock.length || placed.length ? `<div class="inv">${stock.map((gs) => row(gs, 'stock')).join('')}${placed.map((gs) => row(gs, 'placed')).join('')}</div>` : `<p class="c-dialog__body">${esc(t('inventory.empty'))}</p>`)
+      + btn('about', esc(t('privacy.about_title')), null, 'c-btn c-btn--ghost inv-about');
   }
 
   // F4 地圖：上方定位 pill＋今日次數；底板＝最近 3 個地標卡＋打卡大鈕（三態）＋隱私一句話
