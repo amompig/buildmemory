@@ -9,7 +9,7 @@ const FALLBACK = {
   town: { progress_title: '我的小鎮 · {size}×{size}', road_unlimited: '無限', drawer_title: '倉庫 · 依日期' },
   login: { done: '綁好了', failed: '綁定沒有成功，再試一次', unavailable: '登入還沒開放' },
   map: { today: '今天 {n} / 40', checkin_ok: '打卡成功 · 第 {visit} 次來', range: '走進 {n} m 內就能打卡', relocate: '重新定位', daily_toast_decor: '今天的部件已入倉庫' },
-  memory: { variant_origin: '原色', variant_n: '變體 {n}', footprint: '佔 {n} 格 · 進倉庫', note_label: '一句話', optional: '可跳過' },
+  memory: { stow: '收回倉庫', stowed: '已收回倉庫', variant_origin: '原色', variant_n: '變體 {n}', footprint: '佔 {n} 格 · 進倉庫', note_label: '一句話', optional: '可跳過' },
   error: { invalid: '這一步沒存成功，再試一次' },
   // 合成升級：Design 尚未給文案（docs/spec_upgrade_2026-10-22.md），暫代
   inventory: { merge: '合成', merged: '升級成 {name}', merge_fail: '這兩棟沒辦法合成', merge_no_room: '升級成 {name}，原地放不下，已收進倉庫' },
@@ -172,7 +172,8 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
     return `<div class="c-sheet"><div class="c-memory__top"><span class="c-label">${esc(t('memory.title_view'))}</span><span class="c-memory__date">${esc(g.at.slice(0, 10).replaceAll('-', '.'))}</span></div>`
       + `<h3 class="c-memory__name">${esc(lm?.name ?? houseName(g))}</h3><div class="c-memory__sub">${esc(houseName(g))}${g.visit_n > 1 ? ` · ${esc(t('memory.visit_n', { n: g.visit_n }))}` : ''}</div>`
       + (note ? `<div class="c-dialog__body">${esc(note)}</div>` : '')
-      + `<div class="c-memory__pair">${btn('closeSheet', esc(t('common.close')), null, 'c-btn c-btn--ghost')}${btn('rotateSel', esc(t('memory.rotate')), null, 'c-btn c-btn--secondary')}</div></div>`;
+      + `<div class="c-memory__pair">${btn('closeSheet', esc(t('common.close')), null, 'c-btn c-btn--ghost')}${btn('rotateSel', esc(t('memory.rotate')), null, 'c-btn c-btn--secondary')}</div>`
+      + `${btn('stow', esc(t('memory.stow')), null, 'c-btn c-btn--ghost')}</div>`;
   }
 
   return {
@@ -214,7 +215,7 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
             return `<span class="slot-wrap"><button class="c-slot" ${attrs('tool', { tool: { kind: 'house', grantId: gs[0].id } })} aria-pressed="${on}">${swatch(gs[0])}<span><span class="c-slot__name">${esc(houseName(gs[0]))}</span><br><span class="c-slot__meta">${esc(meta(gs[0], gs.length))}</span></span></button>${up}</span>`;
           }).join('');
         })();
-      $('.ui-bottom').innerHTML = `<div class="hud-bar"><span style="flex:1"></span><span class="hud-cam">${camBtns(road)}</span></div>${roadTools}<div class="c-drawer"><div class="c-drawer__head"><span class="c-label">${esc(t('town.drawer_title'))}</span></div><div class="c-drawer__scroll">${slots}</div></div>`;
+      $('.ui-bottom').innerHTML = `<div class="hud-bar"><span style="flex:1"></span><span class="hud-cam">${camBtns(road)}</span></div>${roadTools}<div class="c-drawer${v.overStock ? ' is-drop' : ''}"><div class="c-drawer__head"><span class="c-label">${esc(t('town.drawer_title'))}</span></div><div class="c-drawer__scroll">${slots}</div></div>`;
     },
 
     // F5 記憶卡（打卡成功）：DOM 只建一次，打字中不會被重繪洗掉；心情／字數在本地更新

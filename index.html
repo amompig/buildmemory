@@ -67,8 +67,9 @@
   #login .c-sheet, #about .c-sheet { width: 100%; max-height: 85vh; overflow: auto; }
   #about a { color: var(--accent); }
   .inv-about { display: block; margin: var(--space-6) auto 0; }
+  .c-drawer.is-drop { background: var(--accent-tint); box-shadow: inset 0 0 0 2px var(--accent); }
   .slot-wrap { position: relative; display: inline-flex; flex: 0 0 auto; }
-  .slot-merge { position: absolute; top: -6px; right: -6px; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--surface);
+  .slot-merge { position: absolute; top: 4px; right: 4px; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--surface);
     background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: var(--shadow); }
   .slot-merge .c-icon { width: 16px; height: 16px; stroke: currentColor; }
   #login .gsi { display: flex; justify-content: center; min-height: 44px; }
@@ -156,7 +157,7 @@ function onIntent(it) {
     case 'memory': memoryDone(it); return;
     case 'mode': enterPlace(); break;
     case 'tool':
-      Object.assign(view, { tool: it.tool, erase: false, ghost: null, sel: null, rot: 0 });
+      Object.assign(view, { tool: it.tool, erase: false, ghost: null, sel: null, rot: 0, lifted: null });
       town.topDown(it.tool?.kind === 'road'); // 選道路 = 俯視（F3），選房型 = 回等角（F2）
       break;
     case 'erase': view.erase = it.on; break;
@@ -166,6 +167,7 @@ function onIntent(it) {
     case 'fit': town.fit(); break;
     case 'placeFrom': enterPlace({ kind: 'house', grantId: it.grantId }); break; // F7 卡片「放」
     case 'rotateSel': { const r = ed.rotate(view.sel); if (!r.ok) reject(r); break; }
+    case 'stow': if (view.sel != null && ed.removeHouse(view.sel).ok) { ed.done(); view.sel = null; ui.toast(ui.t('memory.stowed')); } break; // F6 收回倉庫
     case 'closeSheet': view.sel = null; break;
     case 'login': login(); return;
     case 'about': about(); return;
@@ -206,7 +208,10 @@ function brushAt(x, y) {
     }
     stroke.last = i;
   } else if (tool?.kind === 'house') {
-    if (i == null) return;
+    const dr = document.querySelector('#ui .c-drawer')?.getBoundingClientRect();
+    const over = !!dr && y >= dr.top && x >= dr.left && x <= dr.right;
+    if (over !== !!view.overStock) { view.overStock = over; if (over) view.ghost = null; refresh(); }
+    if (over || i == null) return;
     const h = houseOf(tool.grantId), r = ed.checkHouse(tool.grantId, i, view.rot);
     const target = !r.ok && mergeTarget(tool.grantId, i);
     view.ghost = target != null && target !== false
@@ -226,6 +231,12 @@ function mergeTarget(grantId, i) {
 
 // 放手 = 嘗試落房（gestures.md §1）；不能放就說原因，幽靈留著讓玩家換格；放在同種房子上 = 合成
 function commitHouse() {
+  if (view.overStock) {
+    view.overStock = false;
+    if (view.lifted) ui.toast(ui.t('memory.stowed'));
+    Object.assign(view, { tool: null, ghost: null, lifted: null });
+    return;
+  }
   const g = view.ghost;
   if (!g?.houseId) return;
   if (g.merge != null) {
@@ -241,7 +252,7 @@ function commitHouse() {
   // 同一疊還有就繼續拿下一棟，沒有就放下工具
   const placed = store.get().grants.find((x) => x.id === view.tool.grantId);
   const next = store.get().grants.find((x) => x.state === 'stock' && x.item_id === placed.item_id && x.landmark_id === placed.landmark_id);
-  Object.assign(view, { tool: next ? { kind: 'house', grantId: next.id } : null, ghost: null, rot: 0 });
+  Object.assign(view, { tool: next ? { kind: 'house', grantId: next.id } : null, ghost: null, rot: 0, lifted: null });
 }
 
 createGestures(document.getElementById('town'), {
@@ -258,7 +269,7 @@ createGestures(document.getElementById('town'), {
       if (v?.t === 'deco' || v?.deco) { // 部件也能拿起搬家
         if (view.mode !== 'place') enterPlace();
         ed.removeHouse(i);
-        Object.assign(view, { tool: { kind: 'house', grantId: v.t === 'deco' ? v.ref : v.deco.ref }, rot: v.rot ?? 0, sel: null });
+        Object.assign(view, { tool: { kind: 'house', grantId: v.t === 'deco' ? v.ref : v.deco.ref }, rot: v.rot ?? 0, sel: null, lifted: v.t === 'deco' ? v.ref : v.deco.ref });
         stroke = { last: null, warned: false };
         brushAt(e.x, e.y);
         return;
@@ -268,7 +279,7 @@ createGestures(document.getElementById('town'), {
       const cell = store.get().grid[a];
       if (view.mode !== 'place') enterPlace();
       ed.removeHouse(a);
-      Object.assign(view, { tool: { kind: 'house', grantId: cell.ref }, rot: cell.rot, sel: null });
+      Object.assign(view, { tool: { kind: 'house', grantId: cell.ref }, rot: cell.rot, sel: null, lifted: cell.ref });
       stroke = { last: null, warned: false };
       brushAt(e.x, e.y);
     } else if (e.type === 'brushStart') {
