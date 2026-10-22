@@ -101,5 +101,13 @@ export function createStore(storage = globalThis.localStorage, { api = null, onE
       return r;
     },
     flush: push,
+    // 立刻把盤面送到伺服器並等它完成（合成前要讓伺服器知道哪些房子已回倉庫）
+    async sync() {
+      clearTimeout(timer);
+      for (let i = 0; i < 10 && (state.dirty || inflight); i++) {
+        if (inflight) await new Promise((ok) => setTimeout(ok, 200)); else await push();
+      }
+      return !state.dirty;
+    },
   };
 }

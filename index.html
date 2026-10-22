@@ -67,9 +67,10 @@
   #login .c-sheet, #about .c-sheet { width: 100%; max-height: 85vh; overflow: auto; }
   #about a { color: var(--accent); }
   .inv-about { display: block; margin: var(--space-6) auto 0; }
-  .merge-card { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin-bottom: var(--space-2); }
-  .merge-card .c-stockrow__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-  .merge-card .c-btn { flex: 0 0 auto; width: auto; padding: 0 18px; }
+  .slot-wrap { position: relative; display: inline-flex; flex: 0 0 auto; }
+  .slot-merge { position: absolute; top: -6px; right: -6px; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--surface);
+    background: var(--accent); color: var(--accent-ink); display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: var(--shadow); }
+  .slot-merge .c-icon { width: 16px; height: 16px; stroke: currentColor; }
   #login .gsi { display: flex; justify-content: center; min-height: 44px; }
   #dev { position: fixed; left: 8px; top: 90px; z-index: var(--z-dialog); background: rgba(255,255,255,.95); border-radius: var(--radius); padding: 8px; font-size: 12px; box-shadow: var(--shadow); max-width: 230px; }
   #dev input { width: 100%; box-sizing: border-box; font-size: 12px; }
@@ -207,15 +208,33 @@ function brushAt(x, y) {
   } else if (tool?.kind === 'house') {
     if (i == null) return;
     const h = houseOf(tool.grantId), r = ed.checkHouse(tool.grantId, i, view.rot);
-    view.ghost = { anchor: i, ok: r.ok, r, size: h?.size, houseId: h?.id, rot: view.rot };
+    const target = !r.ok && mergeTarget(tool.grantId, i);
+    view.ghost = target != null && target !== false
+      ? { anchor: target, ok: true, r: { ok: true }, size: houseAt(target)?.size, houseId: h?.id, rot: store.get().grid[target].rot, merge: target }
+      : { anchor: i, ok: r.ok, r, size: h?.size, houseId: h?.id, rot: view.rot };
     refresh();
   }
 }
 
-// 放手 = 嘗試落房（gestures.md §1）；不能放就說原因，幽靈留著讓玩家換格
+// 格 i 上若是已放的房子、且與手上這棟同系列同階（可合成）→ 回該房的錨點，否則 null
+function mergeTarget(grantId, i) {
+  const a = anchorAt(i), cell = a == null ? null : store.get().grid[a];
+  if (cell?.t !== 'house') return null;
+  const mine = houseOf(grantId), theirs = houseAt(a);
+  return mine?.line && mine.line === theirs?.line && mine.tier === theirs.tier && mine.tier < 3 ? a : null;
+}
+
+// 放手 = 嘗試落房（gestures.md §1）；不能放就說原因，幽靈留著讓玩家換格；放在同種房子上 = 合成
 function commitHouse() {
   const g = view.ghost;
   if (!g?.houseId) return;
+  if (g.merge != null) {
+    const target = store.get().grid[g.merge], grantId = view.tool.grantId;
+    ed.removeHouse(g.merge);
+    Object.assign(view, { tool: null, ghost: null });
+    merge(grantId, target.ref, { anchor: g.merge, rot: target.rot });
+    return;
+  }
   const r = ed.placeHouse(view.tool.grantId, g.anchor, view.rot);
   if (!r.ok) { reject(r); return; }
   navigator.vibrate?.(10);
@@ -270,12 +289,19 @@ const loadGsi = () => window.google?.accounts?.id ? Promise.resolve() : new Prom
   const sc = Object.assign(document.createElement('script'), { src: 'https://accounts.google.com/gsi/client', async: true, onload: ok, onerror: no });
   document.head.appendChild(sc);
 });
-// 合成升級：伺服器驗證並消耗兩棟 → 重新拉 /me（grants 以伺服器為準）
-async function merge(a, b) {
+// 合成升級（擺放頁的 ⇧，或把房子拖到同種的房子上）：先把盤面送到伺服器 → 伺服器驗證並消耗兩棟 → 重拉 /me
+// at = { anchor, rot }：合成後試著放回原位（拖上去合成）；放不下就留在倉庫。合成後復原清空（舊盤面引用的房子已消耗）
+async function merge(a, b, at = null) {
+  await store.sync();
   const r = await call('POST', '/api/merge', { a, b, op_id: crypto.randomUUID() });
-  if (!r.ok) { ui.toast(ui.t('inventory.merge_fail')); return; }
+  if (!r.ok) { ui.toast(ui.t('inventory.merge_fail')); await store.connect(); refresh(); return; }
   await store.connect();
-  ui.toast(ui.t('inventory.merged', { name: kinds.find((h) => h.id === r.data.grant.item_id)?.name ?? r.data.grant.item_id }));
+  ed.done();
+  const g = r.data.grant, name = kinds.find((h) => h.id === g.item_id)?.name ?? g.item_id;
+  const placed = at && ed.placeHouse(g.id, at.anchor, at.rot).ok;
+  if (placed) { ed.done(); Object.assign(view, { tool: null, ghost: null }); }
+  else if (view.mode === 'place') Object.assign(view, { tool: { kind: 'house', grantId: g.id }, ghost: null, rot: 0 }); // 新房子直接選起來
+  ui.toast(ui.t(at && !placed ? 'inventory.merge_no_room' : 'inventory.merged', { name }));
   refresh();
 }
 

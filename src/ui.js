@@ -12,7 +12,7 @@ const FALLBACK = {
   memory: { variant_origin: '原色', variant_n: '變體 {n}', footprint: '佔 {n} 格 · 進倉庫', note_label: '一句話', optional: '可跳過' },
   error: { invalid: '這一步沒存成功，再試一次' },
   // 合成升級：Design 尚未給文案（docs/spec_upgrade_2026-10-22.md），暫代
-  inventory: { merge_title: '可以升級', merge_hint: '兩棟換一棟大一號的', merge: '合成', merged: '升級成 {name}', merge_fail: '這兩棟沒辦法合成' },
+  inventory: { merge: '合成', merged: '升級成 {name}', merge_fail: '這兩棟沒辦法合成', merge_no_room: '升級成 {name}，原地放不下，已收進倉庫' },
 };
 // 錯誤參數轉人話（時間轉台北時間）
 const fmtParams = (r) => ({ ...r, until: r.until && new Date(r.until).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) });
@@ -21,6 +21,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 // 圖示：design/components.html 的 SVG 原樣
 const svg = (d, cls = 'c-icon') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
 const ICON = {
+  up: svg('<path d="M12 19V5M6 11l6-6 6 6"/>'),
   rotate: svg('<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>'),
   fit: svg('<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>'),
   map: svg('<path d="M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/>'),
@@ -78,6 +79,18 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
     return [...m.values()];
   }
   const houseName = (g) => byId.get(g.item_id)?.name ?? g.item_id;
+  // 可合成：同系列同階的待放房子（規則以 shared/rules.js canMerge 為準，伺服器會再驗）→ Map(line|tier → grants)
+  const mergeKey = (g) => { const h = byId.get(g.item_id); return g.kind === 'house' && h?.line && h.tier < 3 ? `${h.line}|${h.tier}` : null; };
+  function mergeGroups(grants) {
+    const m = new Map();
+    for (const g of grants) {
+      const k = g.state === 'stock' && mergeKey(g);
+      if (!k) continue;
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(g);
+    }
+    return m;
+  }
   const meta = (g, n) => [COUNTY[county(g)] ?? county(g), day(g), `×${n}`].filter(Boolean).join(' · ');
   // 房型縮圖：預渲 PNG（Sprint 1）之前，用該變體的屋頂／牆色塊佔位
   // 房子小圖：kit.js 預烘的 assets/previews/<id>__<seed>.png（scripts 由 Code 產出、Design 審）；沒有該變體時退回原色
@@ -113,19 +126,7 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
         + `<span class="c-stockrow__right"><span class="c-stockrow__qty">×${gs.length}</span><span class="c-stockrow__state${state === 'stock' ? ' c-stockrow__state--stock' : ''}">${state === 'stock' ? '待放' : '已放'}</span></span></button>`;
     };
     const stock = groups(s.grants, 'stock'), placed = groups(s.grants, 'placed');
-    // 可合成：同系列同階的待放房子 ≥ 2 棟（規則以 shared/rules.js canMerge 為準，伺服器會再驗）
-    const byKey = new Map();
-    for (const g of s.grants) {
-      const h = byId.get(g.item_id);
-      if (g.kind !== 'house' || g.state !== 'stock' || !h?.line || h.tier >= 3) continue;
-      const k = `${h.line}|${h.tier}`;
-      if (!byKey.has(k)) byKey.set(k, []);
-      byKey.get(k).push(g);
-    }
-    const merges = [...byKey.values()].filter((gs) => gs.length >= 2).map((gs) =>
-      `<div class="c-card merge-card">${swatch(gs[0], 'c-stockrow__img')}<span class="c-stockrow__body"><span class="c-stockrow__name">${esc(houseName(gs[0]))} ×${gs.length}</span><span class="c-label">${esc(t('inventory.merge_hint'))}</span></span>`
-      + `${btn('merge', esc(t('inventory.merge')), { a: gs[0].id, b: gs[1].id }, 'c-btn c-btn--primary')}</div>`).join('');
-    return `${login}${merges ? `<div class="c-label">${esc(t('inventory.merge_title'))}</div>${merges}` : ''}<div class="inv-head"><span class="c-chip" aria-pressed="true">${esc(t('inventory.sort_date'))}</span></div>`
+    return `${login}<div class="inv-head"><span class="c-chip" aria-pressed="true">${esc(t('inventory.sort_date'))}</span></div>`
       + (stock.length || placed.length ? `<div class="inv">${stock.map((gs) => row(gs, 'stock')).join('')}${placed.map((gs) => row(gs, 'placed')).join('')}</div>` : `<p class="c-dialog__body">${esc(t('inventory.empty'))}</p>`)
       + btn('about', esc(t('privacy.about_title')), null, 'c-btn c-btn--ghost inv-about');
   }
@@ -204,10 +205,15 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
         + `<button class="c-btn c-btn--float ${v.erase ? 'c-btn--ghost' : 'hud-tool--on'}" ${attrs('erase', { on: false })} aria-pressed="${!v.erase}">${ICON.paint}${esc(t('town.tool_road'))}</button>`
         + `<button class="c-btn c-btn--float ${v.erase ? 'hud-tool--on' : 'c-btn--ghost'}" ${attrs('erase', { on: true })} aria-pressed="${!!v.erase}">${ICON.erase}${esc(t('town.tool_erase'))}</button></div>` : '';
       const slots = `<button class="c-slot" ${attrs('tool', { tool: road ? null : { kind: 'road' } })} aria-pressed="${road}">${ROAD_SLOT_IMG}<span><span class="c-slot__name">${esc(t('town.tool_road'))}</span><br><span class="c-slot__meta">${esc(t('town.road_unlimited'))}</span></span></button>`
-        + groups(s.grants, 'stock').map((gs) => {
-          const on = gs.some((g) => g.id === tool?.grantId);
-          return `<button class="c-slot" ${attrs('tool', { tool: { kind: 'house', grantId: gs[0].id } })} aria-pressed="${on}">${swatch(gs[0])}<span><span class="c-slot__name">${esc(houseName(gs[0]))}</span><br><span class="c-slot__meta">${esc(meta(gs[0], gs.length))}</span></span></button>`;
-        }).join('');
+        + (() => {
+          const mg = mergeGroups(s.grants);
+          return groups(s.grants, 'stock').map((gs) => {
+            const on = gs.some((g) => g.id === tool?.grantId);
+            const mates = mg.get(mergeKey(gs[0])) ?? [], other = mates.find((g) => g.id !== gs[0].id);
+            const up = other ? btn('merge', ICON.up, { a: gs[0].id, b: other.id }, 'slot-merge', `aria-label="${esc(t('inventory.merge'))}"`) : '';
+            return `<span class="slot-wrap"><button class="c-slot" ${attrs('tool', { tool: { kind: 'house', grantId: gs[0].id } })} aria-pressed="${on}">${swatch(gs[0])}<span><span class="c-slot__name">${esc(houseName(gs[0]))}</span><br><span class="c-slot__meta">${esc(meta(gs[0], gs.length))}</span></span></button>${up}</span>`;
+          }).join('');
+        })();
       $('.ui-bottom').innerHTML = `<div class="hud-bar"><span style="flex:1"></span><span class="hud-cam">${camBtns(road)}</span></div>${roadTools}<div class="c-drawer"><div class="c-drawer__head"><span class="c-label">${esc(t('town.drawer_title'))}</span></div><div class="c-drawer__scroll">${slots}</div></div>`;
     },
 
