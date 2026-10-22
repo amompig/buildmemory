@@ -67,6 +67,9 @@
   #login .c-sheet, #about .c-sheet { width: 100%; max-height: 85vh; overflow: auto; }
   #about a { color: var(--accent); }
   .inv-about { display: block; margin: var(--space-6) auto 0; }
+  .merge-card { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin-bottom: var(--space-2); }
+  .merge-card .c-stockrow__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .merge-card .c-btn { flex: 0 0 auto; width: auto; padding: 0 18px; }
   #login .gsi { display: flex; justify-content: center; min-height: 44px; }
   #dev { position: fixed; left: 8px; top: 90px; z-index: var(--z-dialog); background: rgba(255,255,255,.95); border-radius: var(--radius); padding: 8px; font-size: 12px; box-shadow: var(--shadow); max-width: 230px; }
   #dev input { width: 100%; box-sizing: border-box; font-size: 12px; }
@@ -97,18 +100,19 @@ const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const store = createStore(globalThis.localStorage, { api, onEvent: onSync });
 addEventListener('online', () => store.flush());
-const ed = createEditor(store, houses);
-const town = createTown(document.getElementById('town'), { houses, palette: palette.three, reducedMotion });
+const kinds = [...houses, ...catalog.decor]; // 房型＋基礎部件（倉庫、擺放、渲染共用）
+const ed = createEditor(store, kinds);
+const town = createTown(document.getElementById('town'), { houses: kinds, palette: palette.three, reducedMotion });
 // erase：俯視畫路時「擦除」鈕；sel：看態點選的房子（F6）
 const view = { tab: 'town', mode: 'view', tool: null, erase: false, ghost: null, sel: null, canUndo: false, rot: 0,
   geo: { status: 'idle', pos: null, near: [], offline: !navigator.onLine, busy: false } };
 const landmarks = landmarksJson.items;
 const mapView = createMap(document.getElementById('mapview'), { landmarks, colors: palette.map });
 let sim = null; // 本機 ?dev=1 的模擬座標
-const ui = createUI(document.getElementById('ui'), { strings, houses, landmarks, onIntent });
+const ui = createUI(document.getElementById('ui'), { strings, houses: kinds, landmarks, onIntent });
 
 const houseAt = (i) => houses.find((h) => h.id === store.get().grid[i]?.id);
-const houseOf = (grantId) => houses.find((h) => h.id === store.get().grants.find((g) => g.id === grantId)?.item_id);
+const houseOf = (grantId) => kinds.find((h) => h.id === store.get().grants.find((g) => g.id === grantId)?.item_id);
 const anchorAt = (i) => { const v = store.get().grid[i]; return v?.t === 'house' ? i : v?.t === 'part' ? v.of : null; };
 
 function refresh() {
@@ -164,6 +168,7 @@ function onIntent(it) {
     case 'closeSheet': view.sel = null; break;
     case 'login': login(); return;
     case 'about': about(); return;
+    case 'merge': merge(it.a, it.b); return;
     default: return;
   }
   refresh();
@@ -230,7 +235,16 @@ createGestures(document.getElementById('town'), {
       view.sel = i == null ? null : anchorAt(i);
       refresh();
     } else if (e.type === 'lift') { // 長按已放的房子 = 拿起（變幽靈，可搬家）
-      const i = town.cellAt(e.x, e.y), a = i == null ? null : anchorAt(i);
+      const i = town.cellAt(e.x, e.y), v = i == null ? null : store.get().grid[i];
+      if (v?.t === 'deco' || v?.deco) { // 部件也能拿起搬家
+        if (view.mode !== 'place') enterPlace();
+        ed.removeHouse(i);
+        Object.assign(view, { tool: { kind: 'house', grantId: v.t === 'deco' ? v.ref : v.deco.ref }, rot: v.rot ?? 0, sel: null });
+        stroke = { last: null, warned: false };
+        brushAt(e.x, e.y);
+        return;
+      }
+      const a = i == null ? null : anchorAt(i);
       if (a == null) return;
       const cell = store.get().grid[a];
       if (view.mode !== 'place') enterPlace();
@@ -256,6 +270,15 @@ const loadGsi = () => window.google?.accounts?.id ? Promise.resolve() : new Prom
   const sc = Object.assign(document.createElement('script'), { src: 'https://accounts.google.com/gsi/client', async: true, onload: ok, onerror: no });
   document.head.appendChild(sc);
 });
+// 合成升級：伺服器驗證並消耗兩棟 → 重新拉 /me（grants 以伺服器為準）
+async function merge(a, b) {
+  const r = await call('POST', '/api/merge', { a, b, op_id: crypto.randomUUID() });
+  if (!r.ok) { ui.toast(ui.t('inventory.merge_fail')); return; }
+  await store.connect();
+  ui.toast(ui.t('inventory.merged', { name: kinds.find((h) => h.id === r.data.grant.item_id)?.name ?? r.data.grant.item_id }));
+  refresh();
+}
+
 // 關於與版權：地圖、地標、模型的出處與授權（地圖署名只放這裡）
 function about() {
   const box = Object.assign(document.createElement('div'), { id: 'about' });
@@ -329,7 +352,7 @@ async function daily(pos) {
   try { last = localStorage.getItem('bym:daily'); } catch { /* ignore */ }
   if (last === today) return;
   const r = await call('POST', '/api/daily', { lat: pos.lat, lng: pos.lng, acc: pos.acc, op_id: crypto.randomUUID() });
-  if (r.ok) { addGrant(r.data.grant); ui.toast(ui.t('map.daily_toast_house')); }
+  if (r.ok) { addGrant(r.data.grant); ui.toast(ui.t(r.data.kind === 'decor' ? 'map.daily_toast_decor' : 'map.daily_toast_house')); }
   if (r.ok || r.code === 'cooldown' || r.reason === 'county') try { localStorage.setItem('bym:daily', today); } catch { /* ignore */ }
 }
 // 按下打卡 → 再取一次定位（不用剛才的）→ 伺服器驗 → 記憶卡

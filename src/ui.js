@@ -8,9 +8,11 @@ const { RULES, isUnlocked, unlockedSize } = R;
 const FALLBACK = {
   town: { progress_title: '我的小鎮 · {size}×{size}', road_unlimited: '無限', drawer_title: '倉庫 · 依日期' },
   login: { done: '綁好了', failed: '綁定沒有成功，再試一次', unavailable: '登入還沒開放' },
-  map: { today: '今天 {n} / 40', checkin_ok: '打卡成功 · 第 {visit} 次來', range: '走進 {n} m 內就能打卡', relocate: '重新定位' },
+  map: { today: '今天 {n} / 40', checkin_ok: '打卡成功 · 第 {visit} 次來', range: '走進 {n} m 內就能打卡', relocate: '重新定位', daily_toast_decor: '今天的部件已入倉庫' },
   memory: { variant_origin: '原色', variant_n: '變體 {n}', footprint: '佔 {n} 格 · 進倉庫', note_label: '一句話', optional: '可跳過' },
   error: { invalid: '這一步沒存成功，再試一次' },
+  // 合成升級：Design 尚未給文案（docs/spec_upgrade_2026-10-22.md），暫代
+  inventory: { merge_title: '可以升級', merge_hint: '兩棟換一棟大一號的', merge: '合成', merged: '升級成 {name}', merge_fail: '這兩棟沒辦法合成' },
 };
 // 錯誤參數轉人話（時間轉台北時間）
 const fmtParams = (r) => ({ ...r, until: r.until && new Date(r.until).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) });
@@ -68,7 +70,7 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
   const day = (g) => g.at.slice(5, 10).replace('-', '.');
   function groups(grants, state) {
     const m = new Map();
-    for (const g of grants.filter((x) => x.kind === 'house' && x.state === state).sort((a, b) => (a.at < b.at ? 1 : -1))) {
+    for (const g of grants.filter((x) => (x.kind === 'house' || x.kind === 'decor') && x.state === state).sort((a, b) => (a.at < b.at ? 1 : -1))) {
       const k = `${g.item_id}|${county(g)}|${day(g)}`;
       if (!m.has(k)) m.set(k, []);
       m.get(k).push(g);
@@ -111,7 +113,19 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
         + `<span class="c-stockrow__right"><span class="c-stockrow__qty">×${gs.length}</span><span class="c-stockrow__state${state === 'stock' ? ' c-stockrow__state--stock' : ''}">${state === 'stock' ? '待放' : '已放'}</span></span></button>`;
     };
     const stock = groups(s.grants, 'stock'), placed = groups(s.grants, 'placed');
-    return `${login}<div class="inv-head"><span class="c-chip" aria-pressed="true">${esc(t('inventory.sort_date'))}</span></div>`
+    // 可合成：同系列同階的待放房子 ≥ 2 棟（規則以 shared/rules.js canMerge 為準，伺服器會再驗）
+    const byKey = new Map();
+    for (const g of s.grants) {
+      const h = byId.get(g.item_id);
+      if (g.kind !== 'house' || g.state !== 'stock' || !h?.line || h.tier >= 3) continue;
+      const k = `${h.line}|${h.tier}`;
+      if (!byKey.has(k)) byKey.set(k, []);
+      byKey.get(k).push(g);
+    }
+    const merges = [...byKey.values()].filter((gs) => gs.length >= 2).map((gs) =>
+      `<div class="c-card merge-card">${swatch(gs[0], 'c-stockrow__img')}<span class="c-stockrow__body"><span class="c-stockrow__name">${esc(houseName(gs[0]))} ×${gs.length}</span><span class="c-label">${esc(t('inventory.merge_hint'))}</span></span>`
+      + `${btn('merge', esc(t('inventory.merge')), { a: gs[0].id, b: gs[1].id }, 'c-btn c-btn--primary')}</div>`).join('');
+    return `${login}${merges ? `<div class="c-label">${esc(t('inventory.merge_title'))}</div>${merges}` : ''}<div class="inv-head"><span class="c-chip" aria-pressed="true">${esc(t('inventory.sort_date'))}</span></div>`
       + (stock.length || placed.length ? `<div class="inv">${stock.map((gs) => row(gs, 'stock')).join('')}${placed.map((gs) => row(gs, 'placed')).join('')}</div>` : `<p class="c-dialog__body">${esc(t('inventory.empty'))}</p>`)
       + btn('about', esc(t('privacy.about_title')), null, 'c-btn c-btn--ghost inv-about');
   }
@@ -176,7 +190,7 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
       $('.ui-page').innerHTML = '';
       const tool = v.tool, road = tool?.kind === 'road';
       if (v.mode === 'view') {
-        const n = s.grants.filter((g) => g.kind === 'house' && g.state === 'stock').length;
+        const n = s.grants.filter((g) => (g.kind === 'house' || g.kind === 'decor') && g.state === 'stock').length;
         $('.ui-top').innerHTML = progressCard(s.grid);
         // 左下主鈕「擺放」（附待放棟數）、右下轉向＋看全鎮
         $('.ui-bottom').innerHTML = `<div class="hud-bar">${btn('mode', `${esc(t('town.mode_place'))}${n ? ` · ${n}` : ''}`, { mode: 'place' }, 'c-btn c-btn--primary c-btn--float hud-place')}<span class="hud-cam">${camBtns(false)}</span></div>${tabbar('town')}`;

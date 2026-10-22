@@ -367,12 +367,16 @@ export function paletteRGB(house, seed) {
 // 原點 = 佔格中心；同房型所有變體共用這份幾何；搭配 houseMaterial + 每棟槽位色 = 1 個 draw call
 function build(house) {
   const sink = createSink(), [W, D] = house.size;
+  // 路上部件（decor layer road）：blueprint 裡的示意路面 road / ln0 / ln1 不畫，疊到既有路格上（Design 回覆 §3）
+  const skip = house.layer === 'road' ? new Set(['road', 'ln0', 'ln1']) : null;
   if (house.blueprint) {
     const ctx = { id: house.id, windowStyle: house.window_style, doorStyle: house.door_style };
-    for (const b of resolveBlocks(house.blueprint)) buildBlock(sink, b, ctx);
+    for (const b of resolveBlocks(house.blueprint)) if (!skip?.has(b.id)) buildBlock(sink, b, ctx);
   } else box(sink, { c0: W * 0.15, c1: W * 0.85, r0: D * 0.15, r1: D * 0.85 }, 0, 0.5, col('wall'), col('roof')); // 沒有藍圖：色塊
   const { g, m } = sink.geometry();
-  for (const x of [g, m]) { x.translate((-W / 2) * CELL, 0, (-D / 2) * CELL); x.computeBoundingBox(); }
+  // 路上部件的 z 以示意路面（0.012 格）為底；town 的路格頂在 0.025 格 → 整體抬高差值
+  const lift = skip ? (0.025 - 0.012) * CELL : 0;
+  for (const x of [g, m]) { x.translate((-W / 2) * CELL, lift, (-D / 2) * CELL); x.computeBoundingBox(); }
   return { g, m };
 }
 export const bake = (house) => build(house).g;

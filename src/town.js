@@ -191,15 +191,18 @@ export function createTown(canvas, { houses, palette, reducedMotion = false }) {
 
       roads.count = 0;
       for (const k of kinds.values()) k.mesh.count = 0;
+      // 房子、空地部件、路上部件都是「某房型的一個 instance」
+      const placeKind = (id, i, rot, ref) => {
+        const { h, mesh } = kinds.get(id), n = mesh.count++;
+        mesh.setMatrixAt(n, houseMatrix(h.size, i, rot));
+        const rgb = paletteRGB(h, seedOf.get(ref) ?? 0);
+        SLOT_ATTRS.forEach((a, s) => mesh.geometry.attributes[a].array.set(rgb.subarray(s * 3, s * 3 + 3), n * 3));
+      };
       for (let i = 0; i < CELLS; i++) {
         const v = grid[i];
         if (v?.t === 'road') { const [r, c] = rc(i); roads.setMatrixAt(roads.count++, m4.makeTranslation(cellX(c), 0.03, cellZ(r))); }
-        else if (v?.t === 'house' && kinds.has(v.id)) {
-          const { h, mesh } = kinds.get(v.id), n = mesh.count++;
-          mesh.setMatrixAt(n, houseMatrix(h.size, i, v.rot));
-          const rgb = paletteRGB(h, seedOf.get(v.ref) ?? 0);
-          SLOT_ATTRS.forEach((a, s) => mesh.geometry.attributes[a].array.set(rgb.subarray(s * 3, s * 3 + 3), n * 3));
-        }
+        if (v?.t === 'road' && v.deco && kinds.has(v.deco.id)) placeKind(v.deco.id, i, 0, v.deco.ref);
+        if ((v?.t === 'house' || v?.t === 'deco') && kinds.has(v.id)) placeKind(v.id, i, v.rot, v.ref);
       }
       roads.instanceMatrix.needsUpdate = true;
       for (const { mesh, lines } of kinds.values()) {
