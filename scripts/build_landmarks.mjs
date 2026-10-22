@@ -8,7 +8,7 @@ const { coords, _meta } = JSON.parse(readFileSync('data/landmark_coords.json', '
 const items = src.landmarks.map((l) => {
   const c = coords[l.id];
   if (!c) throw new Error(`缺座標：${l.id}`);
-  return { id: l.id, name: l.name, lat: c.lat, lng: c.lng, county: l.county, house: l.house, r: l.r, tier: l.tier, blurb: l.blurb ?? l.observed ?? '' };
+  return { id: l.id, name: l.name, lat: c.lat, lng: c.lng, county: l.county, house: l.house, r: c.r ?? l.r, tier: l.tier, blurb: l.blurb ?? l.observed ?? '' };
 });
 const out = {
   meta: { source: `${_meta.source}（座標）；名稱與半徑：data/landmarks_tpe12.json`, license: 'ODbL（座標）', dataset: 'tpe12', fetched_at: _meta.fetched_at, data_version: src._meta.version },

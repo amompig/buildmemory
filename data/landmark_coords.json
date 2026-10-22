@@ -2,7 +2,7 @@
   "_meta": {
     "source": "OpenStreetMap Nominatim（© OpenStreetMap contributors, ODbL）",
     "fetched_at": "2026-10-21",
-    "note": "landmarks_tpe12.json 沒有經緯度，Code 先查 OSM 補上，待使用者確認；正式版以 Cowork 文資局 ETL 為準。house_interim = blueprint v2 落地前，打卡先給的系統房型（待使用者決定 Q2）。"
+    "note": "r = 打卡半徑覆寫（使用者 2026-10-22 核可：迪化街是一整條街，100 → 300 m）；座標使用者 2026-10-22 已確認。landmarks_tpe12.json 沒有經緯度，Code 先查 OSM 補上，待使用者確認；正式版以 Cowork 文資局 ETL 為準。house_interim = blueprint v2 落地前，打卡先給的系統房型（待使用者決定 Q2）。"
   },
   "coords": {
     "lm:TPE-f01": { "lat": 25.04773, "lng": 121.51122, "house_interim": "sys:minnan" },
@@ -13,7 +13,7 @@
     "lm:TPE-f06": { "lat": 25.03725, "lng": 121.49988, "house_interim": "sys:minnan" },
     "lm:TPE-f07": { "lat": 25.04029, "lng": 121.51683, "house_interim": "sys:shophouse" },
     "lm:TPE-f08": { "lat": 25.04489, "lng": 121.52044, "house_interim": "sys:shophouse" },
-    "lm:TPE-f09": { "lat": 25.05617, "lng": 121.51022, "house_interim": "sys:shophouse" },
+    "lm:TPE-f09": { "lat": 25.05617, "lng": 121.51022, "house_interim": "sys:shophouse", "r": 300 },
     "lm:TPE-f10": { "lat": 25.03384, "lng": 121.56450, "house_interim": "sys:iron" },
     "lm:TPE-f11": { "lat": 25.07877, "lng": 121.52621, "house_interim": "sys:minnan" },
     "lm:TPE-f12": { "lat": 25.07243, "lng": 121.53046, "house_interim": "sys:minnan" }
