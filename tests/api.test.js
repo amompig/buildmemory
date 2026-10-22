@@ -49,7 +49,12 @@ test('session：建帳 → HttpOnly device cookie；首啟贈品 2 棟 stock + �
   if (process.env.PROD) assert.match(r.setCookie, /; Secure/);
   const m = await me({ cookie: r.setCookie.split(';')[0] });
   assert.equal(m.user_id, r.json.user_id);
-  assert.deepEqual(m.grants.map((g) => [g.item_id, g.state, g.seed]).sort(), [['sys:iron', 'stock', 0], ['sys:jpdorm', 'stock', 0]]);
+  // 首啟 20 棟：含鐵窗厝與日式宿舍，其餘為城市池的 1×1；全部待放、變體在範圍內
+  assert.equal(m.grants.length, R.STARTER_TOTAL);
+  assert.ok(['sys:iron', 'sys:jpdorm'].every((id) => m.grants.some((g) => g.item_id === id)));
+  const pool = Object.keys(CATALOG.pools.groups[CATALOG.pools.default_group]);
+  assert.ok(m.grants.every((g) => pool.includes(g.item_id) && g.state === 'stock' && g.kind === 'house'
+    && g.seed >= 0 && g.seed < HOUSES.find((h) => h.id === g.item_id).palettes.length), JSON.stringify(m.grants.map((g) => [g.item_id, g.seed])));
   assert.deepEqual(m.town.grid, R.starterGrid());
   assert.equal(m.town.rev, 0);
   assert.equal(R.validateGrid(m.town.grid, m.grants, HOUSES).ok, true);
@@ -60,7 +65,7 @@ test('session：帶有效 cookie 再呼叫 → 同一帳號、不重發贈品', 
   const u = await newUser();
   const r = await call('POST', '/api/session', { body: {}, cookie: u.cookie });
   assert.equal(r.json.user_id, u.id);
-  assert.equal((await me(u)).grants.length, 2);
+  assert.equal((await me(u)).grants.length, R.STARTER_TOTAL);
 });
 
 test('me：無 cookie / 竄改簽章 / 換成別人的 id → 401', opts, async () => {
@@ -194,7 +199,7 @@ test('auth：訪客首次登入 → 綁到同一帳號、bound=true、發 sessio
   assert.deepEqual([r.status, r.json], [200, { user_id: u.id, merged: false }]);
   assert.ok(r.session);
   const m = (await call('GET', '/api/me', { cookie: r.session })).json;
-  assert.deepEqual([m.user_id, m.bound, m.grants.length], [u.id, true, 2]);
+  assert.deepEqual([m.user_id, m.bound, m.grants.length], [u.id, true, R.STARTER_TOTAL]);
   assert.equal((await call('GET', '/api/me', { cookie: u.cookie })).status, 401);
 });
 
@@ -209,7 +214,7 @@ test('auth：同一個 Google 帳在第二台裝置登入 → 合併到原帳；
   assert.deepEqual(second.json, { user_id: a.id, merged: true });
   const m = (await call('GET', '/api/me', { cookie: second.session })).json;
   assert.equal(m.user_id, a.id);
-  assert.equal(m.grants.length, 2); // b 的 2 棟首啟贈品沒有併進來
+  assert.equal(m.grants.length, R.STARTER_TOTAL); // b 的首啟贈品沒有併進來
   assert.deepEqual(m.town.grid[R.idx(6, 6)], { t: 'road' });
   assert.equal((await call('GET', '/api/me', { cookie: b.cookie })).status, 401);
 });
@@ -219,7 +224,7 @@ test('auth：沒有任何 cookie 直接登入 → 以 Google 建新帳（含首�
   assert.equal(r.status, 200);
   logUser(r.json.user_id);
   const m = (await call('GET', '/api/me', { cookie: r.session })).json;
-  assert.deepEqual([m.bound, m.grants.length, m.town.rev], [true, 2, 0]);
+  assert.deepEqual([m.bound, m.grants.length, m.town.rev], [true, R.STARTER_TOTAL, 0]);
 });
 
 test('auth：偽造／過期／錯對象的憑證一律 401 且不發 session', local, async () => {
@@ -271,7 +276,7 @@ test('checkin：acc > 200 → 422 weak_signal；未知地標 → invalid；圈�
   assert.equal((await ck(u, { ...LM5, id: 'lm:TPE-nope' }, 0)).json.error.reason, 'landmark');
   const far = await ck(u, LM5, 125);
   assert.deepEqual([far.status, far.json.error.code, far.json.error.dist], [422, 'too_far', 120]);
-  assert.equal((await me(u)).grants.length, 2); // 都沒有發房
+  assert.equal((await me(u)).grants.length, R.STARTER_TOTAL); // 都沒有發房
 });
 
 test('checkin：圈內 → 發房（原色、第 1 次）；同 op_id 重送 → 同一筆；同地標同日 → cooldown；馬上打別處 → rate_limited', opts, async () => {
@@ -288,7 +293,7 @@ test('checkin：圈內 → 發房（原色、第 1 次）；同 op_id 重送 →
   const rl = await ck(u, other, 0);
   assert.deepEqual([rl.status, rl.json.error.code], [429, 'rate_limited']);
   assert.ok(rl.json.error.retry_after > 0 && rl.json.error.retry_after <= 60);
-  assert.equal((await me(u)).grants.length, 3);
+  assert.equal((await me(u)).grants.length, R.STARTER_TOTAL + 1);
 });
 
 test('daily：台北 → 城市 1×1 池（seed 1..n−1）或部件；同日再領 → cooldown；30 km 外 → invalid county', opts, async () => {

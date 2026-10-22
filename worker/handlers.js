@@ -79,9 +79,9 @@ async function createUser(env, googleSub = null) {
   const id = crypto.randomUUID(), t = now(), db = env.DB;
   await db.batch([
     db.prepare('INSERT INTO users (id, google_sub, created_at, last_seen) VALUES (?, ?, ?, ?)').bind(id, googleSub, t, t),
-    ...R.STARTER_HOUSES.map((item) => db.prepare(
-      "INSERT INTO grants (id, user_id, kind, item_id, state, seed, visit_n, at) VALUES (?, ?, 'house', ?, 'stock', 0, 1, ?)",
-    ).bind(crypto.randomUUID(), id, item, t)),
+    ...R.starterGrants(R.starterPool(HOUSES, POOLS), Math.random).map((g) => db.prepare(
+      "INSERT INTO grants (id, user_id, kind, item_id, state, seed, visit_n, at) VALUES (?, ?, 'house', ?, 'stock', ?, 1, ?)",
+    ).bind(crypto.randomUUID(), id, g.item_id, g.seed, t)),
     db.prepare('INSERT INTO towns (id, user_id, grid_json, rev, updated_at) VALUES (?, ?, ?, 0, ?)')
       .bind(crypto.randomUUID(), id, JSON.stringify(R.starterGrid()), t),
   ]);

@@ -289,7 +289,19 @@ export function applyTown(baseRev, serverRev, serverGrid) {
 }
 
 // ---------- §9 首啟贈品 ----------
-export const STARTER_HOUSES = Object.freeze(['sys:iron', 'sys:jpdorm']); // sys:minnan 已由 Design 刪除；暫以 1×1 的日式宿舍替代，待使用者確認
+export const STARTER_HOUSES = Object.freeze(['sys:iron', 'sys:jpdorm']); // sys:minnan 已由 Design 刪除；以 1×1 的日式宿舍替代
+// 新帳號共送 STARTER_TOTAL 棟（使用者 10-22：含上面 2 棟，其餘從 5 種 1×1 一般房型平均隨機抽；配色全部隨機變體）
+export const STARTER_TOTAL = 20;
+// pool = [{ id, palettes }]（1×1 一般房型）；rand = () => [0, 1)
+export function starterGrants(pool, rand) {
+  const pal = new Map(pool.map((h) => [h.id, h.palettes]));
+  const ids = [...STARTER_HOUSES];
+  while (ids.length < STARTER_TOTAL) ids.push(pool[Math.min(pool.length - 1, Math.floor(rand() * pool.length))].id);
+  return ids.map((item_id) => ({ item_id, seed: Math.floor(rand() * (pal.get(item_id) ?? 1)) }));
+}
+// 首啟贈品的池：城市池用到的 1×1 一般房型（不看縣市，平均）
+export const starterPool = (houses, pools) => Object.keys(pools.groups[pools.default_group])
+  .map((id) => ({ id, palettes: houses.find((h) => h.id === id).palettes.length }));
 export function starterGrid() {
   const grid = new Array(CELLS).fill(null);
   for (let c = 4; c <= 11; c++) grid[idx(7, c)] = { t: 'road' };

@@ -264,6 +264,19 @@ test('§6 dailyPool：台北 = 都會權重、對不到縣市 = default（鄉鎮
   assert.ok(R.dailyPool(CATALOG.houses, 'TPE', CATALOG.pools).every((x) => x.palettes >= 1));
 });
 
+test('§9 starterGrants：共 20 棟、前 2 棟固定、其餘在池內、seed 在 0..n−1', () => {
+  let i = 0; const seq = [0.1, 0.9, 0.5, 0.99, 0.0, 0.7]; const rand = () => seq[i++ % seq.length];
+  const pool = R.starterPool(CATALOG.houses, CATALOG.pools), ids = pool.map((p) => p.id);
+  const gs = R.starterGrants(pool, rand);
+  assert.equal(gs.length, 20);
+  assert.deepEqual(gs.slice(0, 2).map((g) => g.item_id), ['sys:iron', 'sys:jpdorm']);
+  assert.ok(gs.every((g) => ids.includes(g.item_id) && g.seed >= 0 && g.seed < pool.find((p) => p.id === g.item_id).palettes));
+});
+test('§9 starterGrants：rand 極值不出界', () => {
+  const pool = [{ id: 'sys:iron', palettes: 3 }, { id: 'sys:jpdorm', palettes: 3 }];
+  for (const v of [0, 0.999999]) assert.ok(R.starterGrants(pool, () => v).every((g) => g.seed >= 0 && g.seed <= 2));
+});
+
 // ---------- §6b 合成升級 ----------
 const G = (id, item_id, state = 'stock', seed = 0) => ({ id, kind: 'house', item_id, state, seed, consumed_at: null });
 test('§6b canMerge 同型兩棟待放 → ok（line, tier 1）', () =>
