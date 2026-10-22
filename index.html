@@ -67,6 +67,11 @@
   #login .c-sheet, #about .c-sheet { width: 100%; max-height: 85vh; overflow: auto; }
   #about a { color: var(--accent); }
   .inv-about { display: block; margin: var(--space-6) auto 0; }
+  #ring { position: fixed; width: 0; height: 0; z-index: var(--z-sheet); }
+  .ring-btn { position: absolute; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%; border: 0; background: var(--surface); color: var(--ink);
+    box-shadow: var(--shadow); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font: 600 11px/1 var(--font); padding: 0; }
+  .ring-btn .c-icon { width: 20px; height: 20px; stroke: currentColor; }
+  .ring-btn--top { left: 0; top: -66px; } .ring-btn--right { left: 66px; top: 0; } .ring-btn--left { left: -66px; top: 0; } .ring-btn--bottom { left: 0; top: 66px; background: var(--accent); color: var(--accent-ink); }
   .c-drawer.is-drop { background: var(--accent-tint); box-shadow: inset 0 0 0 2px var(--accent); }
   .slot-wrap { position: relative; display: inline-flex; flex: 0 0 auto; }
   .slot-merge { position: absolute; top: 4px; right: 4px; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--surface);
@@ -148,6 +153,7 @@ function finishPlace() {
 function onIntent(it) {
   switch (it.type) {
     case 'tab': // 切 tab = 先完成
+      closeRing();
       if (view.mode === 'place') finishPlace();
       view.tab = it.tab; view.sel = null;
       if (it.tab === 'map') { refresh(); enterMap(); return; }
@@ -172,6 +178,7 @@ function onIntent(it) {
     case 'login': login(); return;
     case 'about': about(); return;
     case 'merge': merge(it.a, it.b); return;
+    case 'ring': ringAction(it.action); return;
     default: return;
   }
   refresh();
@@ -255,16 +262,72 @@ function commitHouse() {
   Object.assign(view, { tool: next ? { kind: 'house', grantId: next.id } : null, ghost: null, rot: 0, lifted: null });
 }
 
+// ---------- 長按圓圈選單（移動 / 收回 / 轉向 / 合成）----------
+let pendingRing = null, ring = null; // ring = { i }：選單對應的格（房子錨點或部件格）
+function closeRing() { ring = null; ui.ringClose(); }
+// 可合成對象：同系列同階的另一棟——先找倉庫裡的，沒有再找鎮上的
+function mergePartner(i) {
+  const { grid, grants } = store.get(), me = grid[i], h = houseAt(i);
+  if (me?.t !== 'house' || !h?.line || h.tier >= 3) return null;
+  const same = (id) => { const x = kinds.find((k) => k.id === id); return x?.line === h.line && x.tier === h.tier; };
+  const stock = grants.find((g) => g.id !== me.ref && g.kind === 'house' && g.state === 'stock' && same(g.item_id));
+  if (stock) return { ref: stock.id };
+  for (let j = 0; j < grid.length; j++) if (j !== i && grid[j]?.t === 'house' && same(grid[j].id)) return { ref: grid[j].ref, anchor: j };
+  return null;
+}
+function openRing(i) {
+  const v = store.get().grid[i];
+  if (!v) return;
+  ring = { i };
+  const h = v.t === 'house' ? houseAt(i) : null;
+  const [x, y] = town.screenOf(i, h?.size ?? [1, 1], v.rot ?? 0);
+  ui.ringOpen(x, y, { merge: !!mergePartner(i), rotate: v.t !== 'road' });
+}
+function ringAction(action) {
+  if (!ring) return;
+  const i = ring.i, v = store.get().grid[i];
+  closeRing();
+  if (!v) return;
+  const ref = v.t === 'road' ? v.deco?.ref : v.ref;
+  if (action === 'move') {
+    if (view.mode !== 'place') enterPlace();
+    ed.removeHouse(i);
+    Object.assign(view, { tool: { kind: 'house', grantId: ref }, rot: v.rot ?? 0, sel: null, lifted: ref });
+    view.ghost = { anchor: i, ok: true, r: { ok: true }, size: houseOf(ref)?.size, houseId: houseOf(ref)?.id, rot: v.rot ?? 0 }; // 原位顯示幽靈，點哪格搬哪格或直接拖
+  } else if (action === 'stow') {
+    if (ed.removeHouse(i).ok) { if (view.mode !== 'place') ed.done(); ui.toast(ui.t('memory.stowed')); }
+  } else if (action === 'rotate') {
+    const r = ed.rotate(i); if (!r.ok) reject(r); else if (view.mode !== 'place') ed.done();
+  } else if (action === 'merge') {
+    const p = mergePartner(i);
+    if (!p) return;
+    ed.removeHouse(i);
+    if (p.anchor != null) ed.removeHouse(p.anchor);
+    merge(ref, p.ref, { anchor: i, rot: v.rot ?? 0 });
+    return;
+  }
+  refresh();
+}
+
 createGestures(document.getElementById('town'), {
   getMode: () => (view.tab === 'town' ? view.mode : 'view'),
-  onEvent(e) {
+  onEvent: function gestureEvent(e) {
+    if (e.type === 'pan' || e.type === 'zoom' || e.type === 'tap') closeRing();
     if (e.type === 'pan') town.pan(e.x0, e.y0, e.x1, e.y1);
     else if (e.type === 'zoom') town.zoom(e.factor, e.x, e.y);
     else if (e.type === 'tap') { // 看態：點房子 = 迷你記憶卡（F6）
       const i = town.cellAt(e.x, e.y);
       view.sel = i == null ? null : anchorAt(i);
       refresh();
-    } else if (e.type === 'lift') { // 長按已放的房子 = 拿起（變幽靈，可搬家）
+    } else if (e.type === 'lift') { // 長按房子：原地放手 = 圓圈選單；按著直接拖 = 拿起搬家
+      const i = town.cellAt(e.x, e.y), v = i == null ? null : store.get().grid[i];
+      const a = i == null ? null : (v?.t === 'deco' || v?.deco ? i : anchorAt(i));
+      if (a == null) return;
+      closeRing();
+      pendingRing = { i: a, x: e.x, y: e.y };
+      stroke = { last: null, warned: false };
+      return;
+    } else if (e.type === 'liftNow') { // 實際拿起（長按後拖曳，或圓圈「移動」）
       const i = town.cellAt(e.x, e.y), v = i == null ? null : store.get().grid[i];
       if (v?.t === 'deco' || v?.deco) { // 部件也能拿起搬家
         if (view.mode !== 'place') enterPlace();
@@ -282,11 +345,16 @@ createGestures(document.getElementById('town'), {
       Object.assign(view, { tool: { kind: 'house', grantId: cell.ref }, rot: cell.rot, sel: null, lifted: cell.ref });
       stroke = { last: null, warned: false };
       brushAt(e.x, e.y);
+    } else if (e.type === 'brushStart' && pendingRing) { // 長按後開始拖 → 拿起
+      const p = pendingRing; pendingRing = null;
+      gestureEvent({ type: 'liftNow', x: p.x, y: p.y });
     } else if (e.type === 'brushStart') {
+      closeRing();
       stroke = { last: null, warned: false };
       if (view.tool?.kind === 'road') ed.beginStroke();
       brushAt(e.x, e.y);
     } else if (e.type === 'brushMove' && stroke) brushAt(e.x, e.y);
+    else if (e.type === 'brushEnd' && pendingRing) { const p = pendingRing; pendingRing = null; stroke = null; openRing(p.i); }
     else if (e.type === 'brushEnd' && stroke) {
       if (view.tool?.kind === 'road') ed.endStroke();
       if (view.tool?.kind === 'house') commitHouse();

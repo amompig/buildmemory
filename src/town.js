@@ -214,6 +214,14 @@ export function createTown(canvas, { houses, palette, reducedMotion = false }) {
       kick();
     },
 
+    // 房子（錨點、size、rot）上方的螢幕座標：長按圓圈選單的中心
+    screenOf(anchor, size = [1, 1], rot = 0) {
+      const v = new THREE.Vector3().setFromMatrixPosition(houseMatrix(size, anchor, rot));
+      v.y = CELL * 0.6; v.project(camera);
+      const r = canvas.getBoundingClientRect();
+      return [r.left + ((v.x + 1) / 2) * r.width, r.top + ((1 - v.y) / 2) * r.height];
+    },
+
     // 螢幕座標 → 格 idx（射線打 y=0 平面）；格外回 null
     cellAt(clientX, clientY) {
       const p = groundAt(clientX, clientY);

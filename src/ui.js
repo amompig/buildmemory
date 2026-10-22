@@ -9,6 +9,7 @@ const FALLBACK = {
   town: { progress_title: '我的小鎮 · {size}×{size}', road_unlimited: '無限', drawer_title: '倉庫 · 依日期' },
   login: { done: '綁好了', failed: '綁定沒有成功，再試一次', unavailable: '登入還沒開放' },
   map: { today: '今天 {n} / 40', checkin_ok: '打卡成功 · 第 {visit} 次來', range: '走進 {n} m 內就能打卡', relocate: '重新定位', daily_toast_decor: '今天的部件已入倉庫' },
+  ring: { move: '移動', stow: '收回', rotate: '轉向', merge: '合成' },
   memory: { stow: '收回倉庫', stowed: '已收回倉庫', variant_origin: '原色', variant_n: '變體 {n}', footprint: '佔 {n} 格 · 進倉庫', note_label: '一句話', optional: '可跳過' },
   error: { invalid: '這一步沒存成功，再試一次' },
   // 合成升級：Design 尚未給文案（docs/spec_upgrade_2026-10-22.md），暫代
@@ -22,6 +23,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 const svg = (d, cls = 'c-icon') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
 const ICON = {
   up: svg('<path d="M12 19V5M6 11l6-6 6 6"/>'),
+  move: svg('<path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/>'),
   rotate: svg('<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>'),
   fit: svg('<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>'),
   map: svg('<path d="M12 21s-6-5.3-6-11a6 6 0 0 1 12 0c0 5.7-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/>'),
@@ -249,6 +251,18 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
     closeMemory() { const el = $('.ui-memory'); el.innerHTML = ''; el.onclick = null; },
 
     // F12：一次一則、新則取代舊則；3 s（reduced-motion 4 s）
+    // 長按房子的圓圈選單：上移動、右收回、左轉向、下合成（有可合成對象才有）；點按鈕 → onIntent({ type:'ring', action })
+    ringOpen(x, y, { merge = false, rotate = true } = {}) {
+      this.ringClose();
+      const el = Object.assign(document.createElement('div'), { id: 'ring' });
+      const b = (action, icon, pos) => `<button class="ring-btn ring-btn--${pos}" data-ring="${action}">${icon}<span>${esc(t(`ring.${action}`))}</span></button>`;
+      el.innerHTML = b('move', ICON.move, 'top') + b('stow', ICON.inventory, 'right') + (rotate ? b('rotate', ICON.rotate, 'left') : '') + (merge ? b('merge', ICON.up, 'bottom') : '');
+      el.style.left = `${x}px`; el.style.top = `${y}px`;
+      el.addEventListener('click', (e) => { const a = e.target.closest('[data-ring]')?.dataset.ring; if (a) onIntent({ type: 'ring', action: a }); });
+      document.body.appendChild(el);
+    },
+    ringClose() { document.getElementById('ring')?.remove(); },
+
     toast(msg, ms = matchMedia('(prefers-reduced-motion: reduce)').matches ? 4000 : 3000) {
       const el = $('.ui-toast');
       el.innerHTML = `<div class="c-toast"><span>${esc(msg)}</span></div>`;
