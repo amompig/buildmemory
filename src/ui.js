@@ -111,7 +111,7 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
         + `<span class="c-stockrow__right"><span class="c-stockrow__qty">×${gs.length}</span><span class="c-stockrow__state${state === 'stock' ? ' c-stockrow__state--stock' : ''}">${state === 'stock' ? '待放' : '已放'}</span></span></button>`;
     };
     const stock = groups(s.grants, 'stock'), placed = groups(s.grants, 'placed');
-    return `${login}<div class="inv-head"><span class="c-chip" aria-pressed="true">${esc(t('inventory.sort_date'))}</span><span style="flex:1"></span><span class="c-chip">${esc(t('inventory.shards', { n: R.shards(s.grants) }))}</span></div>`
+    return `${login}<div class="inv-head"><span class="c-chip" aria-pressed="true">${esc(t('inventory.sort_date'))}</span></div>`
       + (stock.length || placed.length ? `<div class="inv">${stock.map((gs) => row(gs, 'stock')).join('')}${placed.map((gs) => row(gs, 'placed')).join('')}</div>` : `<p class="c-dialog__body">${esc(t('inventory.empty'))}</p>`);
   }
 

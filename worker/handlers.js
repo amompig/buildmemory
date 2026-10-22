@@ -194,7 +194,7 @@ export async function me({ env, userId }) {
     body: {
       user_id: userId, bound: !!user.google_sub, grants,
       town: { id: town.id, grid: JSON.parse(town.grid_json), rev: town.rev },
-      shards: R.shards(grants), data_version: DATA_VERSION, server_time: now(),
+      data_version: DATA_VERSION, server_time: now(),
     },
   };
 }
@@ -294,12 +294,12 @@ export async function checkin({ env, body, userId }) {
   return { body: { grant, checkin: { landmark_id: lm.id, day, visit_n: visit } } };
 }
 
-// POST /api/daily {lat, lng, acc, op_id}：每日 1 次；縣市 = 最近地標 ≤ 30 km；iron 持有 ≥ 3 → 碎片
+// POST /api/daily {lat, lng, acc, op_id}：每日 1 次；縣市 = 最近地標 ≤ 30 km；給該城市 1×1 池隨機一棟
 export async function daily({ env, body, userId }) {
   if (!geoOk(body)) throw invalid('schema');
   const prev = await byOp(env, userId, body.op_id);
   const county = R.countyOf(body.lat, body.lng, LANDMARKS);
-  if (prev) return { body: { grant: prev, county, kind: prev.state === 'dismantled' ? 'shard' : 'house' } };
+  if (prev) return { body: { grant: prev, county, kind: 'house' } };
 
   if (body.acc > R.RULES.ACC_MAX) throw fromRule({ code: 'weak_signal' });
   if (!county) throw invalid('county');
@@ -307,11 +307,9 @@ export async function daily({ env, body, userId }) {
   if (await env.DB.prepare("SELECT 1 FROM checkins WHERE user_id = ? AND landmark_id = 'daily' AND day = ?").bind(userId, day).first()) {
     throw new ApiError(429, 'cooldown', { until: R.cooldownUntil(day) });
   }
-  const iron = HOUSE.get(R.RULES.DAILY_HOUSE);
-  const g = R.dailyGrant(R.ironOwned(await grantsOf(env, userId)), iron.palettes.length, Math.random());
-  // 碎片 = 一列 state='dismantled' 的 house（schema_v1 §3 碎片數的定義）
+  const g = R.dailyGrant(R.dailyPool(HOUSES, county), Math.random(), Math.random());
   const grant = await writeGrant(env, userId, {
-    item_id: g.item_id, state: g.kind === 'shard' ? 'dismantled' : 'stock', seed: g.seed ?? 0, landmark_id: null, visit_n: 1, op_id: body.op_id,
+    item_id: g.item_id, state: 'stock', seed: g.seed, landmark_id: null, visit_n: 1, op_id: body.op_id,
   }, 'daily', day, null, t);
   return { body: { grant, county, kind: g.kind } };
 }

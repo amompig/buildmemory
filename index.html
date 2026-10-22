@@ -311,7 +311,7 @@ async function daily(pos) {
   try { last = localStorage.getItem('bym:daily'); } catch { /* ignore */ }
   if (last === today) return;
   const r = await call('POST', '/api/daily', { lat: pos.lat, lng: pos.lng, acc: pos.acc, op_id: crypto.randomUUID() });
-  if (r.ok) { addGrant(r.data.grant); ui.toast(ui.t(r.data.kind === 'shard' ? 'map.daily_toast_shard' : 'map.daily_toast_house')); }
+  if (r.ok) { addGrant(r.data.grant); ui.toast(ui.t('map.daily_toast_house')); }
   if (r.ok || r.code === 'cooldown' || r.reason === 'county') try { localStorage.setItem('bym:daily', today); } catch { /* ignore */ }
 }
 // 按下打卡 → 再取一次定位（不用剛才的）→ 伺服器驗 → 記憶卡

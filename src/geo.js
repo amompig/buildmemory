@@ -100,6 +100,8 @@ export function createMap(el, { landmarks, colors = {} }) {
           const e = document.createElement('div'); e.className = 'bym-pin';
           markers.set(lm.id, new maplibregl.Marker({ element: e, anchor: 'bottom' }).setLngLat([lm.lng, lm.lat]).addTo(map));
         }
+        // 署名照 OSMF Attribution Guidelines：拖動地圖時（MapLibre 內建）或 5 秒後收成 ⓘ，點 ⓘ 可再展開
+        setTimeout(() => el.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show'), 5000);
         ready = new Promise((ok) => map.on('load', () => {
           const none = { type: 'FeatureCollection', features: [] };
           map.addSource('ring', { type: 'geojson', data: none });

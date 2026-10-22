@@ -32,7 +32,7 @@ test('§0 RULES 常數與真值表一致', () => {
     GRID: 16, SIZES: [8, 10, 12, 14, 16], UNLOCK_RATIO: 0.70,
     R_DEFAULT: 100, ACC_MAX: 200, ACC_TOLERANCE_MAX: 50,
     DAILY_CAP: 40, MIN_INTERVAL_S: 60, DAY_OFFSET_H: 4, TZ_OFFSET_H: 8,
-    DAILY_HOUSE: 'sys:iron', DAILY_HOUSE_MAX: 3, COUNTY_MAX_KM: 30,
+    COUNTY_MAX_KM: 30,
     NOTE_MAX: 40, MOODS: [0, 1, 2, 3, 4],
   });
 });
@@ -237,21 +237,23 @@ const LMS = [
 test('§6 countyOf 補充：最近地標 ≤ 30 km → 其 county', () => assert.equal(R.countyOf(25.05, 121.55, LMS), 'TPE'));
 test('§6 countyOf 補充：最近地標 > 30 km → null', () => assert.equal(R.countyOf(24.0, 121.6, LMS), null));
 
-test('§6 dailyGrant ironOwned 0 → house', () => assert.equal(R.dailyGrant(0, 4, 0.5).kind, 'house'));
-test('§6 dailyGrant ironOwned 2 → house', () => assert.equal(R.dailyGrant(2, 4, 0.5).kind, 'house'));
-test('§6 dailyGrant ironOwned 3 → shard', () =>
-  assert.deepEqual(R.dailyGrant(3, 4, 0.5), { kind: 'shard', item_id: 'sys:iron', state: 'dismantled' }));
-test('§6 dailyGrant ironOwned 7 → shard', () => assert.equal(R.dailyGrant(7, 4, 0.5).kind, 'shard'));
-test('§6 dailyGrant house 的 seed = seed(2, paletteCount, rand)：iron 4 組 → 1–3', () => {
-  assert.equal(R.dailyGrant(0, 4, 0).seed, 1);
-  assert.equal(R.dailyGrant(0, 4, 0.9999).seed, 3);
+// 每日簽到改為城市 1×1 池隨機（docs/spec_upgrade_2026-10-22.md）；碎片規則取消
+const POOL = [{ id: 'sys:a', palettes: 3 }, { id: 'sys:b', palettes: 4 }];
+test('§6 dailyGrant 依 rand 從池中挑一棟、一律 house', () => {
+  assert.deepEqual(R.dailyGrant(POOL, 0, 0.5), { kind: 'house', item_id: 'sys:a', seed: 2 });
+  assert.equal(R.dailyGrant(POOL, 0.9999, 0.5).item_id, 'sys:b');
 });
-test('§6 拆解過 2 棟（dismantled 不計）+ stock 2 → house', () => {
-  const gs = [grant('a', 'sys:iron', 'dismantled'), grant('b', 'sys:iron', 'dismantled'),
-    grant('c', 'sys:iron', 'stock'), grant('d', 'sys:iron', 'stock')];
-  assert.equal(R.ironOwned(gs), 2);
-  assert.equal(R.dailyGrant(R.ironOwned(gs), 4, 0.5).kind, 'house');
+test('§6 dailyGrant seed = seed(2, 該房型 palettes, rand2)：不給原色', () => {
+  assert.equal(R.dailyGrant(POOL, 0.9, 0).seed, 1);
+  assert.equal(R.dailyGrant(POOL, 0.9, 0.9999).seed, 3);
 });
+test('§6 dailyPool：只收 1×1 的一般房型（sys:*），不含地標與大房型', () => {
+  const houses = [{ id: 'sys:a', size: [1, 1], palettes: [{}, {}, {}] }, { id: 'sys:big', size: [3, 1], palettes: [{}] },
+    { id: 'lm:x', size: [1, 1], palettes: [{}] }];
+  assert.deepEqual(R.dailyPool(houses, 'TPE'), [{ id: 'sys:a', palettes: 3 }]);
+});
+test('§6 dailyPool 用真目錄：5 種 1×1', () =>
+  assert.deepEqual(R.dailyPool(HOUSES_JSON, 'TPE').map((h) => h.id).sort(), ['sys:apartment', 'sys:iron', 'sys:jpdorm', 'sys:temple', 'sys:tilehighrise']));
 
 // ---------- §7 記憶卡與拆解 ----------
 test('§7 validateMemory 40 個「好」→ ok', () => assert.equal(R.validateMemory({ mood: 1, note: '好'.repeat(40) }).ok, true));
@@ -274,9 +276,6 @@ test('§7 canDismantle 100 個 → invalid', () =>
   assert.equal(R.canDismantle(stock, Array.from({ length: 100 }, (_, i) => `s${i}`)).code, 'invalid'));
 test('§7 canDismantle 補充：0 個 → invalid', () => assert.equal(R.canDismantle(stock, []).code, 'invalid'));
 test('§7 canDismantle 補充：不屬於本人 → invalid', () => assert.equal(R.canDismantle(stock, ['x']).code, 'invalid'));
-test('§7 shards 補充：只算 dismantled 且未消耗', () =>
-  assert.equal(R.shards([grant('a', 'sys:iron', 'dismantled'), grant('b', 'sys:iron', 'dismantled', { consumed_at: NOW }),
-    grant('c', 'sys:iron', 'stock')]), 1));
 
 // ---------- §8 版本 ----------
 test('§8 applyTown 相等 → 寫入、rev+1', () => assert.deepEqual(R.applyTown(3, 3, []), { ok: true, rev: 4 }));

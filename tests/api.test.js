@@ -291,12 +291,14 @@ test('checkin：圈內 → 發房（原色、第 1 次）；同 op_id 重送 →
   assert.equal((await me(u)).grants.length, 3);
 });
 
-test('daily：台北 → 鐵窗厝 seed 1..n−1；同日再領 → cooldown；30 km 外 → invalid county', opts, async () => {
+test('daily：台北 → 城市 1×1 池隨機一棟、seed 1..n−1；同日再領 → cooldown；30 km 外 → invalid county', opts, async () => {
   const u = await newUser();
   const r = await call('POST', '/api/daily', { cookie: u.cookie, body: { ...north(LM5, 500), acc: 30, op_id: op() } });
   assert.equal(r.status, 200);
-  assert.deepEqual([r.json.kind, r.json.county, r.json.grant.item_id, r.json.grant.state], ['house', 'TPE', 'sys:iron', 'stock']);
-  assert.ok(r.json.grant.seed >= 1 && r.json.grant.seed <= 3);
+  assert.deepEqual([r.json.kind, r.json.county, r.json.grant.state], ['house', 'TPE', 'stock']);
+  const h = HOUSES.find((x) => x.id === r.json.grant.item_id);
+  assert.ok(h && h.id.startsWith('sys:') && h.size.join() === '1,1', r.json.grant.item_id);
+  assert.ok(r.json.grant.seed >= 1 && r.json.grant.seed < h.palettes.length);
   const again = await call('POST', '/api/daily', { cookie: u.cookie, body: { ...north(LM5, 500), acc: 30, op_id: op() } });
   assert.deepEqual([again.status, again.json.error.code], [429, 'cooldown']);
   const v = await newUser();

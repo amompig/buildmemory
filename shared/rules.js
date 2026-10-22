@@ -6,7 +6,7 @@ export const RULES = Object.freeze({
   GRID: 16, SIZES: Object.freeze([8, 10, 12, 14, 16]), UNLOCK_RATIO: 0.70,
   R_DEFAULT: 100, ACC_MAX: 200, ACC_TOLERANCE_MAX: 50,
   DAILY_CAP: 40, MIN_INTERVAL_S: 60, DAY_OFFSET_H: 4, TZ_OFFSET_H: 8,
-  DAILY_HOUSE: 'sys:iron', DAILY_HOUSE_MAX: 3, COUNTY_MAX_KM: 30,
+  COUNTY_MAX_KM: 30,
   NOTE_MAX: 40, MOODS: Object.freeze([0, 1, 2, 3, 4]),
 });
 
@@ -185,14 +185,15 @@ export function countyOf(lat, lng, landmarks) {
   return best && bestD <= RULES.COUNTY_MAX_KM * 1000 ? best.county : null;
 }
 
-// stock + placed 的 sys:iron 列數（dismantled 不計）
-export const ironOwned = (grants) =>
-  grants.filter((g) => g.item_id === RULES.DAILY_HOUSE && (g.state === 'stock' || g.state === 'placed')).length;
-
-export function dailyGrant(ironOwnedCount, paletteCount, rand) {
-  if (ironOwnedCount >= RULES.DAILY_HOUSE_MAX) return { kind: 'shard', item_id: RULES.DAILY_HOUSE, state: 'dismantled' };
-  return { kind: 'house', item_id: RULES.DAILY_HOUSE, seed: seed(2, paletteCount, rand) };
+// 每日簽到：從該城市的 1×1 池隨機一棟（docs/spec_upgrade_2026-10-22.md；碎片規則已取消）
+// pool = [{ id, palettes: n }]；rand、rand2 ∈ [0, 1)；變體同「第 2 次以上到訪」（不給原色）
+export function dailyGrant(pool, rand, rand2) {
+  const h = pool[Math.min(pool.length - 1, Math.floor(rand * pool.length))];
+  return { kind: 'house', item_id: h.id, seed: seed(2, h.palettes, rand2) };
 }
+// 城市 1×1 池：Design 尚未給各縣市清單，暫時所有縣市共用全部 1×1 一般房型（sys:*）
+export const dailyPool = (houses, _county) =>
+  houses.filter((h) => h.id.startsWith('sys:') && h.size[0] === 1 && h.size[1] === 1).map((h) => ({ id: h.id, palettes: h.palettes.length }));
 
 // ---------- §7 記憶卡與拆解 ----------
 export function validateMemory({ mood, note }) {
@@ -213,8 +214,6 @@ export function canDismantle(grants, ids) {
   return ok();
 }
 
-export const shards = (grants) =>
-  grants.filter((g) => g.kind === 'house' && g.state === 'dismantled' && g.consumed_at == null).length;
 
 // ---------- §8 版本 ----------
 export function applyTown(baseRev, serverRev, serverGrid) {
