@@ -11,6 +11,9 @@
 <style>
   /* 只放版面定位；顏色、字級、圓角一律用 tokens.css 變數 */
   html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  input, textarea { -webkit-user-select: text; user-select: text; }
+  .c-drawer__scroll { touch-action: pan-x; } /* 抽屜只橫向捲；往上拖格子 = 把房子拖進小鎮 */
   body { background: #DCE8E2; }
   #town { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
   #ui { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-hud); }
@@ -256,10 +259,58 @@ function commitHouse() {
   const r = ed.placeHouse(view.tool.grantId, g.anchor, view.rot);
   if (!r.ok) { reject(r); return; }
   navigator.vibrate?.(10);
-  // 同一疊還有就繼續拿下一棟，沒有就放下工具
-  const placed = store.get().grants.find((x) => x.id === view.tool.grantId);
-  const next = store.get().grants.find((x) => x.state === 'stock' && x.item_id === placed.item_id && x.landmark_id === placed.landmark_id);
-  Object.assign(view, { tool: next ? { kind: 'house', grantId: next.id } : null, ghost: null, rot: 0, lifted: null });
+  // 放上去 = 擺放完成（使用者 10-24）：直接回到看態，不用再按「完成」
+  Object.assign(view, { lifted: null });
+  finishPlace();
+}
+
+// ---------- 倉庫格子：往上拖出抽屜 = 直接把房子拖進小鎮；長按（不動）= 合成選單 ----------
+// 擺放頁抽屜的 .c-slot 可拖可長按；倉庫頁的 .c-stockrow 只長按（那頁要上下捲）
+let slotPress = null, suppressClick = false;
+const grantOfEl = (el) => { try { const a = JSON.parse(el.dataset.arg ?? '{}'); return a.grantId ?? a.tool?.grantId; } catch { return null; } };
+document.getElementById('ui').addEventListener('pointerdown', (e) => {
+  const el = e.target.closest('.c-slot[data-intent="tool"], .c-stockrow[data-intent="placeFrom"]');
+  const id = el && grantOfEl(el);
+  if (!id) return;
+  slotPress = { id, el, x0: e.clientX, y0: e.clientY, drag: false, long: false, canDrag: el.classList.contains('c-slot') };
+  slotPress.timer = setTimeout(() => { if (slotPress && !slotPress.drag) { slotPress.long = true; openSlotRing(slotPress.id, slotPress.el); } }, 450);
+});
+addEventListener('pointermove', (e) => {
+  const sp = slotPress;
+  if (!sp || sp.long) return;
+  const dx = e.clientX - sp.x0, dy = e.clientY - sp.y0;
+  if (!sp.drag) {
+    if (Math.hypot(dx, dy) > 8) clearTimeout(sp.timer);
+    if (!(sp.canDrag && dy < -12 && -dy > Math.abs(dx) * 0.5)) return; // 明顯往上（橫向為主 = 捲抽屜）
+    sp.drag = true; closeRing();
+    Object.assign(view, { tool: { kind: 'house', grantId: sp.id }, rot: 0, lifted: null, ghost: null, erase: false });
+    town.topDown(false);
+    stroke = { last: null, warned: false };
+  }
+  brushAt(e.clientX, e.clientY);
+});
+const endSlotPress = () => {
+  const sp = slotPress;
+  if (!sp) return;
+  clearTimeout(sp.timer); slotPress = null;
+  if (sp.drag) { commitHouse(); stroke = null; refresh(); }
+  // 拖完 / 長按後放手不要再觸發「選這格」；只擋緊接著的那一下 click（拖到小鎮放手時不會有 click，不能一直擋著）
+  if (sp.drag || sp.long) { suppressClick = true; setTimeout(() => { suppressClick = false; }, 350); }
+};
+addEventListener('pointerup', endSlotPress);
+addEventListener('pointercancel', endSlotPress);
+addEventListener('click', (e) => { if (suppressClick && e.target.closest?.('.c-slot, .c-stockrow')) { suppressClick = false; e.stopPropagation(); e.preventDefault(); } }, true);
+function stockPartner(id) { // 倉庫裡同系列同階的另一棟
+  const { grants } = store.get(), me = grants.find((g) => g.id === id), h = me && kinds.find((k) => k.id === me.item_id);
+  if (!h?.line || h.tier >= 3) return null;
+  return grants.find((g) => g.id !== id && g.kind === 'house' && g.state === 'stock' && (() => { const x = kinds.find((k) => k.id === g.item_id); return x?.line === h.line && x.tier === h.tier; })()) ?? null;
+}
+function openSlotRing(id, el) {
+  if (!stockPartner(id)) return; // 沒有可合成的對象：長按不跳選單
+  const r = el.getBoundingClientRect();
+  ring = { slot: id };
+  navigator.vibrate?.(10);
+  ui.ringOpen(r.left + r.width / 2, r.top + 10, { only: ['merge'] });
 }
 
 // ---------- 長按圓圈選單（移動 / 收回 / 轉向 / 合成）----------
@@ -285,6 +336,12 @@ function openRing(i) {
 }
 function ringAction(action) {
   if (!ring) return;
+  if (ring.slot) { // 倉庫格子長按 → 合成
+    const id = ring.slot, p = stockPartner(id);
+    closeRing();
+    if (action === 'merge' && p) merge(id, p.id);
+    return;
+  }
   const i = ring.i, v = store.get().grid[i];
   closeRing();
   if (!v) return;
@@ -378,7 +435,8 @@ async function merge(a, b, at = null) {
   ed.done();
   const g = r.data.grant, name = kinds.find((h) => h.id === g.item_id)?.name ?? g.item_id;
   const placed = at && ed.placeHouse(g.id, at.anchor, at.rot).ok;
-  if (placed) { ed.done(); Object.assign(view, { tool: null, ghost: null }); }
+  if (placed && view.mode === 'place') finishPlace(); // 合成後放回原位 = 擺放完成
+  else if (placed) { ed.done(); Object.assign(view, { tool: null, ghost: null }); }
   else if (view.mode === 'place') Object.assign(view, { tool: { kind: 'house', grantId: g.id }, ghost: null, rot: 0 }); // 新房子直接選起來
   ui.toast(ui.t(at && !placed ? 'inventory.merge_no_room' : 'inventory.merged', { name }));
   refresh();

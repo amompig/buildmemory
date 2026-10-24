@@ -252,11 +252,14 @@ export function createUI(root, { strings = {}, houses, landmarks = [], onIntent 
 
     // F12：一次一則、新則取代舊則；3 s（reduced-motion 4 s）
     // 長按房子的圓圈選單：上移動、右收回、左轉向、下合成（有可合成對象才有）；點按鈕 → onIntent({ type:'ring', action })
-    ringOpen(x, y, { merge = false, rotate = true } = {}) {
+    // only = ['merge']：只放這幾顆（倉庫格子長按），排在上方
+    ringOpen(x, y, { merge = false, rotate = true, only = null } = {}) {
       this.ringClose();
       const el = Object.assign(document.createElement('div'), { id: 'ring' });
       const b = (action, icon, pos) => `<button class="ring-btn ring-btn--${pos}" data-ring="${action}">${icon}<span>${esc(t(`ring.${action}`))}</span></button>`;
-      el.innerHTML = b('move', ICON.move, 'top') + b('stow', ICON.inventory, 'right') + (rotate ? b('rotate', ICON.rotate, 'left') : '') + (merge ? b('merge', ICON.up, 'bottom') : '');
+      const icons = { move: ICON.move, stow: ICON.inventory, rotate: ICON.rotate, merge: ICON.up };
+      el.innerHTML = only ? only.map((a) => b(a, icons[a], 'top')).join('')
+        : b('move', ICON.move, 'top') + b('stow', ICON.inventory, 'right') + (rotate ? b('rotate', ICON.rotate, 'left') : '') + (merge ? b('merge', ICON.up, 'bottom') : '');
       el.style.left = `${x}px`; el.style.top = `${y}px`;
       el.addEventListener('click', (e) => { const a = e.target.closest('[data-ring]')?.dataset.ring; if (a) onIntent({ type: 'ring', action: a }); });
       document.body.appendChild(el);
